@@ -1,6 +1,3 @@
-[submodule "libs/libs/Project-resources"]
-	path = libs/libs/Project-resources
-	url = https://github.com/TTK4145/Project-resources
 [submodule "libs/Project-resources"]
 	path = libs/Project-resources
 	url = https://github.com/TTK4145/Project-resources.git
