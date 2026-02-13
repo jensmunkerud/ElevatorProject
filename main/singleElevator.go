@@ -1,4 +1,4 @@
-package singeElevator
+package main
 
 import (
 	"fmt"
