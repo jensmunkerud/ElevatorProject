@@ -9,10 +9,12 @@ import (
 func TestController(t *testing.T) {
 	orderEvent, floorEvent, obstructionEvent, stopEvent := InitController(4)
 	myFloor := -1
+	targetFloor := -1
 	for {
 		select {
 		case a := <-orderEvent:
 			fmt.Printf("%+v\n", a)
+			targetFloor = a.Floor
 			if myFloor < 0 || myFloor == a.Floor {
 				continue
 			} else if myFloor < a.Floor {
@@ -25,10 +27,10 @@ func TestController(t *testing.T) {
 
 		case a := <-floorEvent:
 			fmt.Printf("%+v\n", a)
-			if myFloor == a {
+			myFloor = a
+			if myFloor == targetFloor || targetFloor < 0 {
 				elevio.SetMotorDirection(elevio.MD_Stop)
 			}
-			myFloor = a
 
 		case a := <-obstructionEvent:
 			fmt.Printf("%+v\n", a)
