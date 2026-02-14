@@ -6,7 +6,7 @@ import (
 )
 
 func InitController() {
-	orderEvent, floorEvent, obstructionEvent, stopEvent := InitElevatorIO(4)
+	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
 	myFloor := -1
 	targetFloor := -1
 	for {
@@ -45,7 +45,7 @@ func InitController() {
 }
 
 // Handles IO communication between software and hardware
-func InitElevatorIO(numFloors int) (
+func initElevatorIO(numFloors int) (
 	chan elevio.ButtonEvent,
 	chan int,
 	chan bool,
