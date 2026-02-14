@@ -1,7 +1,20 @@
 package networking
 
-import "fmt"
+import (
+	"network-go/network/bcast"
+	"network-go/network/localip"
+	"network-go/network/peers"
+	"flag"
+	"os"
+	"time"
+)
 
-func Test() {
-	fmt.Println("Hello from networking")
+
+func communicationSetup(elevatorId string, ) (
+	chan peers.PeerUpdate, 
+	chan bool,
+	chan sendCustomDataType,
+	chan receiveCustomDataType) {
+
 }
+
