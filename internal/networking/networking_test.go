@@ -19,6 +19,7 @@ func Test(t *testing.T) {
 		}
 	}()
 	fmt.Println("Started sending elevator data")
+	fmt.Printf("Enable peer %v\n", enablePeer)
 	for{
 		select{
 			case peerUpdate := <-peerUpdateChannel:
