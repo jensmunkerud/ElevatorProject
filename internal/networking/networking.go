@@ -1,19 +1,17 @@
 package networking
 
 import (
-	"network-go/network/bcast"
-	"network-go/network/localip"
-	"network-go/network/peers"
-	"elevatorproject/internal/elevatorStruct"
+	elevatorstruct "elevatorproject/internal/elevatorStruct"
 	"flag"
-	"os"
-	"time"
 	"fmt"
+	"Network-go/network/bcast"
+	"Network-go/network/localip"
+	"Network-go/network/peers"
+	"os"
 )
 
-
-func communicationSetup(currentElevator *elevatorStruct.Elevator) (
-	chan peers.PeerUpdate, 
+func communicationSetup(currentElevator *elevatorstruct.Elevator) (
+	chan peers.PeerUpdate,
 	chan bool,
 	chan elevatorstruct.Elevator,
 	chan elevatorstruct.Elevator) {
@@ -21,7 +19,7 @@ func communicationSetup(currentElevator *elevatorStruct.Elevator) (
 	udpID := fmt.Itoa(currentElevator.id)
 	flag.StringVar(&udpID, "id", "", "id of this peer")
 	flag.Parse()
-	
+
 	if udpID == "" {
 		localIP, err := localip.LocalIP()
 		if err != nil {
@@ -44,5 +42,3 @@ func communicationSetup(currentElevator *elevatorStruct.Elevator) (
 
 	return peerUpdateChannel, enablePeer, recieveCustomDataType, sendCustomDataType
 }
-
-
