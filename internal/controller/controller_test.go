@@ -6,4 +6,5 @@ import (
 
 func TestController(t *testing.T) {
 	go InitController()
+	select {}
 }
