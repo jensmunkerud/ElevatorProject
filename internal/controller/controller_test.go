@@ -5,5 +5,5 @@ import (
 )
 
 func TestController(t *testing.T) {
-	InitController()
+	go InitController()
 }
