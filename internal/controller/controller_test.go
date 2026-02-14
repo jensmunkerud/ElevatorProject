@@ -16,14 +16,11 @@ func TestController(t *testing.T) {
 			fmt.Printf("%+v\n", a)
 			targetFloor = a.Floor
 			if myFloor < 0 || myFloor == a.Floor {
-				elevio.SetMotorDirection(elevio.MD_Stop)
 				continue
 			} else if myFloor < targetFloor {
 				elevio.SetMotorDirection(elevio.MD_Up)
 			} else if myFloor > targetFloor {
 				elevio.SetMotorDirection(elevio.MD_Down)
-			} else {
-				elevio.SetMotorDirection(elevio.MD_Stop)
 			}
 
 		case a := <-floorEvent:
