@@ -15,9 +15,12 @@ type Elevator struct {
 
 }
 
-func (e *Elevator) initialize(id int) {
+func (e *Elevator) Initialize(id int, currentFloor int, direction string) {
+	e.HallRequests = [numFloors][2]bool{} //[up, down] * numFloors
 	e.id = id //[up, down] * numFloors
 	e.behaviour = "idle"
+	e.floor = currentFloor
+	e.Direction = direction
 	// Check which floor it is in
 	// Read what direction it is moving
 	e.cabRequest = make([]bool, numFloors)
