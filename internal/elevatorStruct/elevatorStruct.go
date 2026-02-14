@@ -25,3 +25,7 @@ func (e *Elevator) Initialize(id int, currentFloor int, direction string) {
 	// Read what direction it is moving
 	e.cabRequest = make([]bool, numFloors)
 }
+
+func (e *Elevator) CurrentElevatorId() int {
+	return e.id
+}

@@ -8,6 +8,7 @@ import (
 	"Network-go/network/localip"
 	"Network-go/network/peers"
 	"os"
+	"strconv"
 )
 
 func communicationSetup(currentElevator *elevatorstruct.Elevator) (
@@ -16,7 +17,7 @@ func communicationSetup(currentElevator *elevatorstruct.Elevator) (
 	chan elevatorstruct.Elevator,
 	chan elevatorstruct.Elevator) {
 	//Create an id for our communication
-	udpID := fmt.Itoa(currentElevator.id)
+	udpID := strconv.Itoa(currentElevator.CurrentElevatorId())
 	flag.StringVar(&udpID, "id", "", "id of this peer")
 	flag.Parse()
 
