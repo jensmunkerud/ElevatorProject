@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"elevatorproject/internal/config"
-	es "elevatorproject/internal/elevatorstruct"
+	"elevatorproject/internal/elevatorstruct"
 )
 
 // StateData represents individual elevator state in JSON format
@@ -27,7 +27,7 @@ type ElevatorMessage struct {
 type AssignerOutput map[string][][]bool
 
 // ConvertToJson converts elevator states to JSON format for hall request assigner
-func ConvertToJson(hallRequests [config.NumFloors][2]bool, elevators map[string]*es.Elevator) (string, error) {
+func ConvertToJson(hallRequests [config.NumFloors][2]bool, elevators map[string]*elevatorstruct.Elevator) (string, error) {
 	// Convert hall requests from [4][2]bool to [][]bool
 	hallRequestsArray := make([][]bool, len(hallRequests))
 	for i, floor := range hallRequests {
@@ -36,7 +36,8 @@ func ConvertToJson(hallRequests [config.NumFloors][2]bool, elevators map[string]
 
 	// Convert elevator states
 	states := make(map[string]StateData)
-	for id, elev := range elevators {
+	for _, elev := range elevators {
+		id := fmt.Sprintf("id_%d", elev.CurrentElevatorId())
 		states[id] = StateData{
 			Behaviour:   elev.Behaviour(),
 			Floor:       elev.Floor(),
