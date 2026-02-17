@@ -1,3 +1,9 @@
-[submodule "libs/Project-resources"]
-	path = libs/Project-resources
+[submodule "libs/project-resources"]
+	path = libs/project-resources
 	url = https://github.com/TTK4145/Project-resources.git
+[submodule "libs/Network-go"]
+	path = libs/Network-go
+	url = https://github.com/TTK4145/Network-go
+[submodule "libs/driver-go"]
+	path = libs/driver-go
+	url = https://github.com/TTK4145/driver-go
