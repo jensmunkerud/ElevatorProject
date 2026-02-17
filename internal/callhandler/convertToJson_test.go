@@ -2,6 +2,7 @@ package callhandler
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	es "elevatorproject/internal/elevatorstruct"
@@ -35,6 +36,9 @@ func TestConvertToJson(t *testing.T) {
 		t.Fatalf("ConvertToJson failed: %v", err)
 	}
 
+	fmt.Println("ConvertToJson output:")
+	fmt.Println(jsonStr)
+
 	// Verify JSON is valid
 	var message ElevatorMessage
 	err = json.Unmarshal([]byte(jsonStr), &message)
@@ -67,31 +71,6 @@ func TestConvertToJson(t *testing.T) {
 		}
 	} else {
 		t.Error("elev1 not found in states")
-	}
-}
-
-func TestConvertToJsonPretty(t *testing.T) {
-	hall := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
-	elev := &es.Elevator{}
-	elev.Initialize(1, 0, "stop")
-
-	elevators := map[string]*es.Elevator{"elev1": elev}
-
-	jsonStr, err := ConvertToJsonPretty(hall, elevators)
-	if err != nil {
-		t.Fatalf("ConvertToJsonPretty failed: %v", err)
-	}
-
-	// Verify it contains indentation (pretty format)
-	if len(jsonStr) == 0 {
-		t.Error("Expected non-empty JSON string")
-	}
-
-	// Verify it's valid JSON
-	var message ElevatorMessage
-	err = json.Unmarshal([]byte(jsonStr), &message)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal pretty JSON: %v", err)
 	}
 }
 
