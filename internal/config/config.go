@@ -1,5 +1,5 @@
 package config
 
 const (
-	numFloors = 4
+	NumFloors = 4
 )
