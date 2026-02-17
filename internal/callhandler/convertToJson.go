@@ -37,7 +37,7 @@ func ConvertToJson(hallRequests [config.NumFloors][2]bool, elevators map[string]
 	// Convert elevator states
 	states := make(map[string]StateData)
 	for _, elev := range elevators {
-		id := fmt.Sprintf("id_%d", elev.CurrentElevatorId())
+		id := fmt.Sprintf("id_%s", elev.CurrentElevatorId())
 		states[id] = StateData{
 			Behaviour:   elev.Behaviour(),
 			Floor:       elev.Floor(),
