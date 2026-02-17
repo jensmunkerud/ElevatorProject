@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"elevatorproject/internal/config"
 	es "elevatorproject/internal/elevatorstruct"
 )
 
@@ -26,7 +27,7 @@ type ElevatorMessage struct {
 type AssignerOutput map[string][][]bool
 
 // ConvertToJson converts elevator states to JSON format for hall request assigner
-func ConvertToJson(hallRequests [4][2]bool, elevators map[string]*es.Elevator) (string, error) {
+func ConvertToJson(hallRequests [config.NumFloors][2]bool, elevators map[string]*es.Elevator) (string, error) {
 	// Convert hall requests from [4][2]bool to [][]bool
 	hallRequestsArray := make([][]bool, len(hallRequests))
 	for i, floor := range hallRequests {
