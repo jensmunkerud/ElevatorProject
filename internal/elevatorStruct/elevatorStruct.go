@@ -7,14 +7,14 @@ const (
 
 type Elevator struct {
 	HallRequests [numFloors][2]bool //[up, down]
-	id           int
+	id           string
 	behaviour    string
 	floor        int
 	direction    string
 	cabRequest   []bool
 }
 
-func (e *Elevator) Initialize(id int, currentFloor int, direction string) {
+func (e *Elevator) Initialize(id string, currentFloor int, direction string) {
 	e.HallRequests = [numFloors][2]bool{} //[up, down] * numFloors
 	e.id = id                             //[up, down] * numFloors
 	e.behaviour = "idle"
@@ -25,7 +25,7 @@ func (e *Elevator) Initialize(id int, currentFloor int, direction string) {
 	e.cabRequest = make([]bool, numFloors)
 }
 
-func (e *Elevator) CurrentElevatorId() int {
+func (e *Elevator) CurrentElevatorId() string {
 	return e.id
 }
 

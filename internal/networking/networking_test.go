@@ -9,7 +9,7 @@ import(
 
 func Test(t *testing.T) {
 	var elevator elevatorstruct.Elevator
-	elevator.Initialize(1, 0, "up")
+	elevator.Initialize("1", 0, "up")
 	peerUpdateChannel, enablePeer, receiveCustomDataType, sendCustomDataType := communicationSetup(&elevator)
 
 	go func() {
