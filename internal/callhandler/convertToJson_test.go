@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	es "Sanntid/internal/elevatorstruct"
+	es "elevatorproject/internal/elevatorstruct"
 )
 
 func TestConvertToJson(t *testing.T) {

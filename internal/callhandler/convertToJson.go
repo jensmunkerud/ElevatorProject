@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	es "Sanntid/internal/elevatorstruct"
+	es "elevatorproject/internal/elevatorstruct"
 )
 
 // StateData represents individual elevator state in JSON format
