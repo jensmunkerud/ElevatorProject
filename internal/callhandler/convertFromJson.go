@@ -2,7 +2,7 @@ package callhandler
 
 import (
 	"elevatorproject/internal/config"
-    "elevatorproject/internal/elevatorStruct"
+	"elevatorproject/internal/elevatorstruct"
 	"encoding/json"
 )
 
