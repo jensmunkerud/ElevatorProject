@@ -36,6 +36,17 @@ func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*e
 			`tell application "Terminal" to do script "`+
 				binaryPath+` --input '`+jsonString+`'"`)
 		fmt.Println("Running command on MAC...")
+		// READ TERMINAL OUTPUT
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("Error reading terminal:", err)
+			return map[string]elevatorstruct.ElevatorButtons{}, err
+		}
+		// Convert bytes to string
+		result := string(output)
+		fmt.Println("Binary output as string:")
+		fmt.Println(result)
+		return ParseElevatorJson(result)
 
 	case "linux":
 		cmd = exec.Command(
@@ -49,17 +60,5 @@ func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*e
 		fmt.Printf("Unsupported OS: %s\n", runtime.GOOS)
 		return map[string]elevatorstruct.ElevatorButtons{}, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
-
-	// READ TERMINAL OUTPUT
-	output, err := cmd.Output()
-	if err != nil {
-		fmt.Println("Error:", err)
-		return map[string]elevatorstruct.ElevatorButtons{}, err
-	}
-
-	// Convert bytes to string
-	result := string(output)
-	fmt.Println("Binary output as string:")
-	fmt.Println(result)
-	return ParseElevatorJson(result)
+	return map[string]elevatorstruct.ElevatorButtons{}, nil
 }
