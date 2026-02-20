@@ -1,31 +1,31 @@
 package elevatorstruct
+import "elevatorproject/internal/config"
 
-const (
-	numFloors  = 4
-	numButtons = 3
-)
+type ElevatorButtons struct {
+	Buttons [config.NumFloors][2]bool //[up, down]
+}
+
 
 type Elevator struct {
-	HallRequests [numFloors][2]bool //[up, down]
-	id           int
+	HallRequests ElevatorButtons
+	id           string
 	behaviour    string
 	floor        int
 	direction    string
 	cabRequest   []bool
 }
 
-func (e *Elevator) Initialize(id int, currentFloor int, direction string) {
-	e.HallRequests = [numFloors][2]bool{} //[up, down] * numFloors
-	e.id = id                             //[up, down] * numFloors
+func (e *Elevator) Initialize(id string, currentFloor int, direction string) {
+	e.id = id                             
 	e.behaviour = "idle"
 	e.floor = currentFloor
 	e.direction = direction
 	// Check which floor it is in
 	// Read what direction it is moving
-	e.cabRequest = make([]bool, numFloors)
+	e.cabRequest = make([]bool, config.NumFloors)
 }
 
-func (e *Elevator) CurrentElevatorId() int {
+func (e *Elevator) CurrentElevatorId() string {
 	return e.id
 }
 
