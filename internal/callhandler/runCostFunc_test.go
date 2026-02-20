@@ -2,7 +2,6 @@ package callhandler
 
 import (
 	es "elevatorproject/internal/elevatorstruct"
-	"fmt"
 	"testing"
 )
 
@@ -18,13 +17,5 @@ func TestCostFunc(t *testing.T) {
 	elev1.Initialize("bankID", 2, "down")
 	elevators["bankID"] = elev1
 
-	// Convert to JSON
-	jsonString, err := ConvertToJson(hallRequests, elevators)
-	if err != nil {
-		fmt.Printf("Error converting to JSON: %v\n", err)
-		return
-	}
-
-	// costFuncInput = jsonString
-	fmt.Println("JSON String:", jsonString)
+	runCostFunc(hallRequests, elevators)
 }
