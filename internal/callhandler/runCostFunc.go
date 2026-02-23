@@ -3,6 +3,7 @@ package callhandler
 import (
 	"elevatorproject/internal/config"
 	"elevatorproject/internal/elevatorstruct"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -11,57 +12,48 @@ import (
 
 func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*elevatorstruct.Elevator) (map[string]elevatorstruct.ElevatorButtons, error) {
 
-	jsonString, err := ConvertToJson(hallRequests, elevators)
+	// Formats data into JSON format
+	jsonInput, err := ConvertToJson(hallRequests, elevators)
 	if err != nil {
 		fmt.Printf("Error converting to JSON: %v\n", err)
 		return map[string]elevatorstruct.ElevatorButtons{}, err
 	}
-	command := "cd ../../libs/project-resources/cost_fns/hall_request_assigner; ./hall_request_assigner --input '" + jsonString + "'"
-	result := executeCommand(command)
-	fmt.Print(result)
 
-	return map[string]elevatorstruct.ElevatorButtons{}, nil
+	// Executes hall_request_assigner command
+	command := "cd ../../libs/project-resources/cost_fns/hall_request_assigner; ./hall_request_assigner --input '" + jsonInput + "'"
+	jsonOutput, err := executeCommand(command)
+	if err != nil {
+		fmt.Print("Error executing hall_request_assigner command")
+		return map[string]elevatorstruct.ElevatorButtons{}, err
+	}
+
+	// Formats JSON result into data
+	return ParseElevatorJson(jsonOutput)
 }
 
-func executeCommand(command string) string {
-	// EXECUTE COMMAND
+func executeCommand(command string) (string, error) {
 	var cmd *exec.Cmd
-	// binaryPath := "../libs/project-resources-cost_fns/hall_request_assigner/hall_request_assigner"
-
-	_, filename, _, _ := runtime.Caller(0)
-
 	switch runtime.GOOS {
 
 	case "windows":
-		fmt.Println("Running command on WINDOWS...")
-		// cmd = exec.Command(
-		// 	"cmd", "/c", "start", "cmd", "/k",
-		// 	binaryPath,
-		// 	"--input", jsonString,
-		// )
+		cmd = exec.Command("cmd", "/c", command)
 
 	case "darwin":
-		fmt.Printf("Running command on MAC...\n")
 		cmd = exec.Command("/bin/sh", "-c", command)
-		cmd.Dir = filepath.Dir(filename)
-		// READ TERMINAL OUTPUT
-		output, err := cmd.Output()
-		if err != nil {
-			fmt.Println("Error reading terminal:", output)
-			return "error"
-		}
-		return string(output)
 
 	case "linux":
-		fmt.Println("Running command on LINUX...")
-		// cmd = exec.Command(
-		// 	"gnome-terminal", "--",
-		// 	binaryPath,
-		// 	"--input", jsonString,
-		// )
+		cmd = exec.Command("gnome-terminal", "--", command)
 
 	default:
-		fmt.Printf("Unsupported OS: %s\n", runtime.GOOS)
+		return "", errors.New("Unsupported OS")
 	}
-	return "error"
+	_, filename, _, _ := runtime.Caller(0)
+	cmd.Dir = filepath.Dir(filename)
+	// READ TERMINAL OUTPUT
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Println("Error reading terminal:", output)
+		return "", errors.New("Error reading terminal")
+	}
+	return string(output), nil
 }
