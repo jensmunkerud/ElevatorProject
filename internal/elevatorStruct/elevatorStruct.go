@@ -1,10 +1,10 @@
 package elevatorstruct
+
 import "elevatorproject/internal/config"
 
 type ElevatorButtons struct {
 	Buttons [config.NumFloors][2]bool //[up, down]
 }
-
 
 type Elevator struct {
 	HallRequests ElevatorButtons
@@ -16,7 +16,7 @@ type Elevator struct {
 }
 
 func (e *Elevator) Initialize(id string, currentFloor int, direction string) {
-	e.id = id                             
+	e.id = id
 	e.behaviour = "idle"
 	e.floor = currentFloor
 	e.direction = direction
