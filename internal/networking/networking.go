@@ -8,6 +8,9 @@ import (
 )
 
 // Initializes the UDP communication between the elevatorservers
+// Returns a channel for peer updates, a channel to enable/disable the transmitter, 
+// a channel to receive custom data types and a channel to send custom data types
+
 func communicationSetup(elev *elevatorstruct.Elevator) (
 	chan peers.PeerUpdate,
 	chan bool,
@@ -32,7 +35,7 @@ func communicationSetup(elev *elevatorstruct.Elevator) (
 	recieveCustomDataType := make(chan elevatorstruct.Elevator)
 	sendCustomDataType := make(chan elevatorstruct.Elevator)
 
-	go bcast.Transmitter(16569, sendCustomDataType)
+	go bcast.Transmitter(16568, sendCustomDataType)
 	go bcast.Receiver(16569, recieveCustomDataType)
 
 	return peerUpdateChannel, enablePeer, recieveCustomDataType, sendCustomDataType
