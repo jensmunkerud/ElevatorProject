@@ -55,5 +55,6 @@ func executeCommand(command string) (string, error) {
 		fmt.Println("Error reading terminal:", output)
 		return "", errors.New("Error reading terminal")
 	}
+	fmt.Print(string(output))
 	return string(output), nil
 }
