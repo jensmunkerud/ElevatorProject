@@ -68,8 +68,20 @@ func initElevatorIO(numFloors int) (
 
 // Starts off the elevator, going downwards to find our first valid floor
 func initFloor(floorEvent chan int) int {
+	// 1. Check if we're already at a floor
+	currentFloor := elevio.GetFloor()
+	if currentFloor != -1 {
+		return currentFloor
+	}
+
+	// 2. We are between floors → move down
 	elevio.SetMotorDirection(elevio.MD_Down)
+
+	// 3. Wait until PollFloorSensor detects a floor
 	floor := <-floorEvent
+
+	// 4. Stop motor
 	elevio.SetMotorDirection(elevio.MD_Stop)
+
 	return floor
 }
