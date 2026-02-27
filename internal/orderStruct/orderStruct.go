@@ -41,6 +41,3 @@ func (o *Orders) AllAckedCheck(floor int, direction int, requiredIDs []string) b
 	return true
 }
 
-func (o *Orders) SetOrderState(floor int, direction int, state OrderState) {
-	o.Orders[floor][direction].State = state
-}
