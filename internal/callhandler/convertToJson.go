@@ -60,4 +60,3 @@ func ConvertToJson(hallRequests [config.NumFloors][2]bool, elevators map[string]
 
 	return string(jsonData), nil
 }
-
