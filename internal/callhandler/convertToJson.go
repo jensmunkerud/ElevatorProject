@@ -12,7 +12,7 @@ import (
 type StateData struct {
 	Behaviour   string `json:"behaviour"`
 	Floor       int    `json:"floor"`
-	Direction   string `json:"direction"`
+	Direction   elevatorstruct.Direction `json:"direction"`
 	CabRequests []bool `json:"cabRequests"`
 }
 

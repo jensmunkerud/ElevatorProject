@@ -18,10 +18,10 @@ func TestConvertToJsonPrintsOutput(t *testing.T) {
 	}
 
 	elev1 := &es.Elevator{}
-	elev1.Initialize("194234", 2, "up")
+	elev1.Initialize("194234", 2, es.Up)
 
 	elev2 := &es.Elevator{}
-	elev2.Initialize("25435434", 0, "stop")
+	elev2.Initialize("25435434", 0, es.Stop)
 
 	elevators := map[string]*es.Elevator{
 		"elev1": elev1,
