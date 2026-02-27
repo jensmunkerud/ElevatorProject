@@ -3,11 +3,8 @@ package callhandler
 import (
 	"elevatorproject/internal/config"
 	"elevatorproject/internal/elevatorstruct"
-	"errors"
 	"fmt"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 )
 
 func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*elevatorstruct.Elevator) (map[string]elevatorstruct.ElevatorButtons, error) {
@@ -20,8 +17,9 @@ func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*e
 	}
 
 	// Executes hall_request_assigner command
-	command := "cd ../../libs/project-resources/cost_fns/hall_request_assigner; ./hall_request_assigner --input '" + jsonInput + "'"
-	jsonOutput, err := executeCommand(command)
+	// command := "cd ../../libs/project-resources/cost_fns/hall_request_assigner; ./hall_request_assigner --input '" + jsonInput + "'"
+
+	jsonOutput, err := executeCommand(jsonInput)
 	if err != nil {
 		fmt.Print("Error executing hall_request_assigner command")
 		return map[string]elevatorstruct.ElevatorButtons{}, err
@@ -31,30 +29,44 @@ func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*e
 	return ParseElevatorJson(jsonOutput)
 }
 
-func executeCommand(command string) (string, error) {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
+// func executeCommand(command string) (string, error) {
+// 	var cmd *exec.Cmd
+// 	switch runtime.GOOS {
 
-	case "windows":
-		cmd = exec.Command("cmd", "/c", command)
+// 	case "windows":
+// 		cmd = exec.Command("cmd", "/c", command)
 
-	case "darwin":
-		cmd = exec.Command("/bin/sh", "-c", command)
+// 	case "darwin":
+// 		cmd = exec.Command("/bin/sh", "-c", command)
 
-	case "linux":
-		cmd = exec.Command("gnome-terminal", "--", command)
+// 	case "linux":
+// 		cmd = exec.Command("gnome-terminal", "--", command)
 
-	default:
-		return "", errors.New("Unsupported OS")
-	}
-	_, filename, _, _ := runtime.Caller(0)
-	cmd.Dir = filepath.Dir(filename)
-	// READ TERMINAL OUTPUT
-	output, err := cmd.Output()
-	if err != nil {
-		fmt.Println("Error reading terminal:", output)
-		return "", errors.New("Error reading terminal")
-	}
+// 	default:
+// 		return "", errors.New("Unsupported OS")
+// 	}
+// 	_, filename, _, _ := runtime.Caller(0)
+// 	cmd.Dir = filepath.Dir(filename)
+// 	// READ TERMINAL OUTPUT
+// 	output, err := cmd.Output()
+// 	if err != nil {
+// 		fmt.Println("Error reading terminal:", output)
+// 		return "", errors.New("Error reading terminal")
+// 	}
+// 	fmt.Print(string(output))
+// 	return string(output), nil
+// }
+
+func executeCommand(jsonInput string) (string, error) {
+	cmd := exec.Command(
+		"./hall_request_assigner",
+		"--input",
+		jsonInput,
+	)
+
+	cmd.Dir = "../../libs/project-resources/cost_fns/hall_request_assigner"
+
+	output, err := cmd.CombinedOutput()
 	fmt.Print(string(output))
-	return string(output), nil
+	return string(output), err
 }
