@@ -1,19 +1,14 @@
 package main
 
-import "elevatorproject/internal/callhandler"
-import "elevatorproject/internal/networking"
-import "elevatorproject/internal/controller"
-
 func main() {
-	callhandler.Test()
-	networking.Test()
-	controller.Test()
+	/*
 
-	// HallRequest
-	// Elevator 1
-	// Elevator 2
-	// Elevator 3
+	// Create one elevator struct for config.numberOfFloors floors.
+	// Start communication with (potentially) other elevators 
+	// While no other elevators, start elevator in offline mode.
+	// While other elevators, broadcast peerID and current state. Listen
+	// for new peerIDs and information. For each new peerID, add to list of peers.
+	// Create elevator state machine for each new peer.
 
-	//Send and recieve elevator state through four channels (HallRequest, Elevator 1, Elevator 2, Elevator 3)
-
+	*/
 }
