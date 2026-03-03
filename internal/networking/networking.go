@@ -3,7 +3,7 @@ package networking
 import (
 	"Network-go/network/bcast"
 	"Network-go/network/peers"
-	elevatorstruct "elevatorproject/internal/elevatorStruct"
+	elevatorstruct "elevatorproject/internal/elevatorstruct"
 	"flag"
 )
 
