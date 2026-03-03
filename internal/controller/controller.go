@@ -7,7 +7,7 @@ import (
 
 func InitController() {
 	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
-	myFloor := -1
+	myFloor := initFloor(floorEvent)
 	targetFloor := -1
 	for {
 		select {
@@ -64,4 +64,16 @@ func initElevatorIO(numFloors int) (
 	go elevio.PollStopButton(stopEvent)
 
 	return orderEvent, floorEvent, obstructionEvent, stopEvent
+}
+
+// Starts off the elevator, first check if we are at a floor and if not startgoing downwards to find our first valid floor
+func initFloor(floorEvent chan int) int {
+	currentFloor := elevio.GetFloor()
+	if currentFloor != -1 {
+		return currentFloor
+	}
+	elevio.SetMotorDirection(elevio.MD_Down)
+	currentFloor = <-floorEvent
+	elevio.SetMotorDirection(elevio.MD_Stop)
+	return currentFloor
 }
