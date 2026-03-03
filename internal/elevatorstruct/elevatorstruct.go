@@ -23,6 +23,8 @@ type Elevator struct {
 	cabRequest   []bool
 }
 
+
+
 func (e *Elevator) Initialize(id string, currentFloor int, direction Direction) {
 	e.id = id
 	e.behaviour = "idle"
