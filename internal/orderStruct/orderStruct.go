@@ -1,5 +1,6 @@
 package orderstruct
 
+//All possible states of an order, Unconfirmed and finished act as barriers.
 type OrderState int
 
 const (
@@ -7,4 +8,5 @@ const (
 	OrderStateNone
 	OrderStateUnconfirmed
 	OrderStateConfirmed
+	OrderStateCompleted
 )
