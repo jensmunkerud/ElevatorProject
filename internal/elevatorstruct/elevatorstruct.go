@@ -33,7 +33,7 @@ func (e *Elevator) Initialize(id string, currentFloor int, direction Direction) 
 	e.cabRequest = make([]bool, config.NumFloors)
 }
 
-func (e *Elevator) CurrentElevatorId() string {
+func (e *Elevator) Id() string {
 	return e.id
 }
 

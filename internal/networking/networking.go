@@ -24,7 +24,7 @@ func CommunicationSetup(message *ms.Message, currentElevator *es.Elevator) (
 	// Generate a unique identifier for this elevator instance. Attempt to use the configured
 	// elevator ID if available, otherwise fall back to a composite ID using local IP and process ID.
 	// This ensures each peer is uniquely identifiable across the network.
-	udpID := currentElevator.CurrentElevatorId()
+	udpID := currentElevator.Id()
 	flag.StringVar(&udpID, "id", "", "id of this peer")
 	flag.Parse()
 
