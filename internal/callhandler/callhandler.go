@@ -18,16 +18,15 @@ func InitCallHandler() {
 	if controller.isAtFloor {
 
 	}
-	es.Initialize("minMac", floorEvent)
-
-
-	// Create a map for elevators
 	elevators := make(map[string]*es.Elevator)
-	elev1 := &es.Elevator{}
+	localElevator := &es.Elevator{}
+	localElevator.Initialize("minMac", floorEvent)
+
+
 
 	// Create and initialize an elevator with dummy data
-	elev1.Initialize("bankID", , "down")
-	elevators[elev1.getId] = elev1
+	localElevator.Initialize("bankID", , "down")
+	elevators[elev1.Id()] = elev1
 	ElevatorButtons
 	for {
 		eb, err := runCostFunc(hallRequests, elevators)
