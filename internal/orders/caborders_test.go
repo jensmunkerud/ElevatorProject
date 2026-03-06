@@ -1,7 +1,6 @@
-package caborders
+package orders
 
 import (
-	orderstruct "elevatorproject/internal/orderStruct"
 	"testing"
 )
 
@@ -21,7 +20,7 @@ func TestCreateCabOrders_InitializesLengthAndUnknownState(t *testing.T) {
 		if cabOrders.Orders[floor] == nil {
 			t.Fatalf("expected non-nil order pointer at floor %d", floor)
 		}
-		if got := cabOrders.CabOrderState(floor); got != orderstruct.OrderStateUnknown {
+		if got := cabOrders.CabOrderState(floor); got != OrderStateUnknown {
 			t.Logf("floor %d state: %v", floor, got)
 			t.Fatalf("floor %d: expected OrderStateUnknown, got %v", floor, got)
 		} else {
@@ -33,10 +32,10 @@ func TestCreateCabOrders_InitializesLengthAndUnknownState(t *testing.T) {
 func TestCabOrderState_ReadsUpdatedState(t *testing.T) {
 	cabOrders := CreateCabOrders(3)
 
-	updatedState := orderstruct.OrderStateConfirmed
+	updatedState := OrderStateConfirmed
 	cabOrders.Orders[1] = &updatedState
 
-	if got := cabOrders.CabOrderState(1); got != orderstruct.OrderStateConfirmed {
+	if got := cabOrders.CabOrderState(1); got != OrderStateConfirmed {
 		t.Logf("updated floor 1 state: %v", got)
 		t.Fatalf("expected OrderStateConfirmed, got %v", got)
 	} else {

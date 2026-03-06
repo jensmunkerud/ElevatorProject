@@ -1,7 +1,6 @@
-package hallorders
+package orders
 
 import (
-	orderstruct "elevatorproject/internal/orderStruct"
 	"testing"
 )
 
@@ -22,7 +21,7 @@ func TestCreateHallOrders_InitializesDimensionsAndUnknownState(t *testing.T) {
 			if hallOrders.Orders[floor][direction] == nil {
 				t.Fatalf("expected non-nil pointer at floor %d direction %d", floor, direction)
 			}
-			if got := hallOrders.HallOrderState(floor, direction); got != orderstruct.OrderStateUnknown {
+			if got := hallOrders.HallOrderState(floor, direction); got != OrderStateUnknown {
 				t.Logf("floor %d direction %d state: %v", floor, direction, got)
 				t.Fatalf("floor %d direction %d: expected OrderStateUnknown, got %v", floor, direction, got)
 			} else {
