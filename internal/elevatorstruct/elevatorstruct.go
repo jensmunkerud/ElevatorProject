@@ -3,6 +3,7 @@ package elevatorstruct
 import (
 	"elevatorproject/internal/config"
 	"elevatorproject/internal/orders"
+	"fmt"
 )
 
 type Direction int
@@ -39,15 +40,11 @@ type Orders struct {
 }
 
 func createElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
-	hallRequests := orders.CreateHallOrders(config.NumFloors)
-	cabRequests := orders.CreateCabOrders(config.NumFloors)
 	return &Elevator{
 		id:           id,
 		behaviour:    behaviour,
 		floor:        currentFloor,
 		direction:    direction,
-		HallRequests: hallRequests,
-		CabRequest:   cabRequests,
 	}
 }
 
@@ -74,7 +71,8 @@ func (e *Elevator) Behaviour() string {
 	case DoorOpen:
 		return "doorOpen"
 }
-	return "unknown"
+	errorMsg := "unknown behaviour state: %v"
+	return fmt.Sprintf(errorMsg, e.behaviour)
 }
 
 func (e *Elevator) CurrentFloor() int {
@@ -83,6 +81,10 @@ func (e *Elevator) CurrentFloor() int {
 
 func (e *Elevator) CurrentDirection() Direction {
 	return e.direction
+}
+
+func (o *Orders) ordersId() string {
+	return o.id
 }
 
 func (o *Orders) CabRequests() *orders.CabOrders {
