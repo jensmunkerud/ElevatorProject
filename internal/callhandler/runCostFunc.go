@@ -1,8 +1,6 @@
 package callhandler
-
+/*
 import (
-	"elevatorproject/internal/config"
-	"elevatorproject/internal/elevatorstruct"
 	"fmt"
 	"os/exec"
 )
@@ -27,6 +25,7 @@ func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*e
 	return ParseElevatorJson(jsonOutput)
 }
 
+
 func executeCommand(jsonInput string) (string, error) {
 	cmd := exec.Command(
 		"./hall_request_assigner",
@@ -40,3 +39,4 @@ func executeCommand(jsonInput string) (string, error) {
 	fmt.Print(string(output))
 	return string(output), err
 }
+*/

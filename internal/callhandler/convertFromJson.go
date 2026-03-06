@@ -7,7 +7,7 @@ import (
 )
 
 
-func ParseElevatorJson(jsonStr string) (map[string]elevatorstruct.ElevatorButtons, error) {
+func ConvertFromJson(jsonStr string) (map[string]elevatorstruct.ElevatorButtons, error) {
 	var rawData map[string][][]bool
 
 	err := json.Unmarshal([]byte(jsonStr), &rawData)

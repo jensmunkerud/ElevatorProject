@@ -7,35 +7,40 @@ import (
 
 	"elevatorproject/internal/config"
 	es "elevatorproject/internal/elevatorstruct"
+	ord "elevatorproject/internal/orders"
 )
 
-func TestConvertToJsonPrintsOutput(t *testing.T) {
-	hallRequests := [config.NumFloors][2]bool{
-		{true, false},
-		{false, true},
-		{false, false},
-		{true, true},
+func TestConvertToJson_NewSignature_ProducesExpectedStructure(t *testing.T) {
+	myID := ""
+
+	myOrders := &es.Orders{
+		CabOrders:  ord.CreateCabOrders(config.NumFloors),
+		HallOrders: ord.CreateHallOrders(config.NumFloors),
+	}
+	*myOrders.HallOrders.Orders[0][0] = ord.OrderStateConfirmed
+	*myOrders.HallOrders.Orders[1][1] = ord.OrderStateCompleted
+	*myOrders.CabOrders.Orders[2] = ord.OrderStateConfirmed
+
+	ordersMap := map[string]*es.Orders{
+		myID: myOrders,
 	}
 
-	elev1 := &es.Elevator{}
-	elev1.Initialize("194234", 2, es.Up)
-
-	elev2 := &es.Elevator{}
-	elev2.Initialize("25435434", 0, es.Stop)
-
+	// A zero-value elevator is enough for this conversion test; id becomes "" -> state key "id_".
 	elevators := map[string]*es.Elevator{
-		"elev1": elev1,
-		"elev2": elev2,
+		"local": {},
 	}
 
-	jsonStr, err := ConvertToJson(hallRequests, elevators)
+	isOnline := map[string]bool{
+		myID: true,
+	}
+
+	jsonStr, err := ConvertToJson(myID, ordersMap, elevators, isOnline)
 	if err != nil {
 		t.Fatalf("ConvertToJson failed: %v", err)
 	}
 
-	fmt.Println("\n=== ConvertToJson output ===")
+	fmt.Println("Generated JSON:")
 	fmt.Println(jsonStr)
-	fmt.Println("============================")
 
 	var message ElevatorMessage
 	if err := json.Unmarshal([]byte(jsonStr), &message); err != nil {
@@ -43,10 +48,31 @@ func TestConvertToJsonPrintsOutput(t *testing.T) {
 	}
 
 	if len(message.HallRequests) != config.NumFloors {
-		t.Fatalf("Expected %d floors, got %d", config.NumFloors, len(message.HallRequests))
+		t.Fatalf("expected %d hall request rows, got %d", config.NumFloors, len(message.HallRequests))
 	}
 
-	if len(message.States) != 2 {
-		t.Fatalf("Expected 2 elevators, got %d", len(message.States))
+	if !message.HallRequests[0][0] {
+		t.Fatalf("expected HallRequests[0][0] to be true")
+	}
+
+	if !message.HallRequests[1][1] {
+		t.Fatalf("expected HallRequests[1][1] to be true (Completed state)")
+	}
+
+	if len(message.States) != 1 {
+		t.Fatalf("expected 1 elevator state, got %d", len(message.States))
+	}
+
+	state, ok := message.States["id_"]
+	if !ok {
+		t.Fatalf("expected state for key %q", "id_")
+	}
+
+	if len(state.CabRequests) != config.NumFloors {
+		t.Fatalf("expected %d cab requests, got %d", config.NumFloors, len(state.CabRequests))
+	}
+
+	if !state.CabRequests[2] {
+		t.Fatalf("expected CabRequests[2] to be true")
 	}
 }
