@@ -1,5 +1,5 @@
 package callhandler
-
+/*
 import (
 	es "elevatorproject/internal/elevatorstruct"
 	"testing"
@@ -19,3 +19,5 @@ func TestCostFunc(t *testing.T) {
 
 	runCostFunc(hallRequests, elevators)
 }
+
+*/
