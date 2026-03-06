@@ -4,9 +4,9 @@ package orders
 type OrderState int
 
 const (
-	OrderStateUnknown OrderState = iota
-	OrderStateNoOrder
-	OrderStateUnconfirmed
-	OrderStateConfirmed
-	OrderStateCompleted
+	UnknownOrderState OrderState = iota
+	RemovedOrderState
+	UnconfirmedOrderState
+	ConfirmedOrderState
+	CompletedOrderState
 )
