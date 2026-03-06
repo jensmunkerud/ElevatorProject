@@ -2,7 +2,6 @@ package controller
 
 import (
 	"driver-go/elevio"
-	"elevatorproject/internal/controller"
 	"fmt"
 	"testing"
 	"time"
@@ -20,14 +19,21 @@ type Controller struct {
 
 func TestController(t *testing.T) {
 	ready := make(chan struct{})
-	go controller.InitController(ready)
+
+	c := InitController(ready)
 	<-ready
-	select {
-	case a := <-controller.orderEvent:
-		fmt.Printf("%+v\n", a)
-		done := make(chan struct{})
-		controller.GoToFloor(a, done)
-		<-done
+
+	for {
+		select {
+		case btn := <-c.OrderEvent:
+			fmt.Printf("%+v\n", btn)
+
+			done := make(chan struct{})
+			go c.GoToFloor(btn.Floor, done)
+
+			<-done
+			return
+		}
 	}
 }
 
