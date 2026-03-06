@@ -12,8 +12,8 @@ type HallOrders struct {
 func CreateHallOrders(numFloors int) *HallOrders {
 	orders := make([][2]*OrderState, numFloors)
 	for i := 0; i < numFloors; i++ {
-		up := OrderStateUnknown
-		down := OrderStateUnknown
+		up := UnknownOrderState
+		down := UnknownOrderState
 		orders[i][0] = &up
 		orders[i][1] = &down
 	}
@@ -31,8 +31,8 @@ func (h *HallOrders) Simplify() [][]bool {
 	for floor := 0; floor < config.NumFloors; floor++ {
 		simplified[floor] = make([]bool, 2)
 		for direction := 0; direction < 2; direction++ {
-			simplified[floor][direction] = h.HallOrderState(floor, direction) == OrderStateConfirmed ||
-				h.HallOrderState(floor, direction) == OrderStateCompleted
+			simplified[floor][direction] = h.HallOrderState(floor, direction) == ConfirmedOrderState ||
+				h.HallOrderState(floor, direction) == CompletedOrderState
 		}
 	}
 	return simplified

@@ -17,9 +17,9 @@ func TestConvertToJson_NewSignature_ProducesExpectedStructure(t *testing.T) {
 		CabOrders:  ord.CreateCabOrders(config.NumFloors),
 		HallOrders: ord.CreateHallOrders(config.NumFloors),
 	}
-	*myOrders.HallOrders.Orders[0][0] = ord.OrderStateConfirmed
-	*myOrders.HallOrders.Orders[1][1] = ord.OrderStateCompleted
-	*myOrders.CabOrders.Orders[2] = ord.OrderStateConfirmed
+	*myOrders.HallOrders.Orders[0][0] = ord.ConfirmedOrderState
+	*myOrders.HallOrders.Orders[1][1] = ord.CompletedOrderState
+	*myOrders.CabOrders.Orders[2] = ord.ConfirmedOrderState
 
 	ordersMap := map[string]*es.Orders{
 		myID: myOrders,

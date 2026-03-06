@@ -22,7 +22,7 @@ func TestCreateHallOrders_InitializesDimensionsAndUnknownState(t *testing.T) {
 			if hallOrders.Orders[floor][direction] == nil {
 				t.Fatalf("expected non-nil pointer at floor %d direction %d", floor, direction)
 			}
-			if got := hallOrders.HallOrderState(floor, direction); got != OrderStateUnknown {
+			if got := hallOrders.HallOrderState(floor, direction); got != UnknownOrderState {
 				t.Logf("floor %d direction %d state: %v", floor, direction, got)
 				t.Fatalf("floor %d direction %d: expected OrderStateUnknown, got %v", floor, direction, got)
 			} else {
@@ -37,19 +37,19 @@ func TestSimplifyHallOrders(t *testing.T) {
 	hallOrders := CreateHallOrders(numFloors)
 
 	// Set some orders to different states
-	*hallOrders.Orders[0][0] = OrderStateConfirmed   // Floor 0, Up - should be true (active)
-	*hallOrders.Orders[0][1] = OrderStateCompleted   // Floor 0, Down - should be true (transition state)
-	*hallOrders.Orders[2][0] = OrderStateNoOrder     // Floor 2, Up - should be false
-	*hallOrders.Orders[3][1] = OrderStateUnconfirmed // Floor 3, Down - should be false
+	*hallOrders.Orders[0][0] = ConfirmedOrderState   // Floor 0, Up - should be true (active)
+	*hallOrders.Orders[0][1] = CompletedOrderState   // Floor 0, Down - should be true (transition state)
+	*hallOrders.Orders[2][0] = RemovedOrderState     // Floor 2, Up - should be false
+	*hallOrders.Orders[3][1] = UnconfirmedOrderState // Floor 3, Down - should be false
 
 	// Print the original states
 	fmt.Println("Original Hall Order States:")
 	stateNames := map[OrderState]string{
-		OrderStateUnknown:     "Unknown",
-		OrderStateNoOrder:     "NoOrder",
-		OrderStateUnconfirmed: "Unconfirmed",
-		OrderStateConfirmed:   "Confirmed",
-		OrderStateCompleted:   "Completed",
+		UnknownOrderState:     "Unknown",
+		RemovedOrderState:     "NoOrder",
+		UnconfirmedOrderState: "Unconfirmed",
+		ConfirmedOrderState:   "Confirmed",
+		CompletedOrderState:   "Completed",
 	}
 	for floor := 0; floor < len(hallOrders.Orders); floor++ {
 		upState := hallOrders.HallOrderState(floor, 0)
