@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 )
 
+
 func ParseElevatorJson(jsonStr string) (map[string]elevatorstruct.ElevatorButtons, error) {
 	var rawData map[string][][]bool
 
