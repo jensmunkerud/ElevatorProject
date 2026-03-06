@@ -5,34 +5,53 @@ package callhandler
 
 import (
 	controller "elevatorproject/internal/controller"
-	es "elevatorproject/internal/elevatorStruct"
+	es "elevatorproject/internal/elevatorstruct"
 	"fmt"
+	"net"
+	"testing"
 )
 
-func Test() {
-	fmt.Println("Hello from callHandler")
+func TestCallHandler(t *testing.T) {
+	go InitCallHandler()
+	select {}
 }
 
 func InitCallHandler() {
-	controller.InitController()
-	if controller.isAtFloor {
-
-	}
+	ready := make(chan struct{})
+	go controller.InitController(ready)
+	<-ready
 	elevators := make(map[string]*es.Elevator)
-	localElevator := &es.Elevator{}
-	localElevator.Initialize("minMac", floorEvent)
 
+	id, err := getMacAddr()
+	if err != nil {
+		fmt.Printf("Error finding MAC address")
+		return
+	}
 
+	localElevator := CreateElevator(id, controller.MyFloor, es.Direction.Stop, es.Behaviour.Idle)
+	elevators[localElevator.Id()] = localElevator
 
-	// Create and initialize an elevator with dummy data
-	localElevator.Initialize("bankID", , "down")
-	elevators[elev1.Id()] = elev1
-	ElevatorButtons
 	for {
-		eb, err := runCostFunc(hallRequests, elevators)
+		eb, err := runCostFunc(elevators)
 		if err != nil {
 			fmt.Printf("Error running costFunc: %e", err)
 			continue
 		}
 	}
+}
+
+func getMacAddr() (string, error) {
+	ifas, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+
+	for _, ifa := range ifas {
+		a := ifa.HardwareAddr.String()
+		if a != "" {
+			return a, nil
+		}
+	}
+
+	return "", fmt.Errorf("no MAC address found")
 }
