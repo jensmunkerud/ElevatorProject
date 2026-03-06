@@ -28,7 +28,7 @@ func ConvertToJson(myId string,
 	 elevatorsOnline map[string]bool) (string, error) {
 
 	hallRequestsArray := orders[myId].HallOrders.Simplify()
-	// Convert elevator states
+	// Convert elevator states and cab orders into the expected JSON format
 	states := make(map[string]StateData)
 	for _, elev := range elevators {
 		id := fmt.Sprintf("id_%s", elev.CurrentElevatorId())
@@ -40,7 +40,6 @@ func ConvertToJson(myId string,
 		}
 	}
 
-	// Create the message
 	message := ElevatorMessage{
 		HallRequests: hallRequestsArray,
 		States:       states,
