@@ -7,11 +7,13 @@ import (
 
 func InitController() {
 	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
+	isAtFloor := true
 	myFloor := initFloor(floorEvent)
 	targetFloor := -1
 	for {
 		select {
 		case a := <-orderEvent:
+			isAtFloor = false
 			fmt.Printf("%+v\n", a)
 			targetFloor = a.Floor
 			if myFloor < 0 || myFloor == a.Floor {
@@ -27,6 +29,7 @@ func InitController() {
 			myFloor = a
 			if myFloor == targetFloor || targetFloor < 0 {
 				elevio.SetMotorDirection(elevio.MD_Stop)
+				isAtFloor = true
 			} else if myFloor < targetFloor {
 				elevio.SetMotorDirection(elevio.MD_Up)
 			} else if myFloor > targetFloor {
