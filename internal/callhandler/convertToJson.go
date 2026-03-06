@@ -22,13 +22,8 @@ type ElevatorMessage struct {
 	States       map[string]StateData `json:"states"`
 }
 
-// AssignerOutput is the structure for hall request assigner output
-// Maps elevator ID to their assigned hall requests
-type AssignerOutput map[string][][]bool
-
 // ConvertToJson converts elevator states to JSON format for hall request assigner
-func ConvertToJson(hallRequests [config.NumFloors][2]bool, elevators map[string]*elevatorstruct.Elevator) (string, error) {
-	// Convert hall requests from [4][2]bool to [][]bool
+func ConvertToJson(elevators map[string]*elevatorstruct.Elevator) (string, error) {
 	hallRequestsArray := make([][]bool, len(hallRequests))
 	for i, floor := range hallRequests {
 		hallRequestsArray[i] = []bool{floor[0], floor[1]}

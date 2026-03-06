@@ -1,6 +1,6 @@
 package orders
 
-
+//Indexed by floor, contains the state of the cab order for each floor.
 type CabOrders struct {
 	Orders []*OrderState
 }

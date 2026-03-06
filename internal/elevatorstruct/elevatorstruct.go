@@ -27,11 +27,15 @@ type ElevatorButtons struct {
 
 type Elevator struct {
 	id           string
-	behaviour    behaviour
+	behaviour    Behaviour
 	floor        int
 	direction    Direction
-	CabRequest   *orders.CabOrders
-	HallRequests *orders.HallOrders
+}
+
+type Orders struct {
+	id string
+	CabOrders   *orders.CabOrders
+	HallOrders  *orders.HallOrders
 }
 
 func createElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -44,6 +48,16 @@ func createElevator(id string, currentFloor int, direction Direction, behaviour 
 		direction:    direction,
 		HallRequests: hallRequests,
 		CabRequest:   cabRequests,
+	}
+}
+
+func createOrders(id string) *Orders {
+	hallRequests := orders.CreateHallOrders(config.NumFloors)
+	cabRequests := orders.CreateCabOrders(config.NumFloors)
+	return &Orders{
+		id:        id,
+		CabOrders: cabRequests,
+		HallOrders: hallRequests,
 	}
 }
 
@@ -71,10 +85,10 @@ func (e *Elevator) CurrentDirection() Direction {
 	return e.direction
 }
 
-func (e *Elevator) CabRequests() *orders.CabOrders {
-	return e.CabRequest
+func (o *Orders) CabRequests() *orders.CabOrders {
+	return o.CabOrders
 }
 
-func (e *Elevator) HallRequests() *orders.HallOrders {
-	return e.HallRequests
+func (o *Orders) HallRequests() *orders.HallOrders {
+	return o.HallOrders
 }
