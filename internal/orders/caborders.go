@@ -1,5 +1,7 @@
 package orders
 
+import "elevatorproject/internal/config"
+
 //Indexed by floor, contains the state of the cab order for each floor.
 type CabOrders struct {
 	Orders []*OrderState
@@ -22,3 +24,13 @@ func (o *CabOrders) CabOrderState(floor int) OrderState {
 	return *o.Orders[floor]
 }
 
+// Simplify converts CabOrders to a simpler []bool format for easier processing in cost functions.
+// Returns true for states Confirmed and Completed, false otherwise.
+func (c *CabOrders) Simplify() []bool {
+	simplified := make([]bool, config.NumFloors)
+	for floor := 0; floor < config.NumFloors; floor++ {
+		simplified[floor] = c.CabOrderState(floor) == OrderStateConfirmed ||
+			c.CabOrderState(floor) == OrderStateCompleted
+	}
+	return simplified
+}
