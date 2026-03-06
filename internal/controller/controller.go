@@ -132,7 +132,7 @@ func (c *Controller) openDoor() {
 func (c *Controller) GoToFloor(target int, done chan struct{}) {
 	if c.MyFloor == target {
 		return
-	} else if c.MyFloor > target {
+	} else if c.MyFloor < target {
 		c.openDoor()
 		elevio.SetMotorDirection(elevio.MD_Up)
 	} else {
