@@ -27,14 +27,14 @@ type ElevatorButtons struct {
 
 type Elevator struct {
 	id           string
-	behaviour    behaviour
+	behaviour    Behaviour
 	floor        int
 	direction    Direction
 	CabRequest   *orders.CabOrders
 	HallRequests *orders.HallOrders
 }
 
-func createElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
+func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
 	hallRequests := orders.CreateHallOrders(config.NumFloors)
 	cabRequests := orders.CreateCabOrders(config.NumFloors)
 	return &Elevator{
@@ -59,7 +59,7 @@ func (e *Elevator) Behaviour() string {
 		return "moving"
 	case DoorOpen:
 		return "doorOpen"
-}
+	}
 	return "unknown"
 }
 

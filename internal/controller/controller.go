@@ -2,49 +2,81 @@ package controller
 
 import (
 	"driver-go/elevio"
+	"elevatorproject/internal/controller"
 	"fmt"
+	"testing"
+	"time"
 )
 
-func InitController() {
-	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
-	isAtFloor := true
-	myFloor := initFloor(floorEvent)
-	targetFloor := -1
-	for {
-		select {
-		case a := <-orderEvent:
-			isAtFloor = false
-			fmt.Printf("%+v\n", a)
-			targetFloor = a.Floor
-			if myFloor < 0 || myFloor == a.Floor {
-				continue
-			} else if myFloor < targetFloor {
-				elevio.SetMotorDirection(elevio.MD_Up)
-			} else if myFloor > targetFloor {
-				elevio.SetMotorDirection(elevio.MD_Down)
-			}
+type Controller struct {
+	OrderEvent       chan elevio.ButtonEvent
+	FloorEvent       chan int
+	ObstructionEvent chan bool
+	StopEvent        chan bool
+	MyFloor          int
+	IsAtFloor        bool
+	Obstructed       bool
+}
 
-		case a := <-floorEvent:
-			fmt.Printf("%+v\n", a)
-			myFloor = a
-			if myFloor == targetFloor || targetFloor < 0 {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-				isAtFloor = true
-			} else if myFloor < targetFloor {
-				elevio.SetMotorDirection(elevio.MD_Up)
-			} else if myFloor > targetFloor {
-				elevio.SetMotorDirection(elevio.MD_Down)
-			} else {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-			}
-
-		case a := <-obstructionEvent:
-			fmt.Printf("%+v\n", a)
-
-		case a := <-stopEvent:
-			fmt.Printf("%+v\n", a)
-		}
+func TestController(t *testing.T) {
+	ready := make(chan struct{})
+	go controller.InitController(ready)
+	<-ready
+	select {
+	case a := <-controller.orderEvent:
+		fmt.Printf("%+v\n", a)
+		done := make(chan struct{})
+		controller.GoToFloor(a, done)
+		<-done
 	}
+}
+
+func InitController(ready chan struct{}) *Controller {
+	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
+
+	myFloor := initFloor(floorEvent)
+	isAtFloor := true
+
+	c := &Controller{
+		OrderEvent:       orderEvent,
+		FloorEvent:       floorEvent,
+		ObstructionEvent: obstructionEvent,
+		StopEvent:        stopEvent,
+		MyFloor:          myFloor,
+		IsAtFloor:        isAtFloor,
+	}
+
+	close(ready)
+	return c
+	// for {
+	// 	select {
+	// 	case a := <-orderEvent:
+	// 		fmt.Printf("%+v\n", a)
+	// 		targetFloor = a.Floor
+	// 		if MyFloor < 0 || MyFloor == a.Floor {
+	// 			continue
+	// 		} else if MyFloor < targetFloor {
+	// 			elevio.SetMotorDirection(elevio.MD_Up)
+	// 			IsAtFloor = false
+	// 		} else if MyFloor > targetFloor {
+	// 			elevio.SetMotorDirection(elevio.MD_Down)
+	// 			IsAtFloor = false
+	// 		}
+
+	// 	case floor := <-floorEvent:
+	// 		MyFloor = floor
+	// 		if MyFloor == targetFloor {
+	// 			elevio.SetMotorDirection(elevio.MD_Stop)
+	// 			close(targetDone)
+	// 		}
+
+	// 	case a := <-obstructionEvent:
+	// 		fmt.Printf("%+v\n", a)
+
+	// 	case a := <-stopEvent:
+	// 		fmt.Printf("%+v\n", a)
+	// 	}
+	// }
 }
 
 // Handles IO communication between software and hardware
@@ -79,4 +111,58 @@ func initFloor(floorEvent chan int) int {
 	currentFloor = <-floorEvent
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	return currentFloor
+}
+
+func (c *Controller) monitorObstruction() {
+	for o := range c.ObstructionEvent {
+		c.Obstructed = o
+	}
+}
+
+func (c *Controller) waitUntilClear() {
+	for c.Obstructed {
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func (c *Controller) openDoor() {
+	timer := time.NewTimer(3 * time.Second)
+	elevio.SetDoorOpenLamp(true)
+	for {
+		select {
+
+		case o := <-c.ObstructionEvent:
+			if o {
+				timer.Stop()
+			} else {
+				timer.Reset(3 * time.Second)
+			}
+
+		case <-timer.C:
+			elevio.SetDoorOpenLamp(false)
+			return
+		}
+	}
+}
+
+func (c *Controller) GoToFloor(target int, done chan struct{}) {
+	if c.MyFloor == target {
+		return
+	} else if c.MyFloor > target {
+		c.openDoor()
+		elevio.SetMotorDirection(elevio.MD_Up)
+	} else {
+		c.openDoor()
+		elevio.SetMotorDirection(elevio.MD_Up)
+	}
+	for {
+		select {
+		case floor := <-c.FloorEvent:
+			if floor == target {
+				elevio.SetMotorDirection(elevio.MD_Stop)
+				close(done)
+				return
+			}
+		}
+	}
 }
