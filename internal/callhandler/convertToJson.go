@@ -3,8 +3,6 @@ package callhandler
 import (
 	"encoding/json"
 	"fmt"
-
-	"elevatorproject/internal/config"
 	"elevatorproject/internal/elevatorstruct"
 )
 
@@ -22,31 +20,26 @@ type ElevatorMessage struct {
 	States       map[string]StateData `json:"states"`
 }
 
-// AssignerOutput is the structure for hall request assigner output
-// Maps elevator ID to their assigned hall requests
-type AssignerOutput map[string][][]bool
+// ConvertToJson converts elevator states to JSON format for hall request assigner.
+// It takes the current elevator states and hall requests, structures them according to the expected format, and returns the JSON string.
+func ConvertToJson(myId string,
+	 orders map[string]*elevatorstruct.Orders,
+	 elevators map[string]*elevatorstruct.Elevator,
+	 elevatorsOnline map[string]bool) (string, error) {
 
-// ConvertToJson converts elevator states to JSON format for hall request assigner
-func ConvertToJson(hallRequests [config.NumFloors][2]bool, elevators map[string]*elevatorstruct.Elevator) (string, error) {
-	// Convert hall requests from [4][2]bool to [][]bool
-	hallRequestsArray := make([][]bool, len(hallRequests))
-	for i, floor := range hallRequests {
-		hallRequestsArray[i] = []bool{floor[0], floor[1]}
-	}
-
-	// Convert elevator states
+	hallRequestsArray := orders[myId].HallOrders.Simplify()
+	// Convert elevator states and cab orders into the expected JSON format
 	states := make(map[string]StateData)
 	for _, elev := range elevators {
 		id := fmt.Sprintf("id_%s", elev.CurrentElevatorId())
 		states[id] = StateData{
 			Behaviour:   elev.Behaviour(),
-			Floor:       elev.Floor(),
-			Direction:   elev.Direction(),
-			CabRequests: elev.CabRequests(),
+			Floor:       elev.CurrentFloor(),
+			Direction:   elev.CurrentDirection(),
+			CabRequests: orders[elev.CurrentElevatorId()].CabOrders.Simplify(),
 		}
 	}
 
-	// Create the message
 	message := ElevatorMessage{
 		HallRequests: hallRequestsArray,
 		States:       states,

@@ -1,12 +1,12 @@
 package orders
 
-//All possible states of an order, Unconfirmed and finished act as barriers.
+// All possible states of an order, Unconfirmed and finished act as barriers.
 type OrderState int
 
 const (
-	OrderStateUnknown OrderState = iota
-	OrderStateNone
-	OrderStateUnconfirmed
-	OrderStateConfirmed
-	OrderStateCompleted
+	UnknownOrderState OrderState = iota
+	RemovedOrderState
+	UnconfirmedOrderState
+	ConfirmedOrderState
+	CompletedOrderState
 )
