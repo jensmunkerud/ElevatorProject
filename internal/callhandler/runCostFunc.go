@@ -1,14 +1,20 @@
 package callhandler
-/*
+
 import (
+	"elevatorproject/internal/elevatorstruct"
 	"fmt"
 	"os/exec"
 )
 
-func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*elevatorstruct.Elevator) (map[string]elevatorstruct.ElevatorButtons, error) {
+func runCostFunc(
+	myID string,
+	orders map[string]*elevatorstruct.Orders,
+	elevators map[string]*elevatorstruct.Elevator,
+	elevatorsOnline map[string]bool,
+) (map[string]elevatorstruct.ElevatorButtons, error) {
 
 	// Formats data into JSON format
-	jsonInput, err := ConvertToJson(hallRequests, elevators)
+	jsonInput, err := ConvertToJson(myID, orders, elevators, elevatorsOnline)
 	if err != nil {
 		fmt.Printf("Error converting to JSON: %v\n", err)
 		return map[string]elevatorstruct.ElevatorButtons{}, err
@@ -22,9 +28,8 @@ func runCostFunc(hallRequests [config.NumFloors][2]bool, elevators map[string]*e
 	}
 
 	// Formats JSON result into data
-	return ParseElevatorJson(jsonOutput)
+	return ConvertFromJson(jsonOutput)
 }
-
 
 func executeCommand(jsonInput string) (string, error) {
 	cmd := exec.Command(
@@ -39,4 +44,3 @@ func executeCommand(jsonInput string) (string, error) {
 	fmt.Print(string(output))
 	return string(output), err
 }
-*/
