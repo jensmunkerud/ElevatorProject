@@ -6,7 +6,7 @@ import (
 
 func TestCreateCabOrders_InitializesLengthAndUnknownState(t *testing.T) {
 	numFloors := 4
-	cabOrders := CreateCabOrders(numFloors)
+	cabOrders := CreateCabOrders()
 
 	if cabOrders == nil {
 		t.Fatal("CreateCabOrders returned nil")
@@ -30,10 +30,10 @@ func TestCreateCabOrders_InitializesLengthAndUnknownState(t *testing.T) {
 }
 
 func TestCabOrderState_ReadsUpdatedState(t *testing.T) {
-	cabOrders := CreateCabOrders(3)
+	cabOrders := CreateCabOrders()
 
 	updatedState := ConfirmedOrderState
-	cabOrders.Orders[1] = &updatedState
+	cabOrders.UpdateOrderState(1, updatedState)
 
 	if got := cabOrders.CabOrderState(1); got != ConfirmedOrderState {
 		t.Logf("updated floor 1 state: %v", got)

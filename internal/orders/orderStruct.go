@@ -10,3 +10,21 @@ const (
 	ConfirmedOrderState
 	CompletedOrderState
 )
+
+type Order struct{
+	State OrderState
+}
+
+func CreateOrder() *Order {
+	return &Order{
+		State: UnknownOrderState,
+	}
+}
+
+func (o *Order) UpdateState(state OrderState) {
+	o.State = state
+}
+
+func (o *Order) GetState() OrderState {
+	return o.State
+}

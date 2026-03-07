@@ -7,7 +7,7 @@ import (
 
 func TestCreateHallOrders_InitializesDimensionsAndUnknownState(t *testing.T) {
 	numFloors := 4
-	hallOrders := CreateHallOrders(numFloors)
+	hallOrders := CreateHallOrders()
 
 	if hallOrders == nil {
 		t.Fatal("CreateHallOrders returned nil")
@@ -33,14 +33,13 @@ func TestCreateHallOrders_InitializesDimensionsAndUnknownState(t *testing.T) {
 }
 
 func TestSimplifyHallOrders(t *testing.T) {
-	numFloors := 4
-	hallOrders := CreateHallOrders(numFloors)
+	hallOrders := CreateHallOrders()
 
 	// Set some orders to different states
-	*hallOrders.Orders[0][0] = ConfirmedOrderState   // Floor 0, Up - should be true (active)
-	*hallOrders.Orders[0][1] = CompletedOrderState   // Floor 0, Down - should be true (transition state)
-	*hallOrders.Orders[2][0] = RemovedOrderState     // Floor 2, Up - should be false
-	*hallOrders.Orders[3][1] = UnconfirmedOrderState // Floor 3, Down - should be false
+	hallOrders.UpdateOrderState(0, 0, ConfirmedOrderState) // Floor 0, Up - should be true (active)
+	hallOrders.UpdateOrderState(0, 1, CompletedOrderState)   // Floor 0, Down - should be true (transition state)
+	hallOrders.UpdateOrderState(2, 0, RemovedOrderState)     // Floor 2, Up - should be false
+	hallOrders.UpdateOrderState(3, 1, UnconfirmedOrderState) // Floor 3, Down - should be false
 
 	// Print the original states
 	fmt.Println("Original Hall Order States:")
