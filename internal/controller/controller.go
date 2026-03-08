@@ -3,7 +3,6 @@ package controller
 import (
 	"driver-go/elevio"
 	"fmt"
-	"time"
 )
 
 type ElevatorEvent struct {
@@ -13,10 +12,10 @@ type ElevatorEvent struct {
 	StopEvent        chan bool
 }
 
-func InitController(ready chan struct{}) *ElevatorEvent {
+func InitController(ready chan struct{}) (*ElevatorEvent, int) {
 	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
 
-	_, err := initFloor(floorEvent)
+	floor, err := initFloor(floorEvent)
 	if err != nil {
 		fmt.Printf("Error initilizing floor: %d", err)
 	}
@@ -29,7 +28,7 @@ func InitController(ready chan struct{}) *ElevatorEvent {
 	}
 
 	close(ready)
-	return c
+	return c, floor
 }
 
 // Initializes communication with elevatorserver to receive IO from physical elevator
@@ -66,39 +65,7 @@ func initFloor(floorEvent chan int) (int, error) {
 	return currentFloor, nil
 }
 
-func (c *Controller) monitorObstruction() {
-	for o := range c.ObstructionEvent {
-		c.Obstructed = o
-	}
-}
-
-func (c *Controller) waitUntilClear() {
-	for c.Obstructed {
-		time.Sleep(10 * time.Millisecond)
-	}
-}
-
-func (c *Controller) openDoor() {
-	timer := time.NewTimer(3 * time.Second)
-	elevio.SetDoorOpenLamp(true)
-	for {
-		select {
-
-		case o := <-c.ObstructionEvent:
-			if o {
-				timer.Stop()
-			} else {
-				timer.Reset(3 * time.Second)
-			}
-
-		case <-timer.C:
-			elevio.SetDoorOpenLamp(false)
-			return
-		}
-	}
-}
-
-func (c *Controller) GoToFloor(target int, done chan struct{}) {
+func (c *ElevatorEvent) GoToFloor(target int, done chan struct{}) {
 	if c.MyFloor == target {
 		return
 	} else if c.MyFloor < target {

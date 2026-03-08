@@ -19,7 +19,7 @@ func TestCallHandler(t *testing.T) {
 
 func InitCallHandler() {
 	ready := make(chan struct{})
-	c := InitController(ready)
+	c, floor := controller.InitController(ready)
 	<-ready
 
 	elevators := make(map[string]*es.Elevator)
@@ -30,8 +30,12 @@ func InitCallHandler() {
 		return
 	}
 
-	localElevator := CreateElevator(id, , es.Direction.Stop, es.Behaviour.Idle)
+	localElevator := es.CreateElevator(id, floor, es.Stop, es.Idle)
 	elevators[localElevator.Id()] = localElevator
+
+	switch localElevator.behaviour {
+
+	}
 
 	for {
 		select {
