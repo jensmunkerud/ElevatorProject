@@ -7,7 +7,6 @@ import (
 
 func TestController(t *testing.T) {
 	ready := make(chan struct{})
-
 	c := InitController(ready)
 	<-ready
 
@@ -20,7 +19,6 @@ func TestController(t *testing.T) {
 			go c.GoToFloor(btn.Floor, done)
 
 			<-done
-			return
 		}
 	}
 }

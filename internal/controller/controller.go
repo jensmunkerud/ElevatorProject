@@ -2,68 +2,37 @@ package controller
 
 import (
 	"driver-go/elevio"
+	"fmt"
 	"time"
 )
 
-type Controller struct {
+type ElevatorEvent struct {
 	OrderEvent       chan elevio.ButtonEvent
 	FloorEvent       chan int
 	ObstructionEvent chan bool
 	StopEvent        chan bool
-	MyFloor          int
-	IsAtFloor        bool
-	Obstructed       bool
 }
 
-func InitController(ready chan struct{}) *Controller {
+func InitController(ready chan struct{}) *ElevatorEvent {
 	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
 
-	myFloor := initFloor(floorEvent)
-	isAtFloor := true
+	_, err := initFloor(floorEvent)
+	if err != nil {
+		fmt.Printf("Error initilizing floor: %d", err)
+	}
 
-	c := &Controller{
+	c := &ElevatorEvent{
 		OrderEvent:       orderEvent,
 		FloorEvent:       floorEvent,
 		ObstructionEvent: obstructionEvent,
 		StopEvent:        stopEvent,
-		MyFloor:          myFloor,
-		IsAtFloor:        isAtFloor,
 	}
 
 	close(ready)
 	return c
-	// for {
-	// 	select {
-	// 	case a := <-orderEvent:
-	// 		fmt.Printf("%+v\n", a)
-	// 		targetFloor = a.Floor
-	// 		if MyFloor < 0 || MyFloor == a.Floor {
-	// 			continue
-	// 		} else if MyFloor < targetFloor {
-	// 			elevio.SetMotorDirection(elevio.MD_Up)
-	// 			IsAtFloor = false
-	// 		} else if MyFloor > targetFloor {
-	// 			elevio.SetMotorDirection(elevio.MD_Down)
-	// 			IsAtFloor = false
-	// 		}
-
-	// 	case floor := <-floorEvent:
-	// 		MyFloor = floor
-	// 		if MyFloor == targetFloor {
-	// 			elevio.SetMotorDirection(elevio.MD_Stop)
-	// 			close(targetDone)
-	// 		}
-
-	// 	case a := <-obstructionEvent:
-	// 		fmt.Printf("%+v\n", a)
-
-	// 	case a := <-stopEvent:
-	// 		fmt.Printf("%+v\n", a)
-	// 	}
-	// }
 }
 
-// Handles IO communication between software and hardware
+// Initializes communication with elevatorserver to receive IO from physical elevator
 func initElevatorIO(numFloors int) (
 	chan elevio.ButtonEvent,
 	chan int,
@@ -85,16 +54,16 @@ func initElevatorIO(numFloors int) (
 	return orderEvent, floorEvent, obstructionEvent, stopEvent
 }
 
-// Starts off the elevator, first check if we are at a floor and if not startgoing downwards to find our first valid floor
-func initFloor(floorEvent chan int) int {
+// Checks if we are at a floor and if not, start going downwards to find our first valid floor
+func initFloor(floorEvent chan int) (int, error) {
 	currentFloor := elevio.GetFloor()
 	if currentFloor != -1 {
-		return currentFloor
+		return currentFloor, nil
 	}
 	elevio.SetMotorDirection(elevio.MD_Down)
 	currentFloor = <-floorEvent
 	elevio.SetMotorDirection(elevio.MD_Stop)
-	return currentFloor
+	return currentFloor, nil
 }
 
 func (c *Controller) monitorObstruction() {
