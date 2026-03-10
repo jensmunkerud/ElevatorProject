@@ -1,4 +1,4 @@
-package callhandler
+package orderdistributor
 
 import (
 	"elevatorproject/internal/config"
