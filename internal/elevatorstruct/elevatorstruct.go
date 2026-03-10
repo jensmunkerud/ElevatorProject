@@ -3,6 +3,7 @@ package elevatorstruct
 import (
 	"elevatorproject/internal/config"
 	"elevatorproject/internal/orders"
+	"fmt"
 )
 
 type Direction int
@@ -30,20 +31,30 @@ type Elevator struct {
 	behaviour    Behaviour
 	floor        int
 	direction    Direction
-	cabRequest   *orders.CabOrders
-	hallRequests *orders.HallOrders
 }
 
-func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
-	hallRequests := orders.CreateHallOrders(config.NumFloors)
-	cabRequests := orders.CreateCabOrders(config.NumFloors)
+type Orders struct {
+	id string
+	CabOrders   *orders.CabOrders
+	HallOrders  *orders.HallOrders
+}
+
+func createElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
 	return &Elevator{
 		id:           id,
 		behaviour:    behaviour,
 		floor:        currentFloor,
 		direction:    direction,
-		hallRequests: hallRequests,
-		cabRequest:   cabRequests,
+	}
+}
+
+func createOrders(id string) *Orders {
+	hallRequests := orders.CreateHallOrders(config.NumFloors)
+	cabRequests := orders.CreateCabOrders(config.NumFloors)
+	return &Orders{
+		id:        id,
+		CabOrders: cabRequests,
+		HallOrders: hallRequests,
 	}
 }
 
@@ -52,16 +63,20 @@ func (e *Elevator) Id() string {
 }
 
 func (e *Elevator) Behaviour() Behaviour {
-	// switch e.behaviour {
-	// case Idle:
-	// 	return "idle"
-	// case Moving:
-	// 	return "moving"
-	// case DoorOpen:
-	// 	return "doorOpen"
-	// }
-	// return "unknown"
 	return e.behaviour
+}
+
+func (e *Elevator) BehaviourString() string {
+	switch e.behaviour {
+	case Idle:
+		return "idle"
+	case Moving:
+		return "moving"
+	case DoorOpen:
+		return "doorOpen"
+}
+	errorMsg := "unknown behaviour state: %v"
+	return fmt.Sprintf(errorMsg, e.behaviour)
 }
 
 func (e *Elevator) UpdateBehaviour(behaviour Behaviour) {
@@ -84,10 +99,14 @@ func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 	e.direction = direction
 }
 
-func (e *Elevator) CabRequests() *orders.CabOrders {
-	return e.cabRequest
+func (o *Orders) ordersId() string {
+	return o.id
 }
 
-func (e *Elevator) HallRequests() *orders.HallOrders {
-	return e.hallRequests
+func (o *Orders) CabRequests() *orders.CabOrders {
+	return o.CabOrders
+}
+
+func (o *Orders) HallRequests() *orders.HallOrders {
+	return o.HallOrders
 }
