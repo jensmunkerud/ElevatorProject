@@ -62,6 +62,11 @@ func InitCallHandler() {
 			fmt.Printf("%+v\n", floor)
 			localElevator.UpdateCurrentFloor(floor)
 			// CHECK IF ORDER AT FLOOR
+			if shouldStop(localElevator, localOrders) {
+				clearOrdersAtFloor(floor, &localOrders)
+				localElevator.UpdateBehaviour(es.DoorOpen)
+			}
+
 			updateElevatorState(localElevator)
 
 		case obstruction := <-c.ObstructionEvent:
@@ -139,6 +144,11 @@ func updateElevatorState(localElevator *es.Elevator) {
 
 func getLocalOrders(e *es.Elevator, orders es.ElevatorButtons) es.ElevatorButtons {
 	return orders
+}
+
+func clearOrdersAtFloor(floor int, orders *es.ElevatorButtons) {
+	orders.Buttons[floor][0] = false
+	orders.Buttons[floor][1] = false
 }
 
 func shouldStop(e *es.Elevator, buttons es.ElevatorButtons) bool {
