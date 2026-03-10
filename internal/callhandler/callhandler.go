@@ -37,7 +37,7 @@ func InitCallHandler() {
 	elevators[localElevator.Id()] = localElevator
 	updateElevatorState(localElevator)
 
-	orderMapChan := make(chan map[string]es.ElevatorButtons)
+	orderMapChan := make(chan [2]bool)
 	var orderMap map[string]es.ElevatorButtons
 
 	for {
@@ -67,7 +67,11 @@ func InitCallHandler() {
 
 		case stop := <-c.StopEvent:
 			fmt.Printf("%+v\n", stop)
-			localElevator.UpdateBehaviour(es.Idle)
+			if stop {
+				localElevator.UpdateBehaviour(es.Idle)
+			} else {
+				localElevator.UpdateBehaviour(es.Moving)
+			}
 			// localElevator.UpdateCurrentDirection(es.Stop)
 			updateElevatorState(localElevator)
 			break
