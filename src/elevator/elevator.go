@@ -1,8 +1,8 @@
 package elevatorstruct
 
 import (
-	"elevatorproject/internal/config"
-	"elevatorproject/internal/orders"
+	"elevatorproject/src/config"
+	"elevatorproject/src/orders"
 	"fmt"
 )
 
@@ -33,12 +33,6 @@ type Elevator struct {
 	direction    Direction
 }
 
-type Orders struct {
-	id string
-	CabOrders   *orders.CabOrders
-	HallOrders  *orders.HallOrders
-}
-
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
 	return &Elevator{
 		id:           id,
@@ -48,21 +42,15 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 	}
 }
 
-func CreateOrders(id string) *Orders {
-	hallRequests := orders.CreateHallOrders(config.NumFloors)
-	cabRequests := orders.CreateCabOrders(config.NumFloors)
-	return &Orders{
-		id:        id,
-		CabOrders: cabRequests,
-		HallOrders: hallRequests,
-	}
-}
-
-func (e *Elevator) CurrentElevatorId() string {
+func (e *Elevator) Id() string {
 	return e.id
 }
 
-func (e *Elevator) Behaviour() string {
+func (e *Elevator) Behaviour() Behaviour {
+	return e.behaviour
+}
+
+func (e *Elevator) BehaviourString() string {
 	switch e.behaviour {
 	case Idle:
 		return "idle"
@@ -75,22 +63,22 @@ func (e *Elevator) Behaviour() string {
 	return fmt.Sprintf(errorMsg, e.behaviour)
 }
 
+func (e *Elevator) UpdateBehaviour(behaviour Behaviour) {
+	e.behaviour = behaviour
+}
+
 func (e *Elevator) CurrentFloor() int {
 	return e.floor
+}
+
+func (e *Elevator) UpdateCurrentFloor(floor int) {
+	e.floor = floor
 }
 
 func (e *Elevator) CurrentDirection() Direction {
 	return e.direction
 }
 
-func (o *Orders) ordersId() string {
-	return o.id
-}
-
-func (o *Orders) CabRequests() *orders.CabOrders {
-	return o.CabOrders
-}
-
-func (o *Orders) HallRequests() *orders.HallOrders {
-	return o.HallOrders
+func (e *Elevator) UpdateCurrentDirection(direction Direction) {
+	e.direction = direction
 }
