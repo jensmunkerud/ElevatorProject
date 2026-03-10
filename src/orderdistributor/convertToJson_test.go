@@ -15,13 +15,13 @@ func TestConvertToJson_NewSignature_ProducesExpectedStructure(t *testing.T) {
 
 	// Create separate CabOrders and HallOrders
 	cabOrders := map[string]*ord.CabOrders{
-		myID: ord.CreateCabOrders(config.NumFloors),
+		myID: ord.CreateCabOrders(),
 	}
-	*cabOrders[myID].Orders[2] = ord.ConfirmedOrderState
+	cabOrders[myID].UpdateOrderState(2, ord.ConfirmedOrderState)
 
-	hallOrders := ord.CreateHallOrders(config.NumFloors)
-	*hallOrders.Orders[0][0] = ord.ConfirmedOrderState
-	*hallOrders.Orders[1][1] = ord.ConfirmedOrderState
+	hallOrders := ord.CreateHallOrders()
+	hallOrders.UpdateOrderState(0, 0, ord.ConfirmedOrderState)
+	hallOrders.UpdateOrderState(1, 1, ord.ConfirmedOrderState)
 
 	// Create elevator map with pointer values
 	elevators := map[string]*es.Elevator{
