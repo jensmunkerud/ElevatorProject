@@ -1,23 +1,30 @@
 package orderdistributor
-/*
+
 import (
-	es "elevatorproject/internal/elevatorstruct"
+	"elevatorproject/src/config"
+	"elevatorproject/src/elevator"
+	"elevatorproject/src/orders"
+	"fmt"
 	"testing"
 )
 
 func TestCostFunc(t *testing.T) {
 	// Initialize dummy hall requests (all false)
-	var hallRequests [4][2]bool
-
+	elev1 := elevator.CreateElevator("bankID", 2, elevator.Down, elevator.Idle)
+	hallOrders := orders.CreateHallOrders(config.NumFloors)
+	cabOrders := orders.CreateCabOrders(config.NumFloors)
 	// Create a map for elevators
-	elevators := make(map[string]*es.Elevator)
-	elev1 := &es.Elevator{}
-
-	// Create and initialize an elevator with dummy data
-	elev1.Initialize("bankID", 2, "down")
+	elevators := make(map[string]*elevator.Elevator)
 	elevators["bankID"] = elev1
+	allCabOrders := make(map[string]*orders.CabOrders)
+	allCabOrders["bankID"] = cabOrders
+	elevatorsOnline := make(map[string]bool)
+	// Create and initialize an elevator with dummy data
+	elevatorsOnline["bankID"] = true
 
-	runCostFunc(hallRequests, elevators)
+	assigned, err := runCostFunc("bankID", allCabOrders, hallOrders, elevators)
+	fmt.Printf("runCostFunc output: %+v, err: %v\n", assigned, err)
+	if err != nil {
+		t.Fatalf("runCostFunc failed: %v", err)
+	}
 }
-
-*/
