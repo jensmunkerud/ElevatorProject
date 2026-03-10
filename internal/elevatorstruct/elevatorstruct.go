@@ -17,7 +17,8 @@ type Behaviour int
 
 const (
 	Idle Behaviour = iota
-	Moving
+	MovingUp
+	MovingDown
 	DoorOpen
 )
 
@@ -27,8 +28,8 @@ type ElevatorButtons struct {
 
 type Elevator struct {
 	id           string
-	behaviour    Behaviour
-	floor        int
+	Behaviour    Behaviour
+	Floor        int
 	direction    Direction
 	CabRequest   *orders.CabOrders
 	HallRequests *orders.HallOrders
@@ -51,16 +52,17 @@ func (e *Elevator) Id() string {
 	return e.id
 }
 
-func (e *Elevator) Behaviour() string {
-	switch e.behaviour {
-	case Idle:
-		return "idle"
-	case Moving:
-		return "moving"
-	case DoorOpen:
-		return "doorOpen"
-	}
-	return "unknown"
+func (e *Elevator) Behaviour() Behaviour {
+	// switch e.behaviour {
+	// case Idle:
+	// 	return "idle"
+	// case Moving:
+	// 	return "moving"
+	// case DoorOpen:
+	// 	return "doorOpen"
+	// }
+	// return "unknown"
+	return e.behaviour
 }
 
 func (e *Elevator) CurrentFloor() int {

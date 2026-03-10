@@ -22,8 +22,6 @@ func InitCallHandler() {
 	c, floor := controller.InitController(ready)
 	<-ready
 
-	elevators := make(map[string]*es.Elevator)
-
 	id, err := getMacAddr()
 	if err != nil {
 		fmt.Printf("Error finding MAC address")
@@ -31,39 +29,29 @@ func InitCallHandler() {
 	}
 
 	localElevator := es.CreateElevator(id, floor, es.Stop, es.Idle)
+	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
-
-	switch localElevator.behaviour {
-
-	}
+	updateElevatorState(localElevator)
 
 	for {
 		select {
-		case a := <-orderEvent:
-			fmt.Printf("%+v\n", a)
-			targetFloor = a.Floor
-			if MyFloor < 0 || MyFloor == a.Floor {
-				continue
-			} else if MyFloor < targetFloor {
-				elevio.SetMotorDirection(elevio.MD_Up)
-				IsAtFloor = false
-			} else if MyFloor > targetFloor {
-				elevio.SetMotorDirection(elevio.MD_Down)
-				IsAtFloor = false
-			}
+		case order := <-c.OrderEvent:
+			fmt.Printf("%+v\n", order)
+			// CREATE AND SEND ORDER TO ELEVATORSERVER
 
-		case floor := <-floorEvent:
-			MyFloor = floor
-			if MyFloor == targetFloor {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-				close(targetDone)
-			}
+		case floor := <-c.FloorEvent:
+			fmt.Printf("%+v\n", floor)
+			localElevator.Floor = floor
+			// CHECK IF ORDER AT FLOOR
+			updateElevatorState(localElevator)
 
-		case a := <-obstructionEvent:
-			fmt.Printf("%+v\n", a)
+		case obstruction := <-c.ObstructionEvent:
+			localElevator.b
+			fmt.Printf("%+v\n", obstruction)
 
-		case a := <-stopEvent:
-			fmt.Printf("%+v\n", a)
+		case stop := <-c.StopEvent:
+			fmt.Printf("%+v\n", stop)
+
 		}
 	}
 
@@ -123,4 +111,22 @@ func getMacAddr() (string, error) {
 	}
 
 	return "", fmt.Errorf("no MAC address found")
+}
+
+func updateElevatorState(localElevator *es.Elevator) {
+	switch localElevator.Behaviour() {
+	case es.Idle:
+		elevio.SetDoorOpenLamp(false)
+		break
+	case es.MovingUp:
+		elevio.SetDoorOpenLamp(false)
+		elevio.SetMotorDirection(elevio.MD_Up)
+		break
+	case es.MovingDown:
+		elevio.SetDoorOpenLamp(false)
+		elevio.SetMotorDirection(elevio.MD_Down)
+		break
+	case es.DoorOpen:
+		elevio.SetDoorOpenLamp(true)
+	}
 }
