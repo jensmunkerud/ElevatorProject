@@ -1,7 +1,7 @@
 package orderdistributor
 
 import (
-	"elevatorproject/src/elevatorstruct"
+	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
 	"encoding/json"
 	"fmt"

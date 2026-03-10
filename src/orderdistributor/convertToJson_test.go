@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"elevatorproject/src/config"
-	es "elevatorproject/src/elevatorstruct"
+	es "elevatorproject/src/elevator"
 	ord "elevatorproject/src/orders"
 )
 

@@ -4,8 +4,7 @@ import (
 	"Network-go/network/bcast"
 	"Network-go/network/localip"
 	"Network-go/network/peers"
-	es "elevatorproject/src/elevatorstruct"
-	ms "elevatorproject/src/messagestruct"
+	es "elevatorproject/src/elevator"
 	"flag"
 	"fmt"
 	"os"
@@ -15,11 +14,11 @@ import (
 // in a distributed system. It establishes peer discovery (heartbeat/discovery on port 15647)
 // and broadcast messaging capabilities (port 16569) to enable inter-elevator communication.
 // The function returns channels for managing peer connections and sending/receiving messages.
-func CommunicationSetup(message *ms.Message, currentElevator *es.Elevator) (
+func CommunicationSetup(message Message, currentElevator *es.Elevator) (
 	chan peers.PeerUpdate,
 	chan bool,
-	chan ms.Message,
-	chan ms.Message) {
+	chan Message,
+	chan Message) {
 
 	// Generate a unique identifier for this elevator instance. Attempt to use the configured
 	// elevator ID if available, otherwise fall back to a composite ID using local IP and process ID.
