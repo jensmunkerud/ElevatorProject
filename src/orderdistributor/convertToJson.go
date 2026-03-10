@@ -9,9 +9,10 @@ import (
 
 // StateData represents individual elevator state in JSON format
 type StateData struct {
-	Behaviour   elevator.Behaviour   `json:"behaviour"`
+	Id          string                 `json:"id"`
+	Behaviour   string   `json:"behaviour"`
 	Floor       int                      `json:"floor"`
-	Direction   elevator.Direction `json:"direction"`
+	Direction   string `json:"direction"`
 	CabRequests []bool                   `json:"cabRequests"`
 }
 
@@ -33,9 +34,10 @@ func ConvertToJson(myId string,
 	states := make(map[string]StateData)
 	for elevID, elev := range elevators {
 		states[elevID] = StateData{
-			Behaviour:   elev.Behaviour(),
+			Id:          elevID,
+			Behaviour:   elev.BehaviourString(),
 			Floor:       elev.CurrentFloor(),
-			Direction:   elev.CurrentDirection(),
+			Direction:   elev.DirectionString(),
 			CabRequests: cabOrders[elevID].Simplify(),
 		}
 	}

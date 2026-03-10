@@ -57,9 +57,9 @@ func TestConvertToJson_NewSignature_ProducesExpectedStructure(t *testing.T) {
 		t.Fatalf("expected 1 elevator state, got %d", len(message.States))
 	}
 
-	state, ok := message.States["id_"]
+	state, ok := message.States[myID]
 	if !ok {
-		t.Fatalf("expected state for key %q", "id_")
+		t.Fatalf("expected state for key %q", myID)
 	}
 
 	if len(state.CabRequests) != config.NumFloors {

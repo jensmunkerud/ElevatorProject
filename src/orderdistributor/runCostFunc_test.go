@@ -1,6 +1,7 @@
 package orderdistributor
 
 import (
+	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
 	"fmt"
@@ -10,8 +11,8 @@ import (
 func TestCostFunc(t *testing.T) {
 	// Initialize dummy hall requests (all false)
 	elev1 := elevator.CreateElevator("bankID", 2, elevator.Down, elevator.Idle)
-	hallOrders := orders.CreateHallOrders(2)
-	cabOrders := orders.CreateCabOrders(2)
+	hallOrders := orders.CreateHallOrders(config.NumFloors)
+	cabOrders := orders.CreateCabOrders(config.NumFloors)
 	// Create a map for elevators
 	elevators := make(map[string]*elevator.Elevator)
 	elevators["bankID"] = elev1

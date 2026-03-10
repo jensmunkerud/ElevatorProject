@@ -78,6 +78,18 @@ func (e *Elevator) CurrentDirection() Direction {
 	return e.direction
 }
 
+func (e *Elevator) DirectionString() string {
+	switch e.direction {
+	case Stop:
+		return "stop"
+	case Up:
+		return "up"
+	case Down:
+		return "down"
+	}
+	return "unknown"
+}
+
 func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 	e.direction = direction
 }
