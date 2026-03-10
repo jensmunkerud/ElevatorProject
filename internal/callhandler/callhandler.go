@@ -8,6 +8,7 @@ package callhandler
 
 import (
 	"driver-go/elevio"
+	"elevatorproject/internal/config"
 	controller "elevatorproject/internal/controller"
 	es "elevatorproject/internal/elevatorstruct"
 	"fmt"
@@ -36,6 +37,9 @@ func InitCallHandler() {
 	elevators[localElevator.Id()] = localElevator
 	updateElevatorState(localElevator)
 
+	orderMapChan := make(chan map[string]es.ElevatorButtons)
+	var orderMap map[string]es.ElevatorButtons
+
 	for {
 		select {
 		case order := <-c.OrderEvent:
@@ -55,18 +59,23 @@ func InitCallHandler() {
 			if obstruction {
 				localElevator.UpdateBehaviour(es.Idle)
 				// localElevator.UpdateCurrentDirection(es.Stop)
-				updateElevatorState(localElevator)
 			} else {
 				localElevator.UpdateBehaviour(es.Moving) // Possibly dangerous?
-				updateElevatorState(localElevator)
 			}
+			updateElevatorState(localElevator)
 			break
 
 		case stop := <-c.StopEvent:
 			fmt.Printf("%+v\n", stop)
 			localElevator.UpdateBehaviour(es.Idle)
 			// localElevator.UpdateCurrentDirection(es.Stop)
+			updateElevatorState(localElevator)
 			break
+
+		case newOrders := <-orderMapChan:
+			orderMap = newOrders
+			updateElevatorFromOrders(localElevator, orderMap)
+			updateElevatorState(localElevator)
 		}
 	}
 }
@@ -113,4 +122,57 @@ func updateElevatorState(localElevator *es.Elevator) {
 		elevio.SetDoorOpenLamp(true)
 		elevio.SetMotorDirection(elevio.MD_Stop)
 	}
+}
+
+func getLocalOrders(e *es.Elevator, orders map[string]es.ElevatorButtons) es.ElevatorButtons {
+	return orders[e.Id()]
+}
+
+func shouldStop(e *es.Elevator, buttons es.ElevatorButtons) bool {
+	f := e.CurrentFloor()
+
+	return buttons.Buttons[f][0] || buttons.Buttons[f][1]
+}
+
+func updateElevatorFromOrders(
+	e *es.Elevator,
+	orderMap map[string]es.ElevatorButtons,
+) {
+
+	buttons := getLocalOrders(e, orderMap)
+
+	if shouldStop(e, buttons) {
+		e.UpdateBehaviour(es.DoorOpen)
+		return
+	}
+
+	dir := chooseDirection(e, buttons)
+
+	e.UpdateCurrentDirection(dir)
+
+	if dir == es.Stop {
+		e.UpdateBehaviour(es.Idle)
+	} else {
+		e.UpdateBehaviour(es.Moving)
+	}
+	updateElevatorState(e)
+}
+
+func chooseDirection(e *es.Elevator, buttons es.ElevatorButtons) es.Direction {
+
+	current := e.CurrentFloor()
+
+	for f := current + 1; f < config.NumFloors; f++ {
+		if buttons.Buttons[f][0] || buttons.Buttons[f][1] {
+			return es.Up
+		}
+	}
+
+	for f := current - 1; f >= 0; f-- {
+		if buttons.Buttons[f][0] || buttons.Buttons[f][1] {
+			return es.Down
+		}
+	}
+
+	return es.Stop
 }
