@@ -1,8 +1,8 @@
-package callhandler
+package orderdistributor
 
 import (
-	"elevatorproject/internal/config"
-	"elevatorproject/internal/elevatorstruct"
+	"elevatorproject/src/config"
+	"elevatorproject/src/elevator"
 	"encoding/json"
 )
 
