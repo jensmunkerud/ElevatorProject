@@ -11,7 +11,7 @@ import (
 //ID1: [[upButtonState, downButtonState], [upButtonState, downButtonState], ...],
 //ID2: [[upButtonState, downButtonState], [upButtonState, downButtonState], ...], ...
 
-func ConvertFromJson(jsonStr string) (map[string]elevatorstruct.ElevatorButtons, error) {
+func ConvertFromJson(jsonStr string) (map[string]elevator.ElevatorButtons, error) {
 	var rawData map[string][][]bool
 
 	err := json.Unmarshal([]byte(jsonStr), &rawData)
@@ -19,10 +19,10 @@ func ConvertFromJson(jsonStr string) (map[string]elevatorstruct.ElevatorButtons,
 		return nil, err
 	}
 
-	result := make(map[string]elevatorstruct.ElevatorButtons)
+	result := make(map[string]elevator.ElevatorButtons)
 
 	for elevatorID, floors := range rawData {
-		var buttons elevatorstruct.ElevatorButtons
+		var buttons elevator.ElevatorButtons
 		for floorNum, buttonDir := range floors {
 			if floorNum < config.NumFloors && len(buttonDir) >= 2 {
 				buttons.Buttons[floorNum][0] = buttonDir[0]

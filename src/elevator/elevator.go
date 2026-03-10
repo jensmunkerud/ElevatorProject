@@ -1,8 +1,7 @@
-package elevatorstruct
+package elevator
 
 import (
 	"elevatorproject/src/config"
-	"elevatorproject/src/orders"
 	"fmt"
 )
 

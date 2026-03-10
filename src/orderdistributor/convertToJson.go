@@ -9,9 +9,9 @@ import (
 
 // StateData represents individual elevator state in JSON format
 type StateData struct {
-	Behaviour   string                   `json:"behaviour"`
+	Behaviour   elevator.Behaviour   `json:"behaviour"`
 	Floor       int                      `json:"floor"`
-	Direction   elevatorstruct.Direction `json:"direction"`
+	Direction   elevator.Direction `json:"direction"`
 	CabRequests []bool                   `json:"cabRequests"`
 }
 
@@ -26,18 +26,17 @@ type ElevatorMessage struct {
 func ConvertToJson(myId string,
 	cabOrders map[string]*orders.CabOrders,
 	hallOrders *orders.HallOrders,
-	elevators map[string]*elevatorstruct.Elevator) (string, error) {
+	elevators map[string]*elevator.Elevator) (string, error) {
 
 	hallRequestsArray := hallOrders.Simplify()
 	// Convert elevator states and cab orders into the expected JSON format
 	states := make(map[string]StateData)
-	for _, elev := range elevators {
-		id := fmt.Sprintf("id_%s", elev.Id())
-		states[id] = StateData{
+	for elevID, elev := range elevators {
+		states[elevID] = StateData{
 			Behaviour:   elev.Behaviour(),
 			Floor:       elev.CurrentFloor(),
 			Direction:   elev.CurrentDirection(),
-			CabRequests: cabOrders[elev.CurrentElevatorId()].Simplify(),
+			CabRequests: cabOrders[elevID].Simplify(),
 		}
 	}
 

@@ -1,30 +1,31 @@
 package orderdistributor
-/*
+
 import (
-	"elevatorproject/internal/elevatorstruct"
+	"elevatorproject/src/elevator"
+	"elevatorproject/src/orders"
 	"fmt"
 	"os/exec"
 )
 
 func runCostFunc(
-	myID string,
-	orders map[string]*elevatorstruct.Orders,
-	elevators map[string]*elevatorstruct.Elevator,
-	elevatorsOnline map[string]bool,
-) (map[string]elevatorstruct.ElevatorButtons, error) {
+	myId string,
+	cabOrders map[string]*orders.CabOrders,
+	hallOrders *orders.HallOrders,
+	elevators map[string]*elevator.Elevator,
+) (map[string]elevator.ElevatorButtons, error) {
 
 	// Formats data into JSON format
-	jsonInput, err := ConvertToJson(myID, orders, elevators, elevatorsOnline)
+	jsonInput, err := ConvertToJson(myId, cabOrders, hallOrders, elevators)
 	if err != nil {
 		fmt.Printf("Error converting to JSON: %v\n", err)
-		return map[string]elevatorstruct.ElevatorButtons{}, err
+		return map[string]elevator.ElevatorButtons{}, err
 	}
 
 	// Executes hall_request_assigner command
 	jsonOutput, err := executeCommand(jsonInput)
 	if err != nil {
 		fmt.Print("Error executing hall_request_assigner command")
-		return map[string]elevatorstruct.ElevatorButtons{}, err
+		return map[string]elevator.ElevatorButtons{}, err
 	}
 
 	// Formats JSON result into data
