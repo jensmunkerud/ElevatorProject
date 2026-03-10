@@ -21,6 +21,7 @@ type CabOrderUpdate struct {
 	State    orders.OrderState
 }
 
+//This should be moved to networking.
 // HallOrderUpdatesFromNetwork unpacks a received HallOrders snapshot into individual
 // HallOrderUpdate values, one per floor per direction, ready to send into hallUpdates.
 func HallOrderUpdatesFromNetwork(senderID string, hallOrders *orders.HallOrders) []HallOrderUpdate {
@@ -38,6 +39,7 @@ func HallOrderUpdatesFromNetwork(senderID string, hallOrders *orders.HallOrders)
 	return updates
 }
 
+//This should be moved to networking.
 // CabOrderUpdatesFromNetwork unpacks a received allCabOrders map into individual
 // CabOrderUpdate values, one per elevator per floor, ready to send into cabUpdates.
 // SenderID is set to the owning elevator's ID, not the relaying node's ID.
@@ -197,9 +199,10 @@ func RunElevatorServer(
 			next := mergeHallOrderState(u, receiverID, allHall, online)
 			allHall[receiverID].UpdateOrderState(u.Floor, u.Direction, next)
 			select {
-			case hallSnap <- allHall[receiverID].Copy():
+			case <-hallSnap:
 			default:
 			}
+			hallSnap <- allHall[receiverID].Copy()
 
 		case u := <-cabUpdates:
 			if _, ok := allCab[u.SenderID]; !ok {
@@ -209,9 +212,10 @@ func RunElevatorServer(
 			next := mergeCabOrderState(u, receiverID, allCab, online)
 			allCab[receiverID].UpdateOrderState(u.Floor, next)
 			select {
-			case cabSnap <- orders.CopyAllCab(allCab):
+			case <-cabSnap:
 			default:
 			}
+			cabSnap <- orders.CopyAllCab(allCab)
 
 		case nodes := <-peerUpdates:
 			online = nodes
