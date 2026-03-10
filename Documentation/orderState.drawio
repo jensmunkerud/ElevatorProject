@@ -1,6 +1,10 @@
 <mxfile host="65bd71144e">
     <diagram name="Page-1" id="fXLtdXe-6DGHO8m1pgKr">
+<<<<<<< HEAD
+        <mxGraphModel dx="1636" dy="1331" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+=======
         <mxGraphModel dx="673" dy="666" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+>>>>>>> main
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -61,6 +65,17 @@
                 <mxCell id="14" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="11" target="13">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
+<<<<<<< HEAD
+                <mxCell id="3" style="edgeStyle=none;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;rounded=1;curved=0;" edge="1" parent="1" source="iroSA8h_szIJ1iftdJJR-3" target="2">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="890" y="90"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="iroSA8h_szIJ1iftdJJR-3" value="Confirmed Order&lt;div&gt;Output: Bulb on&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="830" y="160" width="120" height="60" as="geometry"/>
+=======
                 <mxCell id="11" value="Completed order" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;" vertex="1" parent="1">
                     <mxGeometry x="680" y="200" width="120" height="60" as="geometry"/>
                 </mxCell>
@@ -80,6 +95,7 @@
                 </mxCell>
                 <mxCell id="13" value="No Order&lt;div&gt;Output: Bulb off&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;" vertex="1" parent="1">
                     <mxGeometry x="1040" y="200" width="120" height="60" as="geometry"/>
+>>>>>>> main
                 </mxCell>
                 <mxCell id="16" value="[Barrier] All online&amp;nbsp;&lt;div&gt;elevators&amp;nbsp;&lt;span style=&quot;color: rgb(63, 63, 63); background-color: light-dark(#ffffff, var(--ge-dark-color, #121212));&quot;&gt;must confirm&lt;/span&gt;&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=16;" connectable="0" vertex="1" parent="1">
                     <mxGeometry x="909.9985714285713" y="219.99999999999994" as="geometry"/>
@@ -89,6 +105,16 @@
                 </mxCell>
                 <mxCell id="24" value="&lt;span style=&quot;font-size: 16px;&quot;&gt;OrderCompleted&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="1">
                     <mxGeometry x="579.9952941176471" y="229.9999999999999" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="2" target="iroSA8h_szIJ1iftdJJR-1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="260" y="90"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="2" value="Order complete" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="490" y="60" width="120" height="60" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

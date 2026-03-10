@@ -13,7 +13,7 @@ func Test(t *testing.T) {
 
 	// var elevator = elevatorstruct.CreateElevator()
 
-	peerUpdateChannel, enablePeer, receiveCustomDataType, sendCustomDataType := communicationSetup(&elevator)
+	peerUpdateChannel, enablePeer, receiveCustomDataType, sendCustomDataType := CommunicationSetup(&elevator)
 
 	go func() {
 		for {
