@@ -58,11 +58,15 @@ func CreateOrders(id string) *Orders {
 	}
 }
 
-func (e *Elevator) CurrentElevatorId() string {
+func (e *Elevator) Id() string {
 	return e.id
 }
 
-func (e *Elevator) Behaviour() string {
+func (e *Elevator) Behaviour() Behaviour {
+	return e.behaviour
+}
+
+func (e *Elevator) BehaviourString() string {
 	switch e.behaviour {
 	case Idle:
 		return "idle"
@@ -75,12 +79,24 @@ func (e *Elevator) Behaviour() string {
 	return fmt.Sprintf(errorMsg, e.behaviour)
 }
 
+func (e *Elevator) UpdateBehaviour(behaviour Behaviour) {
+	e.behaviour = behaviour
+}
+
 func (e *Elevator) CurrentFloor() int {
 	return e.floor
 }
 
+func (e *Elevator) UpdateCurrentFloor(floor int) {
+	e.floor = floor
+}
+
 func (e *Elevator) CurrentDirection() Direction {
 	return e.direction
+}
+
+func (e *Elevator) UpdateCurrentDirection(direction Direction) {
+	e.direction = direction
 }
 
 func (o *Orders) ordersId() string {
