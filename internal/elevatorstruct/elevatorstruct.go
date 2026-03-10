@@ -17,8 +17,7 @@ type Behaviour int
 
 const (
 	Idle Behaviour = iota
-	MovingUp
-	MovingDown
+	Moving
 	DoorOpen
 )
 
@@ -28,11 +27,11 @@ type ElevatorButtons struct {
 
 type Elevator struct {
 	id           string
-	Behaviour    Behaviour
-	Floor        int
+	behaviour    Behaviour
+	floor        int
 	direction    Direction
-	CabRequest   *orders.CabOrders
-	HallRequests *orders.HallOrders
+	cabRequest   *orders.CabOrders
+	hallRequests *orders.HallOrders
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -43,8 +42,8 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 		behaviour:    behaviour,
 		floor:        currentFloor,
 		direction:    direction,
-		HallRequests: hallRequests,
-		CabRequest:   cabRequests,
+		hallRequests: hallRequests,
+		cabRequest:   cabRequests,
 	}
 }
 
@@ -65,18 +64,30 @@ func (e *Elevator) Behaviour() Behaviour {
 	return e.behaviour
 }
 
+func (e *Elevator) UpdateBehaviour(behaviour Behaviour) {
+	e.behaviour = behaviour
+}
+
 func (e *Elevator) CurrentFloor() int {
 	return e.floor
+}
+
+func (e *Elevator) UpdateCurrentFloor(floor int) {
+	e.floor = floor
 }
 
 func (e *Elevator) CurrentDirection() Direction {
 	return e.direction
 }
 
+func (e *Elevator) UpdateCurrentDirection(direction Direction) {
+	e.direction = direction
+}
+
 func (e *Elevator) CabRequests() *orders.CabOrders {
-	return e.CabRequest
+	return e.cabRequest
 }
 
 func (e *Elevator) HallRequests() *orders.HallOrders {
-	return e.HallRequests
+	return e.hallRequests
 }

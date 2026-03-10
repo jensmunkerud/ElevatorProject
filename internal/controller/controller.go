@@ -64,25 +64,3 @@ func initFloor(floorEvent chan int) (int, error) {
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	return currentFloor, nil
 }
-
-func (c *ElevatorEvent) GoToFloor(target int, done chan struct{}) {
-	if c.MyFloor == target {
-		return
-	} else if c.MyFloor < target {
-		c.openDoor()
-		elevio.SetMotorDirection(elevio.MD_Up)
-	} else {
-		c.openDoor()
-		elevio.SetMotorDirection(elevio.MD_Up)
-	}
-	for {
-		select {
-		case floor := <-c.FloorEvent:
-			if floor == target {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-				close(done)
-				return
-			}
-		}
-	}
-}
