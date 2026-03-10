@@ -31,7 +31,7 @@ func ConvertToJson(myId string,
 	// Convert elevator states and cab orders into the expected JSON format
 	states := make(map[string]StateData)
 	for _, elev := range elevators {
-		id := fmt.Sprintf("id_%s", elev.CurrentElevatorId())
+		id := fmt.Sprintf("id_%s", elev.Id())
 		states[id] = StateData{
 			Behaviour:   elev.Behaviour(),
 			Floor:       elev.CurrentFloor(),
