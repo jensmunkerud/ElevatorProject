@@ -39,7 +39,7 @@ type Orders struct {
 	HallOrders  *orders.HallOrders
 }
 
-func createElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
+func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
 	return &Elevator{
 		id:           id,
 		behaviour:    behaviour,
@@ -48,7 +48,7 @@ func createElevator(id string, currentFloor int, direction Direction, behaviour 
 	}
 }
 
-func createOrders(id string) *Orders {
+func CreateOrders(id string) *Orders {
 	hallRequests := orders.CreateHallOrders(config.NumFloors)
 	cabRequests := orders.CreateCabOrders(config.NumFloors)
 	return &Orders{

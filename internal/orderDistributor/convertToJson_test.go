@@ -1,4 +1,4 @@
-package callhandler
+package orderdistributor
 
 import (
 	"encoding/json"
@@ -13,28 +13,22 @@ import (
 func TestConvertToJson_NewSignature_ProducesExpectedStructure(t *testing.T) {
 	myID := ""
 
-	myOrders := &es.Orders{
-		CabOrders:  ord.CreateCabOrders(config.NumFloors),
-		HallOrders: ord.CreateHallOrders(config.NumFloors),
+	// Create separate CabOrders and HallOrders
+	cabOrders := map[string]*ord.CabOrders{
+		myID: ord.CreateCabOrders(config.NumFloors),
 	}
-	*myOrders.HallOrders.Orders[0][0] = ord.ConfirmedOrderState
-	*myOrders.HallOrders.Orders[1][1] = ord.CompletedOrderState
-	*myOrders.CabOrders.Orders[2] = ord.ConfirmedOrderState
+	*cabOrders[myID].Orders[2] = ord.ConfirmedOrderState
 
-	ordersMap := map[string]*es.Orders{
-		myID: myOrders,
-	}
+	hallOrders := ord.CreateHallOrders(config.NumFloors)
+	*hallOrders.Orders[0][0] = ord.ConfirmedOrderState
+	*hallOrders.Orders[1][1] = ord.ConfirmedOrderState
 
-	// A zero-value elevator is enough for this conversion test; id becomes "" -> state key "id_".
+	// Create elevator map with pointer values
 	elevators := map[string]*es.Elevator{
-		"local": {},
+		myID: es.CreateElevator(myID, 2, es.Down, es.Moving),
 	}
 
-	isOnline := map[string]bool{
-		myID: true,
-	}
-
-	jsonStr, err := ConvertToJson(myID, ordersMap, elevators, isOnline)
+	jsonStr, err := ConvertToJson(myID, cabOrders, hallOrders, elevators)
 	if err != nil {
 		t.Fatalf("ConvertToJson failed: %v", err)
 	}
@@ -56,7 +50,7 @@ func TestConvertToJson_NewSignature_ProducesExpectedStructure(t *testing.T) {
 	}
 
 	if !message.HallRequests[1][1] {
-		t.Fatalf("expected HallRequests[1][1] to be true (Completed state)")
+		t.Fatalf("expected HallRequests[1][1] to be true")
 	}
 
 	if len(message.States) != 1 {
