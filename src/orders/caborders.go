@@ -4,23 +4,23 @@ import "elevatorproject/src/config"
 
 //Indexed by floor, contains the state of the cab order for each floor.
 type CabOrders struct {
-	Orders []*OrderState
+	Orders []*Order
 }
 
 //A [NumFloors][2] array of pointers to OrderState,
 // where the first index represents the floor
 // and the second index represents the direction (0 for up, 1 for down).
-func CreateCabOrders(numFloors int) *CabOrders {
-	orders := make([]*OrderState, numFloors)
-	for i := 0; i < numFloors; i++ {
-		currentOrder := UnknownOrderState
-		orders[i] = &currentOrder
+func CreateCabOrders() *CabOrders {
+	orders := make([]*Order, config.NumFloors)
+	for i := 0; i < config.NumFloors; i++ {
+		order := CreateOrder()
+		orders[i] = order
 	}
 	return &CabOrders{Orders: orders}
 }
 
 func (o *CabOrders) CabOrderState(floor int) OrderState {
-	return *o.Orders[floor]
+	return o.Orders[floor].GetState()
 }
 
 // Simplify converts CabOrders to a simpler []bool format for easier processing in cost functions.
@@ -32,4 +32,12 @@ func (c *CabOrders) Simplify() []bool {
 			c.CabOrderState(floor) == CompletedOrderState
 	}
 	return simplified
+}
+
+func (c *CabOrders) UpdateOrderState(floor int, state OrderState) {
+	c.Orders[floor].UpdateState(state)
+}
+
+func (c *CabOrders) GetOrderState(floor int) OrderState{	
+	return c.Orders[floor].GetState()
 }

@@ -3,25 +3,25 @@ package orders
 import "elevatorproject/src/config"
 
 type HallOrders struct {
-	Orders [][2]*OrderState //[floor][up/down] for each floor and direction
+	Orders [][2]*Order //[floor][up/down] for each floor and direction
 }
 
 // A [NumFloors][2] array of pointers to OrderState,
 // where the first index represents the floor
 // and the second index represents the direction (0 for up, 1 for down).
-func CreateHallOrders(numFloors int) *HallOrders {
-	orders := make([][2]*OrderState, numFloors)
-	for i := 0; i < numFloors; i++ {
-		up := UnknownOrderState
-		down := UnknownOrderState
-		orders[i][0] = &up
-		orders[i][1] = &down
+func CreateHallOrders() *HallOrders {
+	orders := make([][2]*Order, config.NumFloors)
+	for i := 0; i < config.NumFloors; i++ {
+		up := CreateOrder()
+		down := CreateOrder()
+		orders[i][0] = up
+		orders[i][1] = down
 	}
 	return &HallOrders{Orders: orders}
 }
 
 func (o *HallOrders) HallOrderState(floor int, direction int) OrderState {
-	return *o.Orders[floor][direction]
+	return o.Orders[floor][direction].GetState()
 }
 
 // Simplify converts HallOrders to a simpler [][]bool format for easier processing in cost functions.
@@ -36,4 +36,12 @@ func (h *HallOrders) Simplify() [][]bool {
 		}
 	}
 	return simplified
+}
+
+func (h *HallOrders) UpdateOrderState(floor int, direction int, state OrderState) {
+	h.Orders[floor][direction].UpdateState(state)
+}
+
+func (h *HallOrders) GetOrderState(floor int, direction int) OrderState {
+	return h.Orders[floor][direction].GetState()
 }
