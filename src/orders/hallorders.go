@@ -1,6 +1,6 @@
 package orders
 
-import "elevatorproject/internal/config"
+import "elevatorproject/src/config"
 
 type HallOrders struct {
 	Orders [][2]*Order //[floor][up/down] for each floor and direction

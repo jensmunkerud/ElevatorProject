@@ -1,6 +1,6 @@
 import (
-	"elevatorproject/internal/config"
-	"elevatorproject/internal/elevatorstruct"
+	"elevatorproject/src/config"
+	"elevatorproject/src/elevatorstruct"
 	"fmt"
 	"os"
 	"os/exec"
