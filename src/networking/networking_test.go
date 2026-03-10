@@ -2,7 +2,7 @@ package networking
 
 import(
 	"testing"
-	"elevatorproject/internal/elevatorStruct"
+	"elevatorproject/src/elevatorStruct"
 	"time"
 	"fmt"
 )

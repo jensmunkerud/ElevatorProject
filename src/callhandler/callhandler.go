@@ -8,9 +8,10 @@ package callhandler
 
 import (
 	"driver-go/elevio"
-	"elevatorproject/internal/config"
-	controller "elevatorproject/internal/controller"
-	es "elevatorproject/internal/elevatorstruct"
+	"elevatorproject/src/config"
+	controller "elevatorproject/src/controller"
+	es "elevatorproject/src/elevatorstruct"
+	messageconfig "elevatorproject/src/messagestruct"
 	"fmt"
 	"net"
 )

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"elevatorproject/internal/config"
-	es "elevatorproject/internal/elevatorstruct"
-	ord "elevatorproject/internal/orders"
+	"elevatorproject/src/config"
+	es "elevatorproject/src/elevatorstruct"
+	ord "elevatorproject/src/orders"
 )
 
 func TestConvertToJson_NewSignature_ProducesExpectedStructure(t *testing.T) {

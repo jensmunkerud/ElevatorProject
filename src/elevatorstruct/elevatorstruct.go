@@ -1,8 +1,8 @@
 package elevatorstruct
 
 import (
-	"elevatorproject/internal/config"
-	"elevatorproject/internal/orders"
+	"elevatorproject/src/config"
+	"elevatorproject/src/orders"
 	"fmt"
 )
 
@@ -33,28 +33,12 @@ type Elevator struct {
 	direction    Direction
 }
 
-type Orders struct {
-	id string
-	CabOrders   *orders.CabOrders
-	HallOrders  *orders.HallOrders
-}
-
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
 	return &Elevator{
 		id:           id,
 		behaviour:    behaviour,
 		floor:        currentFloor,
 		direction:    direction,
-	}
-}
-
-func CreateOrders(id string) *Orders {
-	hallRequests := orders.CreateHallOrders(config.NumFloors)
-	cabRequests := orders.CreateCabOrders(config.NumFloors)
-	return &Orders{
-		id:        id,
-		CabOrders: cabRequests,
-		HallOrders: hallRequests,
 	}
 }
 
@@ -97,16 +81,4 @@ func (e *Elevator) CurrentDirection() Direction {
 
 func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 	e.direction = direction
-}
-
-func (o *Orders) ordersId() string {
-	return o.id
-}
-
-func (o *Orders) CabRequests() *orders.CabOrders {
-	return o.CabOrders
-}
-
-func (o *Orders) HallRequests() *orders.HallOrders {
-	return o.HallOrders
 }

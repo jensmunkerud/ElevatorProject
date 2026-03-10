@@ -1,6 +1,6 @@
 package orders
 
-import "elevatorproject/internal/config"
+import "elevatorproject/src/config"
 
 //Indexed by floor, contains the state of the cab order for each floor.
 type CabOrders struct {
