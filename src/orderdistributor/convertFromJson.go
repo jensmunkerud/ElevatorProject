@@ -1,8 +1,8 @@
 package orderdistributor
 
 import (
-	"elevatorproject/internal/config"
-	"elevatorproject/internal/elevatorstruct"
+	"elevatorproject/src/config"
+	"elevatorproject/src/elevatorstruct"
 	"encoding/json"
 )
 

@@ -1,8 +1,8 @@
 package messagestruct
 
 import  (
-	es "elevatorproject/internal/elevatorStruct"
-	os "elevatorproject/internal/orderStruct"
+	es "elevatorproject/src/elevatorStruct"
+	os "elevatorproject/src/orderStruct"
 )
 
 type Message struct {
