@@ -37,8 +37,8 @@ func InitCallHandler() {
 	elevators[localElevator.Id()] = localElevator
 	updateElevatorState(localElevator)
 
-	orderMapChan := make(chan [2]bool)
-	var orderMap map[string]es.ElevatorButtons
+	orderChan := make(chan es.ElevatorButtons, 10)
+	var localOrders es.ElevatorButtons
 
 	for {
 		select {
@@ -47,6 +47,16 @@ func InitCallHandler() {
 			// ElevatorServer.RequestOrder(order data)
 			// -> Requests elevatorserver to actually create (or not) a new order,
 			// callHandler does not have this authority.
+			switch order.Button {
+			case elevio.BT_HallUp:
+				localOrders.Buttons[order.Floor][0] = true
+
+			case elevio.BT_HallDown:
+				localOrders.Buttons[order.Floor][1] = true
+			}
+
+			orderChan <- localOrders
+			break
 
 		case floor := <-c.FloorEvent:
 			fmt.Printf("%+v\n", floor)
@@ -76,9 +86,8 @@ func InitCallHandler() {
 			updateElevatorState(localElevator)
 			break
 
-		case newOrders := <-orderMapChan:
-			orderMap = newOrders
-			updateElevatorFromOrders(localElevator, orderMap)
+		case newOrders := <-orderChan:
+			updateElevatorFromOrders(localElevator, newOrders)
 			updateElevatorState(localElevator)
 		}
 	}
@@ -128,8 +137,8 @@ func updateElevatorState(localElevator *es.Elevator) {
 	}
 }
 
-func getLocalOrders(e *es.Elevator, orders map[string]es.ElevatorButtons) es.ElevatorButtons {
-	return orders[e.Id()]
+func getLocalOrders(e *es.Elevator, orders es.ElevatorButtons) es.ElevatorButtons {
+	return orders
 }
 
 func shouldStop(e *es.Elevator, buttons es.ElevatorButtons) bool {
@@ -140,10 +149,10 @@ func shouldStop(e *es.Elevator, buttons es.ElevatorButtons) bool {
 
 func updateElevatorFromOrders(
 	e *es.Elevator,
-	orderMap map[string]es.ElevatorButtons,
+	orders es.ElevatorButtons,
 ) {
 
-	buttons := getLocalOrders(e, orderMap)
+	buttons := getLocalOrders(e, orders)
 
 	if shouldStop(e, buttons) {
 		e.UpdateBehaviour(es.DoorOpen)
