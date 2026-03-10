@@ -13,13 +13,7 @@ import (
 	es "elevatorproject/internal/elevatorstruct"
 	"fmt"
 	"net"
-	"testing"
 )
-
-func TestCallHandler(t *testing.T) {
-	go InitCallHandler()
-	select {}
-}
 
 func InitCallHandler() {
 	ready := make(chan struct{})
