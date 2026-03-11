@@ -21,7 +21,7 @@ type CabOrderUpdate struct {
 	State    orders.OrderState
 }
 
-//This should be moved to networking.
+// This should be moved to networking.
 // HallOrderUpdatesFromNetwork unpacks a received HallOrders snapshot into individual
 // HallOrderUpdate values, one per floor per direction, ready to send into hallUpdates.
 func HallOrderUpdatesFromNetwork(senderID string, hallOrders *orders.HallOrders) []HallOrderUpdate {
@@ -39,7 +39,7 @@ func HallOrderUpdatesFromNetwork(senderID string, hallOrders *orders.HallOrders)
 	return updates
 }
 
-//This should be moved to networking.
+// This should be moved to networking.
 // CabOrderUpdatesFromNetwork unpacks a received allCabOrders map into individual
 // CabOrderUpdate values, one per elevator per floor, ready to send into cabUpdates.
 // SenderID is set to the owning elevator's ID, not the relaying node's ID.
@@ -57,8 +57,6 @@ func CabOrderUpdatesFromNetwork(allCabOrders map[string]*orders.CabOrders) []Cab
 	return updates
 }
 
-
-
 // mergeHallOrderState resolves the next OrderState for a hall order at the given floor and direction.
 // It compares the incoming state from update.SenderID against the receiver's local state, using the
 // barrier protocol to coordinate transitions across all online nodes.
@@ -74,10 +72,12 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 }
 
 // mergeCabOrderState resolves the next OrderState for a cab order at the given floor.
-// It compares the incoming state from update.SenderID against the receiver's local state, using the
-// barrier protocol to coordinate transitions across all online nodes.
-func mergeCabOrderState(update CabOrderUpdate, receiverID string, allOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
-	local := allOrders[receiverID].GetOrderState(update.Floor)
+// It uses ownerID (the elevator whose cab button was pressed) as the sole barrier node,
+// since cab orders are per-elevator and there is no shared physical button to reach
+// cross-node consensus on. The barrier advances once the receiver's local knowledge of
+// the owner's state reaches the threshold.
+func mergeCabOrderState(update CabOrderUpdate, allOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
+	local := allOrders[update.SenderID].GetOrderState(update.Floor)
 	return mergeState(update.State, local, onlineNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allOrders[id]
 		if !ok {
@@ -209,8 +209,8 @@ func RunElevatorServer(
 				allCab[u.SenderID] = orders.CreateCabOrders()
 			}
 			allCab[u.SenderID].UpdateOrderState(u.Floor, u.State)
-			next := mergeCabOrderState(u, receiverID, allCab, online)
-			allCab[receiverID].UpdateOrderState(u.Floor, next)
+			next := mergeCabOrderState(u, allCab, online)
+			allCab[u.SenderID].UpdateOrderState(u.Floor, next)
 			select {
 			case <-cabSnap:
 			default:

@@ -48,7 +48,7 @@ func messageFromOrders(senderID string, hall *orders.HallOrders, allCab map[stri
 		for floor := 0; floor < config.NumFloors; floor++ {
 			arr[floor] = int(cab.GetOrderState(floor))
 		}
-	msg.AllCabOrders[id] = arr
+		msg.AllCabOrders[id] = arr
 	}
 	msg.ElevatorStates[senderID] = ElevatorState{
 		Behaviour: elev.BehaviourString(),
