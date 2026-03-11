@@ -2,57 +2,99 @@ package networking
 
 import (
 	"Network-go/network/bcast"
-	"Network-go/network/localip"
 	"Network-go/network/peers"
-	es "elevatorproject/src/elevator"
-	"flag"
-	"fmt"
-	"os"
+	"elevatorproject/src/config"
+	es "elevatorproject/src/elevatorserver"
+	"elevatorproject/src/elevator"
+	"elevatorproject/src/orders"
 )
 
-// CommunicationSetup initializes the networking infrastructure for an elevator to participate
-// in a distributed system. It establishes peer discovery (heartbeat/discovery on port 15647)
-// and broadcast messaging capabilities (port 16569) to enable inter-elevator communication.
-// The function returns channels for managing peer connections and sending/receiving messages.
-func CommunicationSetup(message Message, currentElevator *es.Elevator) (
-	chan peers.PeerUpdate,
-	chan bool,
-	chan Message,
-	chan Message) {
-
-	// Generate a unique identifier for this elevator instance. Attempt to use the configured
-	// elevator ID if available, otherwise fall back to a composite ID using local IP and process ID.
-	// This ensures each peer is uniquely identifiable across the network.
-	udpID := currentElevator.Id()
-	flag.StringVar(&udpID, "id", "", "id of this peer")
-	flag.Parse()
-
-	if udpID == "" {
-		localIP, err := localip.LocalIP()
-		if err != nil {
-			fmt.Println(err)
-			localIP = "DISCONNECTED"
-		}
-		udpID = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-	}
-
-	// Set up peer discovery: channels for notifying when peers join/leave the network
-	peerUpdateChannel := make(chan peers.PeerUpdate)
+// RunNetworking bridges the elevator server with the UDP broadcast network.
+// Outbound: hall, cab, and elevator state snapshots are combined into wire Messages
+// and broadcast to all peers on port 16569.
+// Inbound: received Messages are decoded into HallOrderUpdates, CabOrderUpdates,
+// and elevator state updates forwarded into the provided output channels.
+// Peer discovery runs on port 15647; the current peer list is forwarded to peerUpdates.
+func RunNetworking(
+	receiverID string,
+	hallOut <-chan *orders.HallOrders,
+	cabOut <-chan map[string]*orders.CabOrders,
+	elevatorStateIn <-chan elevator.Elevator,
+	hallUpdates chan<- es.HallOrderUpdate,
+	cabUpdates chan<- es.CabOrderUpdate,
+	peerUpdates chan<- []string,
+	elevatorStatesOut chan<- ElevatorStateUpdate,
+) {
+	peerUpdateCh := make(chan peers.PeerUpdate)
 	enablePeer := make(chan bool)
+	sendMsg := make(chan Message, 1)
+	recvMsg := make(chan Message, 10)
 
-	// Launch peer discovery service on port 15647. This enables the elevator to advertise
-	// its presence and detect other elevators on the network.
-	go peers.Transmitter(15647, udpID, enablePeer)
-	go peers.Receiver(15647, peerUpdateChannel)
+	go peers.Transmitter(15647, receiverID, enablePeer)
+	go peers.Receiver(15647, peerUpdateCh)
+	go bcast.Transmitter(16569, sendMsg)
+	go bcast.Receiver(16569, recvMsg)
 
-	// Set up broadcast messaging channels for custom message passing between elevators
-	recieveCustomDataType := make(chan ms.Message)
-	sendCustomDataType := make(chan ms.Message)
+	// Outbound goroutine: rebuild and queue a message whenever a new snapshot arrives.
+	// A non-blocking send keeps only the latest message in the buffer.
+	go func() {
+		latestHall := orders.CreateHallOrders()
+		latestCab := map[string]*orders.CabOrders{}
+		latestElevState := elevator.Elevator{}
+		for {
+			select {
+			case h := <-hallOut:
+				latestHall = h
+			case c := <-cabOut:
+				latestCab = c
+			case s := <-elevatorStateIn:
+				latestElevState = s
+			}
+			msg := messageFromOrders(receiverID, latestHall, latestCab, latestElevState)
+			select {
+			case sendMsg <- msg:
+			default:
+				<-sendMsg
+				sendMsg <- msg
+			}
+		}
+	}()
 
-	// Launch broadcast service on port 16569. This enables elevators to share state
-	// and coordinate actions across the distributed system.
-	go bcast.Transmitter(16569, sendCustomDataType)
-	go bcast.Receiver(16569, recieveCustomDataType)
+	// Inbound loop: decode received messages into order and peer updates.
+	for {
+		select {
+		case msg := <-recvMsg:
+			if msg.SenderID == receiverID {
+				continue
+			}
+			hallOrds := orders.CreateHallOrders()
+			for floor := 0; floor < config.NumFloors; floor++ {
+				for dir := 0; dir < 2; dir++ {
+					hallOrds.UpdateOrderState(floor, dir, orders.OrderState(msg.HallOrders[floor][dir]))
+				}
+			}
+			for _, upd := range es.HallOrderUpdatesFromNetwork(msg.SenderID, hallOrds) {
+				hallUpdates <- upd
+			}
 
-	return peerUpdateChannel, enablePeer, recieveCustomDataType, sendCustomDataType
+			allCab := make(map[string]*orders.CabOrders, len(msg.AllCabOrders))
+			for id, arr := range msg.AllCabOrders {
+				cab := orders.CreateCabOrders()
+				for floor := 0; floor < config.NumFloors; floor++ {
+					cab.UpdateOrderState(floor, orders.OrderState(arr[floor]))
+				}
+				allCab[id] = cab
+			}
+			for _, upd := range es.CabOrderUpdatesFromNetwork(allCab) {
+				cabUpdates <- upd
+			}
+
+			if state, ok := msg.ElevatorStates[msg.SenderID]; ok {
+				elevatorStatesOut <- ElevatorStateUpdate{SenderID: msg.SenderID, State: state}
+			}
+
+		case pu := <-peerUpdateCh:
+			peerUpdates <- pu.Peers
+		}
+	}
 }
