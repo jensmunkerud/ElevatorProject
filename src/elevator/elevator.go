@@ -31,7 +31,7 @@ type Elevator struct {
 	behaviour Behaviour
 	floor     int
 	direction Direction
-	requests  [config.NumFloors][2]bool
+	requests  [config.NumFloors][config.NumButtons]bool
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -52,7 +52,7 @@ func (e *Elevator) Id() string {
 	return e.id
 }
 
-func (e *Elevator) Requests() [config.NumFloors][2]bool {
+func (e *Elevator) Requests() [config.NumFloors][config.NumButtons]bool {
 	return e.requests
 }
 
