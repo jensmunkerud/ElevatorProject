@@ -1,6 +1,7 @@
 package elevator
 
 import (
+	"driver-go/elevio"
 	"elevatorproject/src/config"
 	"fmt"
 )
@@ -26,23 +27,37 @@ type ElevatorButtons struct {
 }
 
 type Elevator struct {
-	id           string
-	behaviour    Behaviour
-	floor        int
-	direction    Direction
+	id        string
+	behaviour Behaviour
+	floor     int
+	direction Direction
+	requests  [config.NumFloors][config.NumButtons]bool
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
 	return &Elevator{
-		id:           id,
-		behaviour:    behaviour,
-		floor:        currentFloor,
-		direction:    direction,
+		id:        id,
+		behaviour: behaviour,
+		floor:     currentFloor,
+		direction: direction,
 	}
+}
+
+// Sets corresponding light on floor, f -> floor, b -> 0 / 1 for down / up, on 1->on 0->off
+func Elevator_requestButtonLight(f int, b int, on bool) {
+	elevio.SetButtonLamp(2, f, on)
 }
 
 func (e *Elevator) Id() string {
 	return e.id
+}
+
+func (e *Elevator) Requests() [config.NumFloors][config.NumButtons]bool {
+	return e.requests
+}
+
+func (e *Elevator) UpdateRequest(floor int, btn elevio.ButtonType, value bool) {
+	e.requests[floor][btn] = value
 }
 
 func (e *Elevator) Behaviour() Behaviour {
@@ -57,7 +72,7 @@ func (e *Elevator) BehaviourString() string {
 		return "moving"
 	case DoorOpen:
 		return "doorOpen"
-}
+	}
 	errorMsg := "unknown behaviour state: %v"
 	return fmt.Sprintf(errorMsg, e.behaviour)
 }

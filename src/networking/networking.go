@@ -66,7 +66,7 @@ func RunNetworking(
 		case msg := <-recvMsg:
 			if msg.SenderID == receiverID {
 				continue
-			}
+			} 
 			hallOrds := orders.CreateHallOrders()
 			for floor := 0; floor < config.NumFloors; floor++ {
 				for dir := 0; dir < 2; dir++ {

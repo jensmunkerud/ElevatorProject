@@ -237,6 +237,28 @@ type CallHandlerMessage struct {
 	myCabOrders      orders.CabOrders
 }
 
+// NewCallHandlerMessage constructs a CallHandlerMessage from HallOrders and CabOrders snapshots.
+func NewCallHandlerMessage(hall *orders.HallOrders, cab *orders.CabOrders) CallHandlerMessage {
+	var merged orders.HallOrders
+	var myCab orders.CabOrders
+
+	if hall != nil {
+		if cp := hall.Copy(); cp != nil {
+			merged = *cp
+		}
+	}
+
+	if cab != nil {
+		if cp := cab.Copy(); cp != nil {
+			myCab = *cp
+		}
+	}
+
+	return CallHandlerMessage{
+		mergedHallOrders: merged,
+		myCabOrders:      myCab,
+	}
+}
 
 // UnpackForCallHandler returns pointer-based snapshots for call handler consumers.
 func (m CallHandlerMessage) UnpackForCallHandler() (*orders.HallOrders, *orders.CabOrders) {
@@ -250,8 +272,6 @@ type OrderDistributorMessage struct {
 	allCabOrders     map[string]orders.CabOrders
 	elevatorState    map[string]elevator.Elevator
 }
-
-
 
 // UnpackForConvertToJson returns pointer-based snapshots compatible with orderdistributor.ConvertToJson.
 func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
@@ -270,7 +290,6 @@ func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders
 
 	return allCabOrders, hallOrders, elevatorState
 }
-
 
 type NetworkingDistributorMessage struct {
 	allCabOrders     map[string]orders.CabOrders
@@ -296,9 +315,6 @@ func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.
 
 	return allCabOrders, hallOrders, elevatorState, m.isSharingId
 }
-
-
-
 
 // Takes in the results of the merging of orders and distributes it to
 // any packages that may need it.
@@ -390,7 +406,7 @@ func distributeResultsToUsers(
 			case <-orderDistributorOutput:
 			default:
 			}
-	
+
 			select {
 			case <-networkingDistributorOutput:
 			default:
