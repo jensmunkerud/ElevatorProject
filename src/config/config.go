@@ -11,7 +11,5 @@ const (
 )
 
 var (
-	// MyID is the local elevator's ID (set by the application at startup).
-	// It is used by packages that need to select "my" state from shared maps.
 	MyID = "placeholder"
 )

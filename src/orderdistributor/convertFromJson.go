@@ -1,8 +1,6 @@
 package orderdistributor
 
 import (
-	"elevatorproject/src/config"
-	"elevatorproject/src/elevator"
 	"encoding/json"
 )
 
@@ -11,26 +9,12 @@ import (
 //ID1: [[upButtonState, downButtonState], [upButtonState, downButtonState], ...],
 //ID2: [[upButtonState, downButtonState], [upButtonState, downButtonState], ...], ...
 
-func ConvertFromJson(jsonStr string) (map[string]elevator.ElevatorButtons, error) {
-	var rawData map[string][][]bool
+func ConvertFromJson(jsonStr string) (map[string][][]bool, error) {
+	var results map[string][][]bool
 
-	err := json.Unmarshal([]byte(jsonStr), &rawData)
+	err := json.Unmarshal([]byte(jsonStr), &results)
 	if err != nil {
 		return nil, err
 	}
-
-	result := make(map[string]elevator.ElevatorButtons)
-
-	for elevatorID, floors := range rawData {
-		var buttons elevator.ElevatorButtons
-		for floorNum, buttonDir := range floors {
-			if floorNum < config.NumFloors && len(buttonDir) >= 2 {
-				buttons.Buttons[floorNum][0] = buttonDir[0]
-				buttons.Buttons[floorNum][1] = buttonDir[1]
-			}
-		}
-		result[elevatorID] = buttons
-	}
-
-	return result, nil
+	return results, nil
 }

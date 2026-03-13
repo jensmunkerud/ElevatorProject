@@ -1,6 +1,7 @@
 package orderdistributor
 
 import (
+	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
 	"fmt"
@@ -21,9 +22,24 @@ func TestCostFunc(t *testing.T) {
 	// Create and initialize an elevator with dummy data
 	elevatorsOnline["bankID"] = true
 
-	assigned, err := runCostFunc("bankID", allCabOrders, hallOrders, elevators)
-	fmt.Printf("runCostFunc output: %+v, err: %v\n", assigned, err)
-	if err != nil {
-		t.Fatalf("runCostFunc failed: %v", err)
+	input := make(chan any, 1)
+	activeOrders := make(chan [][]bool, 1)
+
+	config.MyID = "bankID"
+	go runCostFunc(input, activeOrders)
+
+	input <- CostFuncInput{
+		AllCabOrders:     allCabOrders,
+		MergedHallOrders: hallOrders,
+		Elevators:        elevators,
+	}
+
+	ordersOut := <-activeOrders
+	fmt.Printf("runCostFunc output: %+v\n", ordersOut)
+	if ordersOut == nil {
+		t.Fatalf("runCostFunc returned nil active orders")
+	}
+	if len(ordersOut) != config.NumFloors {
+		t.Fatalf("expected %d floors, got %d", config.NumFloors, len(ordersOut))
 	}
 }
