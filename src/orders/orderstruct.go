@@ -14,7 +14,7 @@ const (
 type Order struct{
 	State OrderState
 }
-
+	
 func CreateOrder() *Order {
 	return &Order{
 		State: UnknownOrderState,

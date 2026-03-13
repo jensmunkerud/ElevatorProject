@@ -1,8 +1,11 @@
 package elevatorserver
 
 import (
+	"elevatorproject/src/config"
+	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
 	"testing"
+	"time"
 )
 
 // --- mergeState ---
@@ -172,4 +175,124 @@ func TestRunElevatorServer_CabUpdateStoresUnderCorrectOwner(t *testing.T) {
 		}
 	}
 	t.Fatal("expected B's cab order at floor 2 to be Confirmed in the broadcast map")
+}
+
+func TestDistributeResultsToUsers_PublishesAllOnStateUpdates_NetworkOnlyOnSharingUpdate(t *testing.T) {
+	origID := config.MyID
+	config.MyID = "me"
+	t.Cleanup(func() { config.MyID = origID })
+
+	hallIn := make(chan *orders.HallOrders, 10)
+	cabIn := make(chan map[string]*orders.CabOrders, 10)
+	elevIn := make(chan map[string]*elevator.Elevator, 10)
+	sharingIn := make(chan bool, 10)
+
+	callCh, orderCh, netCh := distributeResultsToUsers(hallIn, cabIn, elevIn, sharingIn)
+
+	// Prepare synthetic inputs
+	h := orders.CreateHallOrders()
+	h.UpdateOrderState(1, 0, orders.ConfirmedOrderState)
+
+	meCab := orders.CreateCabOrders()
+	meCab.UpdateOrderState(2, orders.ConfirmedOrderState)
+	otherCab := orders.CreateCabOrders()
+	otherCab.UpdateOrderState(3, orders.UnconfirmedOrderState)
+	allCab := map[string]*orders.CabOrders{
+		"me":    meCab,
+		"other": otherCab,
+	}
+
+	meElev := elevator.CreateElevator("me", 2, elevator.Down, elevator.Moving)
+	elevState := map[string]*elevator.Elevator{"me": meElev}
+
+	// 1) Hall update should publish to all three channels.
+	hallIn <- h
+
+	expectAll := func() (CallHandlerMessage, OrderDistributorMessage, NetworkingDistributorMessage) {
+		t.Helper()
+		timeout := time.NewTimer(200 * time.Millisecond)
+		defer timeout.Stop()
+
+		var (
+			gotCall  CallHandlerMessage
+			gotOrder OrderDistributorMessage
+			gotNet   NetworkingDistributorMessage
+			okCall   bool
+			okOrder  bool
+			okNet    bool
+		)
+
+		for !(okCall && okOrder && okNet) {
+			select {
+			case gotCall = <-callCh:
+				okCall = true
+			case gotOrder = <-orderCh:
+				okOrder = true
+			case gotNet = <-netCh:
+				okNet = true
+			case <-timeout.C:
+				t.Fatalf("timeout waiting for all outputs (call=%v order=%v net=%v)", okCall, okOrder, okNet)
+			}
+		}
+		return gotCall, gotOrder, gotNet
+	}
+
+	callMsg, orderMsg, netMsg := expectAll()
+	if (&callMsg.mergedHallOrders).GetOrderState(1, 0) != orders.ConfirmedOrderState {
+		t.Fatalf("callhandler mergedHallOrders not propagated")
+	}
+	// cab/elev not yet provided; myCabOrders may be zero-value here. That’s fine.
+	_ = orderMsg
+	_ = netMsg
+
+	// 2) Cab update should publish to all three channels, and include myCabOrders from config.MyID.
+	cabIn <- allCab
+	callMsg, orderMsg, netMsg = expectAll()
+
+	if (&callMsg.myCabOrders).GetOrderState(2) != orders.ConfirmedOrderState {
+		t.Fatalf("expected myCabOrders[2] Confirmed, got %v", (&callMsg.myCabOrders).GetOrderState(2))
+	}
+	gotMeCab, ok := orderMsg.allCabOrders["me"]
+	if !ok {
+		t.Fatalf("expected allCabOrders to include key %q", "me")
+	}
+	if (&gotMeCab).GetOrderState(2) != orders.ConfirmedOrderState {
+		t.Fatalf("expected allCabOrders[me][2] Confirmed")
+	}
+	gotOtherCab, ok := netMsg.allCabOrders["other"]
+	if !ok {
+		t.Fatalf("expected networking allCabOrders to include key %q", "other")
+	}
+	if (&gotOtherCab).GetOrderState(3) != orders.UnconfirmedOrderState {
+		t.Fatalf("expected allCabOrders[other][3] Unconfirmed")
+	}
+
+	// 3) Elevator state update should publish to all three channels.
+	elevIn <- elevState
+	_, _, netMsg = expectAll()
+	gotElev, ok := netMsg.elevatorState["me"]
+	if !ok {
+		t.Fatalf("expected elevatorState to include key %q", "me")
+	}
+	if (&gotElev).CurrentFloor() != 2 || (&gotElev).CurrentDirection() != elevator.Down || (&gotElev).Behaviour() != elevator.Moving {
+		t.Fatalf("elevatorState not propagated correctly")
+	}
+
+	// 4) Sharing update should publish ONLY to networking.
+	sharingIn <- true
+	select {
+	case <-netCh:
+		// ok
+	case <-time.After(200 * time.Millisecond):
+		t.Fatalf("expected networking message on sharing update")
+	}
+
+	select {
+	case <-callCh:
+		t.Fatalf("did not expect callhandler message on sharing update")
+	case <-orderCh:
+		t.Fatalf("did not expect orderdistributor message on sharing update")
+	case <-time.After(50 * time.Millisecond):
+		// ok: no messages
+	}
 }
