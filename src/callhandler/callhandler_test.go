@@ -1,6 +1,8 @@
 package callhandler
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCallHandler(t *testing.T) {
 	go InitCallHandler()
