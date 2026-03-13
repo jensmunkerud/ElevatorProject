@@ -11,6 +11,8 @@ import (
 	"elevatorproject/src/config"
 	controller "elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
+	"elevatorproject/src/elevatorserver"
+	"elevatorproject/src/orders"
 	"fmt"
 	"net"
 )
@@ -192,4 +194,25 @@ func chooseDirection(e *es.Elevator, buttons es.ElevatorButtons) es.Direction {
 	}
 
 	return es.Stop
+}
+
+func setElevatorLights(msg elevatorserver.CallHandlerMessage) {
+	hallOrders, cabOrders := msg.UnpackForCallHandler()
+	for floorIndex := range hallOrders.Orders {
+		for b := range [2]int{0, 1} { // b = 0 (hall up), b = 1 (hall down)
+			orderState := hallOrders.GetOrderState(floorIndex, b)
+			if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
+				elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
+			} else {
+				elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, false)
+			}
+		}
+		// Assuming one cab button per floor (b = 0)
+		orderState := cabOrders.GetOrderState(floorIndex)
+		if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
+			elevio.SetButtonLamp(elevio.ButtonType(0), floorIndex, true)
+		} else {
+			elevio.SetButtonLamp(elevio.ButtonType(0), floorIndex, false)
+		}
+	}
 }

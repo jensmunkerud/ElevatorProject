@@ -297,9 +297,6 @@ func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.
 	return allCabOrders, hallOrders, elevatorState, m.isSharingId
 }
 
-
-
-
 // Takes in the results of the merging of orders and distributes it to
 // any packages that may need it.
 func distributeResultsToUsers(
