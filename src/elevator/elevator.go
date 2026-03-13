@@ -22,9 +22,9 @@ const (
 	DoorOpen
 )
 
-type ElevatorButtons struct {
-	Buttons [config.NumFloors][2]bool //[up, down]
-}
+// type ElevatorButtons struct {
+// 	Buttons [config.NumFloors][2]bool //[up, down]
+// }
 
 type Elevator struct {
 	id        string

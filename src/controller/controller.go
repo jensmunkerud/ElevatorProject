@@ -2,7 +2,6 @@ package controller
 
 import (
 	"driver-go/elevio"
-	"fmt"
 )
 
 type ElevatorEvent struct {
@@ -12,13 +11,13 @@ type ElevatorEvent struct {
 	StopEvent        chan bool
 }
 
-func InitController(ready chan struct{}) (*ElevatorEvent, int) {
+func InitController(ready chan struct{}) *ElevatorEvent {
 	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
 
-	floor, err := initFloor(floorEvent)
-	if err != nil {
-		fmt.Printf("Error initilizing floor: %d", err)
-	}
+	// floor, err := initFloor(floorEvent)
+	// if err != nil {
+	// fmt.Printf("Error initilizing floor: %d", err)
+	// }
 
 	c := &ElevatorEvent{
 		OrderEvent:       orderEvent,
@@ -28,7 +27,7 @@ func InitController(ready chan struct{}) (*ElevatorEvent, int) {
 	}
 
 	close(ready)
-	return c, floor
+	return c
 }
 
 // Initializes communication with elevatorserver to receive IO from physical elevator

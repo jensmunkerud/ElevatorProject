@@ -28,7 +28,8 @@ func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.Button
 	switch e.Behaviour() {
 	case es.DoorOpen:
 		if requestsShouldClearImmediately(*e, btnFloor, btnType) {
-			time.Sleep(config.DoorOpenDuration)
+			doorTimer := time.NewTimer(config.DoorOpenDuration)
+			doorTimer.Stop()
 		} else {
 			e.UpdateRequest(btnFloor, btnType, true)
 		}
@@ -44,7 +45,8 @@ func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.Button
 		switch newBehaviour {
 		case es.DoorOpen:
 			elevio.SetDoorOpenLamp(true)
-			time.Sleep(config.DoorOpenDuration)
+			doorTimer := time.NewTimer(config.DoorOpenDuration)
+			doorTimer.Stop()
 			*e = requestsClearAtCurrentFloor(*e)
 
 		case es.Moving:
@@ -69,10 +71,11 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int) {
 	switch e.Behaviour() {
 	case es.Moving:
 		if requestsShouldStop(*e) {
-			elevio.SetMotorDirection(elevio.MotorDirection(e.CurrentDirection()))
+			elevio.SetMotorDirection(elevio.MotorDirection(es.Stop))
 			elevio.SetDoorOpenLamp(true)
 			*e = requestsClearAtCurrentFloor(*e)
-			time.Sleep(config.DoorOpenDuration)
+			doorTimer := time.NewTimer(config.DoorOpenDuration)
+			doorTimer.Stop()
 			setAllLights(*e)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
@@ -94,7 +97,8 @@ func fsmOnDoorTimeout(e *es.Elevator) {
 
 		switch e.Behaviour() {
 		case es.DoorOpen:
-			time.Sleep(config.DoorOpenDuration)
+			doorTimer := time.NewTimer(config.DoorOpenDuration)
+			doorTimer.Stop()
 			*e = requestsClearAtCurrentFloor(*e)
 			setAllLights(*e)
 		case es.Moving, es.Idle:
