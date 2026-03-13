@@ -12,7 +12,7 @@ func main() {
 	// CurrentOrders := make(chan elevatorserver.CallHandlerMessage)
 
 	// PeerUpdate := make(chan []string) MAYBE?
-	// WorldviewToCostFunction:= make(chan elevatorserver.OrderDistributorMessage)
+	// WorldviewToOrderDistributor:= make(chan elevatorserver.OrderDistributorMessage)
 	// SendWorldviewToNetwork:= make(chan elevatorserver.NetworkingDistributorMessage)
 	// ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage)
 

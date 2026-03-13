@@ -1,9 +1,13 @@
 package networking
 
 import (
+	"fmt"
+	"testing"
+	"time"
+
+	"Network-go/network/bcast"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
-	"testing"
 )
 
 func TestMessageFromOrders_RoundTrip(t *testing.T) {
@@ -39,5 +43,37 @@ func TestMessageFromOrders_RoundTrip(t *testing.T) {
 	}
 	if state.Direction != "up" {
 		t.Errorf("ElevatorStates direction: got %q, want %q", state.Direction, "up")
+	}
+}
+
+// TestBroadcastAndReceiveManual is an integration-style test intended to be run
+// on two machines on the same network. It sends a Message on the UDP broadcast
+// channel and prints any received Messages to the terminal.
+func TestBroadcastAndReceiveManual(t *testing.T) {
+	sendCh := make(chan Message)
+	recvCh := make(chan Message)
+
+	// Start broadcaster and receiver on the same port as networking.RunNetworking.
+	go bcast.Transmitter(16569, sendCh)
+	go bcast.Receiver(16569, recvCh)
+
+	// Build a simple message with a recognizable SenderID and no orders.
+	msg := Message{
+		SenderID: fmt.Sprintf("network-test-%d", time.Now().UnixNano()),
+	}
+
+	fmt.Printf("Networking test: sending message with SenderID=%s\n", msg.SenderID)
+	sendCh <- msg
+
+	// Listen for a short period and print anything we receive.
+	timeout := time.After(10 * time.Second)
+	for {
+		select {
+		case m := <-recvCh:
+			fmt.Printf("Networking test: received message from SenderID=%s: %+v\n", m.SenderID, m)
+		case <-timeout:
+			fmt.Println("Networking test: timeout reached, ending test")
+			return
+		}
 	}
 }

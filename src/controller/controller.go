@@ -64,3 +64,4 @@ func initFloor(floorEvent chan int) (int, error) {
 	elevio.SetMotorDirection(elevio.MD_Stop)
 	return currentFloor, nil
 }
+
