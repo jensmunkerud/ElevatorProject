@@ -11,5 +11,5 @@ const (
 )
 
 var (
-	myID = "placeholder"
+	MyID = "placeholder"
 )
