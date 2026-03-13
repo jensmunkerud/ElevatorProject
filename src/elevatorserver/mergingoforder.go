@@ -2,7 +2,6 @@ package elevatorserver
 
 import (
 	"elevatorproject/src/orders"
-	"fmt"
 )
 
 // mergingOfOrders should be used to keep track
@@ -15,7 +14,7 @@ import (
 // Function that takes in three (should be expanded to numOfAliveElevators) caborders and returns a merged caborders for further use
 func mergeCabOrders(allIncomingCabOrders []orders.CabOrders,
 	mergedCabOrders *orders.CabOrders) {
-	for index, order := range allIncomingCabOrders[0].Orders {
+	for _, order := range allIncomingCabOrders[0].Orders {
 		switch currentState := order.GetState(); currentState {
 		case orders.UnknownOrderState:
 			//mergeUnknownOrders()
