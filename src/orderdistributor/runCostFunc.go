@@ -1,35 +1,59 @@
 package orderdistributor
 
 import (
+	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
 	"fmt"
 	"os/exec"
 )
 
+type CostFuncInput struct {
+	AllCabOrders     map[string]*orders.CabOrders
+	MergedHallOrders *orders.HallOrders
+	Elevators        map[string]*elevator.Elevator
+}
+
+// splitCostFuncInput is a temporary adapter. Replace this when your final input structure is decided.
+func splitCostFuncInput(raw any) (CostFuncInput, bool) {
+	input, ok := raw.(CostFuncInput)
+	return input, ok
+}
+
 func runCostFunc(
-	myId string,
-	cabOrders map[string]*orders.CabOrders,
-	hallOrders *orders.HallOrders,
-	elevators map[string]*elevator.Elevator,
-) (map[string]elevator.ElevatorButtons, error) {
+	input <-chan any,
+	activeOrders chan<- [][]bool,
+) {
+	for raw := range input {
+		parts, ok := splitCostFuncInput(raw)
+		if !ok {
+			activeOrders <- nil
+			continue
+		}
 
-	// Formats data into JSON format
-	jsonInput, err := ConvertToJson(myId, cabOrders, hallOrders, elevators)
-	if err != nil {
-		fmt.Printf("Error converting to JSON: %v\n", err)
-		return map[string]elevator.ElevatorButtons{}, err
+		// Formats data into JSON format
+		jsonInput, err := ConvertToJson(config.MyID, parts.AllCabOrders, parts.MergedHallOrders, parts.Elevators)
+		if err != nil {
+			fmt.Printf("Error converting to JSON: %v\n", err)
+			activeOrders <- nil
+			continue
+		}
+
+		// Executes hall_request_assigner command
+		jsonOutput, err := executeCommand(jsonInput)
+		if err != nil {
+			fmt.Print("Error executing hall_request_assigner command")
+			activeOrders <- nil
+			continue
+		}
+
+		assignments, err := ConvertFromJson(jsonOutput)
+		if err != nil {
+			activeOrders <- nil
+			continue
+		}
+		activeOrders <- assignments[config.MyID]
 	}
-
-	// Executes hall_request_assigner command
-	jsonOutput, err := executeCommand(jsonInput)
-	if err != nil {
-		fmt.Print("Error executing hall_request_assigner command")
-		return map[string]elevator.ElevatorButtons{}, err
-	}
-
-	// Formats JSON result into data
-	return ConvertFromJson(jsonOutput)
 }
 
 func executeCommand(jsonInput string) (string, error) {
