@@ -38,6 +38,23 @@ func (c *CabOrders) UpdateOrderState(floor int, state OrderState) {
 	c.Orders[floor].UpdateState(state)
 }
 
-func (c *CabOrders) GetOrderState(floor int) OrderState{	
+func (c *CabOrders) GetOrderState(floor int) OrderState {
 	return c.Orders[floor].GetState()
+}
+
+func (c *CabOrders) Copy() *CabOrders {
+	cp := CreateCabOrders()
+	for floor := 0; floor < config.NumFloors; floor++ {
+		cp.Orders[floor].UpdateState(c.Orders[floor].GetState())
+	}
+	return cp
+}
+
+// CopyAllCab returns a deep copy of a map[string]*CabOrders.
+func CopyAllCab(m map[string]*CabOrders) map[string]*CabOrders {
+	cp := make(map[string]*CabOrders, len(m))
+	for id, cab := range m {
+		cp[id] = cab.Copy()
+	}
+	return cp
 }

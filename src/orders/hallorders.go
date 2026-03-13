@@ -45,3 +45,13 @@ func (h *HallOrders) UpdateOrderState(floor int, direction int, state OrderState
 func (h *HallOrders) GetOrderState(floor int, direction int) OrderState {
 	return h.Orders[floor][direction].GetState()
 }
+
+func (h *HallOrders) Copy() *HallOrders {
+	cp := CreateHallOrders()
+	for floor := 0; floor < config.NumFloors; floor++ {
+		for dir := 0; dir < 2; dir++ {
+			cp.Orders[floor][dir].UpdateState(h.Orders[floor][dir].GetState())
+		}
+	}
+	return cp
+}

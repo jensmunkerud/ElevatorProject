@@ -1,37 +1,43 @@
 package networking
 
-import(
+import (
+	"elevatorproject/src/elevator"
+	"elevatorproject/src/orders"
 	"testing"
-	"elevatorproject/src/elevatorStruct"
-	"time"
-	"fmt"
 )
 
-func Test(t *testing.T) {
-	var elevator elevatorstruct.Elevator
-	elevator.Initialize("1", 0, "up")
+func TestMessageFromOrders_RoundTrip(t *testing.T) {
+	hall := orders.CreateHallOrders()
+	hall.UpdateOrderState(0, 0, orders.UnconfirmedOrderState)
+	hall.UpdateOrderState(2, 1, orders.ConfirmedOrderState)
 
-	// var elevator = elevatorstruct.CreateElevator()
+	cab := orders.CreateCabOrders()
+	cab.UpdateOrderState(1, orders.ConfirmedOrderState)
+	allCab := map[string]*orders.CabOrders{"elev-1": cab}
 
-	peerUpdateChannel, enablePeer, receiveCustomDataType, sendCustomDataType := communicationSetup(&elevator)
+	localElev := *elevator.CreateElevator("elev-1", 2, elevator.Up, elevator.Moving)
+	msg := messageFromOrders("elev-1", hall, allCab, localElev)
 
-	go func() {
-		for {
-			sendCustomDataType <- elevator
-			time.Sleep(1 * time.Second)
-		}
-	}()
-	fmt.Println("Started sending elevator data")
-	fmt.Printf("Enable peer %v\n", enablePeer)
-	for{
-		select{
-			case peerUpdate := <-peerUpdateChannel:
-				fmt.Printf("Peer update: \n")
-				fmt.Printf("Peers : %q\n", peerUpdate.Peers)
-				fmt.Printf("New : %q\n", peerUpdate.New)
-				fmt.Printf("Lost : %q\n", peerUpdate.Lost)
-			case recievedData := <- receiveCustomDataType:
-				fmt.Printf("Received elevator data: %#v\n", recievedData)
-		}
+	if msg.SenderID != "elev-1" {
+		t.Errorf("SenderID: got %q, want %q", msg.SenderID, "elev-1")
+	}
+	if got := orders.OrderState(msg.HallOrders[0][0]); got != orders.UnconfirmedOrderState {
+		t.Errorf("HallOrders[0][0]: got %v, want %v", got, orders.UnconfirmedOrderState)
+	}
+	if got := orders.OrderState(msg.HallOrders[2][1]); got != orders.ConfirmedOrderState {
+		t.Errorf("HallOrders[2][1]: got %v, want %v", got, orders.ConfirmedOrderState)
+	}
+	if got := orders.OrderState(msg.AllCabOrders["elev-1"][1]); got != orders.ConfirmedOrderState {
+		t.Errorf("AllCabOrders[elev-1][1]: got %v, want %v", got, orders.ConfirmedOrderState)
+	}
+	state := msg.ElevatorStates["elev-1"]
+	if state.Behaviour != "moving" {
+		t.Errorf("ElevatorStates behaviour: got %q, want %q", state.Behaviour, "moving")
+	}
+	if state.Floor != 2 {
+		t.Errorf("ElevatorStates floor: got %d, want %d", state.Floor, 2)
+	}
+	if state.Direction != "up" {
+		t.Errorf("ElevatorStates direction: got %q, want %q", state.Direction, "up")
 	}
 }
