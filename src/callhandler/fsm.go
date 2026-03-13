@@ -64,7 +64,7 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int) {
 	fmt.Printf("\n\nfsmOnFloorArrival(%d)\n", newFloor)
 
 	e.UpdateCurrentFloor(newFloor)
-	elevatorFloorIndicator(e.floor)
+	// elevatorFloorIndicator(e.floor) // whatafak
 
 	switch e.Behaviour() {
 	case es.Moving:

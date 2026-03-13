@@ -37,7 +37,7 @@ func requestsHere(e es.Elevator) bool {
 	return false
 }
 
-func RequestsChooseDirection(e es.Elevator) (es.Direction, es.Behaviour) {
+func requestsChooseDirection(e es.Elevator) (es.Direction, es.Behaviour) {
 	switch e.CurrentDirection() {
 	case es.Up:
 		switch {
@@ -77,7 +77,7 @@ func RequestsChooseDirection(e es.Elevator) (es.Direction, es.Behaviour) {
 	}
 }
 
-func RequestsShouldStop(e es.Elevator) bool {
+func requestsShouldStop(e es.Elevator) bool {
 	switch e.CurrentDirection() {
 	case es.Down:
 		return e.Requests()[e.CurrentFloor()][elevio.BT_HallDown] ||
@@ -92,7 +92,7 @@ func RequestsShouldStop(e es.Elevator) bool {
 	}
 }
 
-func RequestsShouldClearImmediately(e es.Elevator, btnFloor int, btnType elevio.ButtonType) bool {
+func requestsShouldClearImmediately(e es.Elevator, btnFloor int, btnType elevio.ButtonType) bool {
 	return e.CurrentFloor() == btnFloor &&
 		((e.CurrentDirection() == es.Up && btnType == elevio.BT_HallUp) ||
 			(e.CurrentDirection() == es.Down && btnType == elevio.BT_HallDown) ||
@@ -100,7 +100,7 @@ func RequestsShouldClearImmediately(e es.Elevator, btnFloor int, btnType elevio.
 			btnType == elevio.BT_Cab)
 }
 
-func RequestsClearAtCurrentFloor(e es.Elevator) es.Elevator {
+func requestsClearAtCurrentFloor(e es.Elevator) es.Elevator {
 	e.UpdateRequest(e.CurrentFloor(), elevio.BT_Cab, false)
 
 	switch e.CurrentDirection() {
