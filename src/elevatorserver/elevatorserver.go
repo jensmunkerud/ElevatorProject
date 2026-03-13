@@ -230,62 +230,168 @@ func RunElevatorServer(
 			}
 		}
 	}
-}¨
-
-type callHandlerMessage struct {
-	mergedHallOrders orders.HallOrders
-	myCabOrders 	orders.CabOrders
 }
 
-type orderDistributorMessage struct {
+type CallHandlerMessage struct {
 	mergedHallOrders orders.HallOrders
-	allCabOrders map[string]orders.CabOrders
-	elevatorState map[string]elevator.Elevator
+	myCabOrders      orders.CabOrders
 }
 
-type networkingDistributorMessage struct {
-	allCabOrders map[string]orders.CabOrders
+type OrderDistributorMessage struct {
 	mergedHallOrders orders.HallOrders
-	elevatorState map[string]elevator.Elevator
-	isSharingId bool
+	allCabOrders     map[string]orders.CabOrders
+	elevatorState    map[string]elevator.Elevator
 }
 
+type NetworkingDistributorMessage struct {
+	allCabOrders     map[string]orders.CabOrders
+	mergedHallOrders orders.HallOrders
+	elevatorState    map[string]elevator.Elevator
+	isSharingId      bool
+}
 
 // Takes in the results of the merging of orders and distributes it to
 // any packages that may need it.
-func distributeResultsToUsers(hallOut chan *orders.HallOrders, 
-	cabOut chan map[string]*orders.CabOrders,
-	elevatorState chan map[string]*elevator.Elevator,
-	isDistributing chan bool,
-	) (chan callHandlerMessage, chan orderDistributorMessage, chan networkingDistributorMessage) {
+func distributeResultsToUsers(
+	hallOut <-chan *orders.HallOrders,
+	cabOut <-chan map[string]*orders.CabOrders,
+	elevatorState <-chan map[string]*elevator.Elevator,
+	isDistributing <-chan bool,
+) (<-chan CallHandlerMessage, <-chan OrderDistributorMessage, <-chan NetworkingDistributorMessage) {
 
-	//Initialize the channels for sending the updatet orders to the users
-	callHandlerOutput := make(chan callHandlerMessage)
-	orderDistributorOutput := make(chan orderDistributorMessage)
-	networkingDistributorOutput := make(chan networkingDistributorMessage)
+	// Latest-only outputs (buffer size 1): never block the distributor goroutine.
+	callHandlerOutput := make(chan CallHandlerMessage, 1)
+	orderDistributorOutput := make(chan OrderDistributorMessage, 1)
+	networkingDistributorOutput := make(chan NetworkingDistributorMessage, 1)
+
+	// Helpers to deep-copy pointer snapshots into value-based message fields.
+	copyHallValue := func(h *orders.HallOrders) (orders.HallOrders, bool) {
+		if h == nil {
+			return orders.HallOrders{}, false
+		}
+		cp := h.Copy()
+		return *cp, true
+	}
+	copyAllCabValue := func(m map[string]*orders.CabOrders) (map[string]orders.CabOrders, bool) {
+		if m == nil {
+			return nil, false
+		}
+		cp := make(map[string]orders.CabOrders, len(m))
+		for id, cab := range m {
+			if cab == nil {
+				continue
+			}
+			cc := cab.Copy()
+			cp[id] = *cc
+		}
+		return cp, true
+	}
+	copyElevStateValue := func(m map[string]*elevator.Elevator) (map[string]elevator.Elevator, bool) {
+		if m == nil {
+			return nil, false
+		}
+		cp := make(map[string]elevator.Elevator, len(m))
+		for id, e := range m {
+			if e == nil {
+				continue
+			}
+			cp[id] = *e
+		}
+		return cp, true
+	}
+
+	go func() {
+		var (
+			currentMergedHall orders.HallOrders
+			currentAllCab     map[string]orders.CabOrders
+			currentElevState  map[string]elevator.Elevator
+			currentSharing    bool
+		)
+
+		publish := func() {
+			myCab, ok := currentAllCab[config.MyID]
+			if !ok {
+				myCab = orders.CabOrders{}
+			}
+
+			chMsg := CallHandlerMessage{
+				mergedHallOrders: currentMergedHall,
+				myCabOrders:      myCab,
+			}
+			odMsg := OrderDistributorMessage{
+				mergedHallOrders: currentMergedHall,
+				allCabOrders:     currentAllCab,
+				elevatorState:    currentElevState,
+			}
+			netMsg := NetworkingDistributorMessage{
+				allCabOrders:     currentAllCab,
+				mergedHallOrders: currentMergedHall,
+				elevatorState:    currentElevState,
+				isSharingId:      currentSharing,
+			}
+
+			//Start by emptying all the channels
+			select {
+			case <-callHandlerOutput:
+			default:
+			}
+
+			select {
+			case <-orderDistributorOutput:
+			default:
+			}
 	
-	func handleUpdate(latestMergedHall orders.HallOrders, 
-		latestCabOrder map[string]orders.CabOrders, 
-		latestElevState elevator.Elevator,
-		latestDistributing bool) {
-		callHandlerOutput <- callHandlerMessage{mergedHal9lOrders: latestMergedHall, myCabOrders: latestCabOrder[config.myID]}
-		orderDistributorOutput <- orderDistributorMessage{mergedHallOrders: latestCabOrder, allCabOrders: latestCabOrder}
-		networkingDistributorOutput <- networkingDistributorMessage{allCabOrders: latestCabOrder, mergedHallOrders: latestMergedHall, elevatorState: latestElevState, isSharingId: latestDistributing}
-	}
+			select {
+			case <-networkingDistributorOutput:
+			default:
+			}
+			// Then writing your new message to the channels
+			callHandlerOutput <- chMsg
+			orderDistributorOutput <- odMsg
+			networkingDistributorOutput <- netMsg
+		}
 
-	go func () {
-		currentMergedHall := *orders.HallOrders
-		currentElevState := elevator.Elevator
-	select {
-	case currentMergedHall <-hallOut:
-		handleUpdate(currentMergedHall, currentCab, currentElevState)
-	case currentCab <-cabOut:
-		handleUpdate(currentMergedHall, currentCab, currentElevState)
-	case currentElevState <-elevatorState:
-		handleUpdate(currentMergedHall, currentCab, currentElevState)
-	}
-	}
+		publishNetworkingOnly := func() {
+			netMsg := NetworkingDistributorMessage{
+				allCabOrders:     currentAllCab,
+				mergedHallOrders: currentMergedHall,
+				elevatorState:    currentElevState,
+				isSharingId:      currentSharing,
+			}
+
+			select {
+			case <-networkingDistributorOutput:
+			default:
+			}
+			networkingDistributorOutput <- netMsg
+		}
+
+		for {
+			select {
+			case h := <-hallOut:
+				if hv, ok := copyHallValue(h); ok {
+					currentMergedHall = hv
+				}
+				publish()
+
+			case c := <-cabOut:
+				if cv, ok := copyAllCabValue(c); ok {
+					currentAllCab = cv
+				}
+				publish()
+
+			case es := <-elevatorState:
+				if ev, ok := copyElevStateValue(es); ok {
+					currentElevState = ev
+				}
+				publish()
+
+			case sharing := <-isDistributing:
+				currentSharing = sharing
+				publishNetworkingOnly()
+			}
+		}
+	}()
 
 	return callHandlerOutput, orderDistributorOutput, networkingDistributorOutput
 }
-
