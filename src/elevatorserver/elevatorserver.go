@@ -237,18 +237,69 @@ type CallHandlerMessage struct {
 	myCabOrders      orders.CabOrders
 }
 
+
+// UnpackForCallHandler returns pointer-based snapshots for call handler consumers.
+func (m CallHandlerMessage) UnpackForCallHandler() (*orders.HallOrders, *orders.CabOrders) {
+	hallOrders := m.mergedHallOrders.Copy()
+	cabOrders := m.myCabOrders.Copy()
+	return hallOrders, cabOrders
+}
+
 type OrderDistributorMessage struct {
 	mergedHallOrders orders.HallOrders
 	allCabOrders     map[string]orders.CabOrders
 	elevatorState    map[string]elevator.Elevator
 }
 
+
+
+// UnpackForConvertToJson returns pointer-based snapshots compatible with orderdistributor.ConvertToJson.
+func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
+	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
+	for id, cab := range m.allCabOrders {
+		allCabOrders[id] = cab.Copy()
+	}
+
+	hallOrders := m.mergedHallOrders.Copy()
+
+	elevatorState := make(map[string]*elevator.Elevator, len(m.elevatorState))
+	for id, elev := range m.elevatorState {
+		elevCopy := elev
+		elevatorState[id] = &elevCopy
+	}
+
+	return allCabOrders, hallOrders, elevatorState
+}
+
+type NetworkingDistributorMessage struct {
+	allCabOrders map[string]orders.CabOrders
 type NetworkingDistributorMessage struct {
 	allCabOrders     map[string]orders.CabOrders
 	mergedHallOrders orders.HallOrders
 	elevatorState    map[string]elevator.Elevator
 	isSharingId      bool
 }
+
+// UnpackForNetworking returns pointer-based snapshots for networking consumers.
+func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator, bool) {
+	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
+	for id, cab := range m.allCabOrders {
+		allCabOrders[id] = cab.Copy()
+	}
+
+	hallOrders := m.mergedHallOrders.Copy()
+
+	elevatorState := make(map[string]*elevator.Elevator, len(m.elevatorState))
+	for id, elev := range m.elevatorState {
+		elevCopy := elev
+		elevatorState[id] = &elevCopy
+	}
+
+	return allCabOrders, hallOrders, elevatorState, m.isSharingId
+}
+
+
+
 
 // Takes in the results of the merging of orders and distributes it to
 // any packages that may need it.

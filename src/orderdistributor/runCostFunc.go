@@ -1,38 +1,53 @@
 package orderdistributor
 
 import (
-	"elevatorproject/src/elevator"
-	"elevatorproject/src/orders"
+	"elevatorproject/src/config"
+	"elevatorproject/src/elevatorserver"
 	"fmt"
 	"os/exec"
 )
 
-func runCostFunc(
-	myId string,
-	cabOrders map[string]*orders.CabOrders,
-	hallOrders *orders.HallOrders,
-	elevators map[string]*elevator.Elevator,
-) (map[string]elevator.ElevatorButtons, error) {
 
-	// Formats data into JSON format
-	jsonInput, err := ConvertToJson(myId, cabOrders, hallOrders, elevators)
-	if err != nil {
-		fmt.Printf("Error converting to JSON: %v\n", err)
-		return map[string]elevator.ElevatorButtons{}, err
+//Receives OrderDistributorMessage, unpacks the message, converts to JSON, executes cost function, and sends active orders assigned to self
+//  to call handler.
+func RunCostFunc(
+	input <-chan elevatorserver.OrderDistributorMessage,
+	activeOrders chan<- [][]bool,
+) {
+	for {
+		select {
+		case parts, ok := <-input:
+			if !ok {
+				return
+			}
+
+			allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
+			jsonInput, err := ConvertToJson(config.MyID, allCabOrders, mergedHallOrders, elevators)
+			if err != nil {
+				fmt.Printf("Error converting to JSON: %v\n", err)
+				activeOrders <- nil
+				continue
+			}
+
+			// Executes hall_request_assigner command
+			jsonOutput, err := executeCostFunction(jsonInput)
+			if err != nil {
+				fmt.Print("Error executing hall_request_assigner command")
+				activeOrders <- nil
+				continue
+			}
+
+			assignments, err := ConvertFromJson(jsonOutput)
+			if err != nil {
+				activeOrders <- nil
+				continue
+			}
+			activeOrders <- assignments[config.MyID]
+		}
 	}
-
-	// Executes hall_request_assigner command
-	jsonOutput, err := executeCommand(jsonInput)
-	if err != nil {
-		fmt.Print("Error executing hall_request_assigner command")
-		return map[string]elevator.ElevatorButtons{}, err
-	}
-
-	// Formats JSON result into data
-	return ConvertFromJson(jsonOutput)
 }
 
-func executeCommand(jsonInput string) (string, error) {
+func executeCostFunction(jsonInput string) (string, error) {
 	cmd := exec.Command(
 		"./hall_request_assigner",
 		"--input",
