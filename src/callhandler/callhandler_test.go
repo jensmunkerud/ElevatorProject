@@ -16,6 +16,8 @@ import (
 // one-second intervals so the physical panel can be inspected manually while
 // elevatorserver is running.
 func TestSetElevatorLightsBlinkInHardware(t *testing.T) {
+	go InitCallHandler()
+	time.Sleep(1 * time.Second)
 	hall := orders.CreateHallOrders()
 	cab := orders.CreateCabOrders()
 
