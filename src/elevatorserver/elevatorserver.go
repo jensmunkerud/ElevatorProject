@@ -237,7 +237,6 @@ type CallHandlerMessage struct {
 	myCabOrders      orders.CabOrders
 }
 
-
 // UnpackForCallHandler returns pointer-based snapshots for call handler consumers.
 func (m CallHandlerMessage) UnpackForCallHandler() (*orders.HallOrders, *orders.CabOrders) {
 	hallOrders := m.mergedHallOrders.Copy()
@@ -250,8 +249,6 @@ type OrderDistributorMessage struct {
 	allCabOrders     map[string]orders.CabOrders
 	elevatorState    map[string]elevator.Elevator
 }
-
-
 
 // UnpackForConvertToJson returns pointer-based snapshots compatible with orderdistributor.ConvertToJson.
 func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
@@ -271,7 +268,6 @@ func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders
 	return allCabOrders, hallOrders, elevatorState
 }
 
-
 type NetworkingDistributorMessage struct {
 	allCabOrders     map[string]orders.CabOrders
 	mergedHallOrders orders.HallOrders
@@ -279,8 +275,35 @@ type NetworkingDistributorMessage struct {
 	isSharingId      bool
 }
 
+func NewNetworkingDistributorMessage(
+	allCabOrders map[string]*orders.CabOrders,
+	hallOrders *orders.HallOrders,
+	elevatorState map[string]*elevator.Elevator,
+) NetworkingDistributorMessage {
+	msg := NetworkingDistributorMessage{
+		allCabOrders:  make(map[string]orders.CabOrders, len(allCabOrders)),
+		elevatorState: make(map[string]elevator.Elevator, len(elevatorState)),
+	}
+	if hallOrders != nil {
+		msg.mergedHallOrders = *hallOrders.Copy()
+	}
+	for id, cab := range allCabOrders {
+		if cab == nil {
+			continue
+		}
+		msg.allCabOrders[id] = *cab.Copy()
+	}
+	for id, elev := range elevatorState {
+		if elev == nil {
+			continue
+		}
+		msg.elevatorState[id] = *elev
+	}
+	return msg
+}
+
 // UnpackForNetworking returns pointer-based snapshots for networking consumers.
-func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator, bool) {
+func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
 	for id, cab := range m.allCabOrders {
 		allCabOrders[id] = cab.Copy()
@@ -294,11 +317,8 @@ func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.
 		elevatorState[id] = &elevCopy
 	}
 
-	return allCabOrders, hallOrders, elevatorState, m.isSharingId
+	return allCabOrders, hallOrders, elevatorState
 }
-
-
-
 
 // Takes in the results of the merging of orders and distributes it to
 // any packages that may need it.
@@ -390,7 +410,7 @@ func distributeResultsToUsers(
 			case <-orderDistributorOutput:
 			default:
 			}
-	
+
 			select {
 			case <-networkingDistributorOutput:
 			default:
