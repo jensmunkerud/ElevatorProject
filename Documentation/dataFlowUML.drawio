@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="ry4karR3t7CFvxCy5z8A" name="Page-1">
-        <mxGraphModel dx="606" dy="599" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="758" dy="476" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -13,14 +13,18 @@
                 <mxCell id="4" value="Controller" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="277" y="470" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="17" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="8" target="9" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="17" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="357" y="680" as="sourcePoint"/>
+                        <mxPoint x="357" y="730" as="targetPoint"/>
+                    </mxGeometry>
                 </mxCell>
                 <mxCell id="23" value="" style="edgeStyle=none;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;endFill=0;startArrow=classic;startFill=1;" parent="1" source="8" target="14" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <mxPoint x="180" y="650" as="sourcePoint"/>
                         <mxPoint x="183" y="870" as="targetPoint"/>
                         <Array as="points">
+                            <mxPoint x="220" y="650"/>
                             <mxPoint x="160" y="650"/>
                             <mxPoint x="160" y="870"/>
                         </Array>
@@ -34,13 +38,27 @@
                 <mxCell id="8" value="CallHandler" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="277" y="620" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="35" value="" style="edgeStyle=none;html=1;" parent="1" source="9" target="14" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
                 <mxCell id="37" style="edgeStyle=none;html=1;" parent="1" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <mxPoint x="397" y="741" as="sourcePoint"/>
                         <mxPoint x="590" y="741" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="49" value="" style="edgeStyle=none;html=1;startArrow=classic;startFill=1;endArrow=none;endFill=0;" edge="1" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="337" y="840" as="sourcePoint"/>
+                        <mxPoint x="337" y="790" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="51" value="" style="edgeStyle=none;html=1;startArrow=none;startFill=0;" edge="1" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="317" y="730" as="sourcePoint"/>
+                        <mxPoint x="317" y="680" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="52" value="MergedHallOrders&lt;div&gt;MyCabOrders&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="51">
+                    <mxGeometry x="-0.16" y="-4" relative="1" as="geometry">
+                        <mxPoint x="-51" y="1" as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="9" value="ElevatorServer" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
@@ -74,11 +92,11 @@
                         <mxPoint x="-10" y="-2" as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="33" value="OrderRequest&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;OrderCompleted&lt;br&gt;&lt;/font&gt;&lt;div&gt;ElevatorState&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
-                    <mxGeometry x="222" y="673" width="110" height="60" as="geometry"/>
+                <mxCell id="33" value="HallOrderUpdate&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;CabOrderUpdate&lt;br&gt;&lt;/font&gt;&lt;div&gt;ElevatorState&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="680" width="110" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="34" value="&lt;ul&gt;&lt;li&gt;AllCabOrders&lt;/li&gt;&lt;li&gt;HallOrders&lt;/li&gt;&lt;li&gt;MyID&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
-                    <mxGeometry x="165" y="763" width="140" height="100" as="geometry"/>
+                <mxCell id="34" value="&lt;span style=&quot;color: rgb(63, 63, 63); background-color: transparent;&quot;&gt;AllCabOrders&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;color: rgb(63, 63, 63); background-color: transparent;&quot;&gt;MergedHallOrders&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;color: rgb(63, 63, 63); background-color: transparent;&quot;&gt;MyID&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="790" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="38" value="SendWorldview&lt;div&gt;IsSharingID&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
                     <mxGeometry x="440" y="705" width="110" height="40" as="geometry"/>
