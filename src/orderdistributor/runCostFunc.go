@@ -2,61 +2,52 @@ package orderdistributor
 
 import (
 	"elevatorproject/src/config"
-	"elevatorproject/src/elevator"
-	"elevatorproject/src/orders"
+	"elevatorproject/src/elevatorserver"
 	"fmt"
 	"os/exec"
 )
 
-type CostFuncInput struct {
-	AllCabOrders     map[string]*orders.CabOrders
-	MergedHallOrders *orders.HallOrders
-	Elevators        map[string]*elevator.Elevator
-}
 
-// splitCostFuncInput is a temporary adapter. Replace this when your final input structure is decided.
-func splitCostFuncInput(raw any) (CostFuncInput, bool) {
-	input, ok := raw.(CostFuncInput)
-	return input, ok
-}
-
-func runCostFunc(
-	input <-chan any,
+//Receives OrderDistributorMessage, unpacks the message, converts to JSON, executes cost function, and sends active orders assigned to self
+//  to call handler.
+func RunCostFunc(
+	input <-chan elevatorserver.OrderDistributorMessage,
 	activeOrders chan<- [][]bool,
 ) {
-	for raw := range input {
-		parts, ok := splitCostFuncInput(raw)
-		if !ok {
-			activeOrders <- nil
-			continue
-		}
+	for {
+		select {
+		case parts, ok := <-input:
+			if !ok {
+				return
+			}
 
-		// Formats data into JSON format
-		jsonInput, err := ConvertToJson(config.MyID, parts.AllCabOrders, parts.MergedHallOrders, parts.Elevators)
-		if err != nil {
-			fmt.Printf("Error converting to JSON: %v\n", err)
-			activeOrders <- nil
-			continue
-		}
+			allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
+			jsonInput, err := ConvertToJson(config.MyID, allCabOrders, mergedHallOrders, elevators)
+			if err != nil {
+				fmt.Printf("Error converting to JSON: %v\n", err)
+				activeOrders <- nil
+				continue
+			}
 
-		// Executes hall_request_assigner command
-		jsonOutput, err := executeCommand(jsonInput)
-		if err != nil {
-			fmt.Print("Error executing hall_request_assigner command")
-			activeOrders <- nil
-			continue
-		}
+			// Executes hall_request_assigner command
+			jsonOutput, err := executeCostFunction(jsonInput)
+			if err != nil {
+				fmt.Print("Error executing hall_request_assigner command")
+				activeOrders <- nil
+				continue
+			}
 
-		assignments, err := ConvertFromJson(jsonOutput)
-		if err != nil {
-			activeOrders <- nil
-			continue
+			assignments, err := ConvertFromJson(jsonOutput)
+			if err != nil {
+				activeOrders <- nil
+				continue
+			}
+			activeOrders <- assignments[config.MyID]
 		}
-		activeOrders <- assignments[config.MyID]
 	}
 }
 
-func executeCommand(jsonInput string) (string, error) {
+func executeCostFunction(jsonInput string) (string, error) {
 	cmd := exec.Command(
 		"./hall_request_assigner",
 		"--input",
