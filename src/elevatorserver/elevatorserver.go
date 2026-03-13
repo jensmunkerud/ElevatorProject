@@ -2,6 +2,7 @@ package elevatorserver
 
 import (
 	"elevatorproject/src/config"
+	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
 	"time"
 )
@@ -76,10 +77,10 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 // since cab orders are per-elevator and there is no shared physical button to reach
 // cross-node consensus on. The barrier advances once the receiver's local knowledge of
 // the owner's state reaches the threshold.
-func mergeCabOrderState(update CabOrderUpdate, allOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
-	local := allOrders[update.SenderID].GetOrderState(update.Floor)
+func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
+	local := allCabOrders[update.SenderID].GetOrderState(update.Floor)
 	return mergeState(update.State, local, onlineNodes, func(id string) (orders.OrderState, bool) {
-		elev, ok := allOrders[id]
+		elev, ok := allCabOrders[id]
 		if !ok {
 			return orders.UnknownOrderState, false
 		}
@@ -229,4 +230,61 @@ func RunElevatorServer(
 			}
 		}
 	}
+}¨
+
+type callHandlerMessage struct {
+	mergedHallOrders orders.HallOrders
+	myCabOrders 	orders.CabOrders
 }
+
+type orderDistributorMessage struct {
+	mergedHallOrders orders.HallOrders
+	allCabOrders map[string]*orders.CabOrders
+}
+
+type networkingDistributorMessage struct {
+	allCabOrders map[string]orders.CabOrders
+	mergedHallOrders orders.HallOrders
+	elevatorState map[string]elevator.Elevator
+	isSharingId bool
+}
+
+
+// Takes in the results of the merging of orders and distributes it to
+// any packages that may need it.
+func distributeResultsToUsers(hallOut chan *orders.HallOrders, 
+	cabOut chan map[string]*orders.CabOrders,
+	elevatorState chan map[string]*elevator.Elevator,
+	isDistributing chan bool,
+	) (chan callHandlerMessage, chan orderDistributorMessage, chan networkingDistributorMessage) {
+
+	//Initialize the channels for sending the updatet orders to the users
+	callHandlerOutput := make(chan callHandlerMessage)
+	orderDistributorOutput := make(chan orderDistributorMessage)
+	networkingDistributorOutput := make(chan networkingDistributorMessage)
+	
+	func handleUpdate(latestMergedHall orders.HallOrders, 
+		latestCabOrder map[string]orders.CabOrders, 
+		latestElevState elevator.Elevator,
+		latestDistributing bool) {
+		callHandlerOutput <- callHandlerMessage{mergedHal9lOrders: latestMergedHall, myCabOrders: latestCabOrder[config.myID]}
+		orderDistributorOutput <- orderDistributorMessage{mergedHallOrders: latestCabOrder, allCabOrders: latestCabOrder}
+		networkingDistributorOutput <- networkingDistributorMessage{allCabOrders: latestCabOrder, mergedHallOrders: latestMergedHall, elevatorState: latestElevState, isSharingId: latestDistributing}
+	}
+
+	go func () {
+		currentMergedHall := *orders.HallOrders
+		currentElevState := elevator.Elevator
+	select {
+	case currentMergedHall <-hallOut:
+		handleUpdate(currentMergedHall, currentCab, currentElevState)
+	case currentCab <-cabOut:
+		handleUpdate(currentMergedHall, currentCab, currentElevState)
+	case currentElevState <-elevatorState:
+		handleUpdate(currentMergedHall, currentCab, currentElevState)
+	}
+	}
+
+	return callHandlerOutput, orderDistributorOutput, networkingDistributorOutput
+}
+
