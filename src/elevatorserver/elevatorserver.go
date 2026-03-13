@@ -239,7 +239,8 @@ type callHandlerMessage struct {
 
 type orderDistributorMessage struct {
 	mergedHallOrders orders.HallOrders
-	allCabOrders map[string]*orders.CabOrders
+	allCabOrders map[string]orders.CabOrders
+	elevatorState map[string]elevator.Elevator
 }
 
 type networkingDistributorMessage struct {
