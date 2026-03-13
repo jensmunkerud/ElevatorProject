@@ -11,7 +11,6 @@ import (
 	"elevatorproject/src/config"
 	controller "elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
-	messageconfig "elevatorproject/src/messagestruct"
 	"fmt"
 	"net"
 )
