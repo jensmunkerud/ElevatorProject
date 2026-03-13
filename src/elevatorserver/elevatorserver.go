@@ -271,8 +271,7 @@ func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders
 	return allCabOrders, hallOrders, elevatorState
 }
 
-type NetworkingDistributorMessage struct {
-	allCabOrders map[string]orders.CabOrders
+
 type NetworkingDistributorMessage struct {
 	allCabOrders     map[string]orders.CabOrders
 	mergedHallOrders orders.HallOrders
