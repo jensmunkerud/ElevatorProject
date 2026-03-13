@@ -199,7 +199,7 @@ func chooseDirection(e *es.Elevator, buttons es.ElevatorButtons) es.Direction {
 func setElevatorLights(msg elevatorserver.CallHandlerMessage) {
 	hallOrders, cabOrders := msg.UnpackForCallHandler()
 	for floorIndex := range hallOrders.Orders {
-		for b := range [2]int{0, 1} { // b = 0 (hall up), b = 1 (hall down)
+		for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
 			orderState := hallOrders.GetOrderState(floorIndex, b)
 			if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
 				elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
@@ -210,9 +210,9 @@ func setElevatorLights(msg elevatorserver.CallHandlerMessage) {
 		// Assuming one cab button per floor (b = 0)
 		orderState := cabOrders.GetOrderState(floorIndex)
 		if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
-			elevio.SetButtonLamp(elevio.ButtonType(0), floorIndex, true)
+			elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, true)
 		} else {
-			elevio.SetButtonLamp(elevio.ButtonType(0), floorIndex, false)
+			elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, false)
 		}
 	}
 }
