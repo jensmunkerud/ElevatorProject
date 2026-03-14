@@ -14,6 +14,14 @@ const (
 	Down Direction = -1
 )
 
+type ButtonType int
+
+const (
+	HallUp   ButtonType = 0
+	HallDown ButtonType = 1
+	Cab      ButtonType = 2
+)
+
 type Behaviour int
 
 const (
@@ -58,7 +66,7 @@ func (e *Elevator) Requests() [config.NumFloors][config.NumButtons]bool {
 	return e.requests
 }
 
-func (e *Elevator) UpdateRequest(floor int, btn elevio.ButtonType, value bool) {
+func (e *Elevator) UpdateRequest(floor int, btn ButtonType, value bool) {
 	e.requests[floor][btn] = value
 }
 

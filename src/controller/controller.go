@@ -2,6 +2,8 @@ package controller
 
 import (
 	"driver-go/elevio"
+	"elevatorproject/src/config"
+	es "elevatorproject/src/elevator"
 )
 
 type ElevatorEvent struct {
@@ -12,32 +14,25 @@ type ElevatorEvent struct {
 }
 
 func InitController(ready chan struct{}) *ElevatorEvent {
-	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO(4)
-
-	// floor, err := initFloor(floorEvent)
-	// if err != nil {
-	// fmt.Printf("Error initilizing floor: %d", err)
-	// }
-
+	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO()
 	c := &ElevatorEvent{
 		OrderEvent:       orderEvent,
 		FloorEvent:       floorEvent,
 		ObstructionEvent: obstructionEvent,
 		StopEvent:        stopEvent,
 	}
-
 	close(ready)
 	return c
 }
 
 // Initializes communication with elevatorserver to receive IO from physical elevator
-func initElevatorIO(numFloors int) (
+func initElevatorIO() (
 	chan elevio.ButtonEvent,
 	chan int,
 	chan bool,
 	chan bool,
 ) {
-	elevio.Init("localhost:15657", numFloors)
+	elevio.Init("localhost:15657", config.NumFloors)
 
 	orderEvent := make(chan elevio.ButtonEvent)
 	floorEvent := make(chan int)
@@ -52,14 +47,18 @@ func initElevatorIO(numFloors int) (
 	return orderEvent, floorEvent, obstructionEvent, stopEvent
 }
 
-// Checks if we are at a floor and if not, start going downwards to find our first valid floor
-func initFloor(floorEvent chan int) (int, error) {
-	currentFloor := elevio.GetFloor()
-	if currentFloor != -1 {
-		return currentFloor, nil
-	}
+func MoveElevatorUp() {
+	elevio.SetMotorDirection(elevio.MD_Up)
+}
+
+func MoveElevatorDown() {
 	elevio.SetMotorDirection(elevio.MD_Down)
-	currentFloor = <-floorEvent
+}
+
+func StopElevator() {
 	elevio.SetMotorDirection(elevio.MD_Stop)
-	return currentFloor, nil
+}
+
+func SetButtonLamp(button es.ButtonType, floor int, value bool) {
+	elevio.SetButtonLamp(elevio.ButtonType(button), floor, value)
 }
