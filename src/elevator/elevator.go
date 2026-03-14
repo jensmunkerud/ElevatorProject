@@ -1,7 +1,6 @@
 package elevator
 
 import (
-	"driver-go/elevio"
 	"elevatorproject/src/config"
 	"fmt"
 )
@@ -59,9 +58,9 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 }
 
 // Sets corresponding light on floor, f -> floor, b -> 0 / 1 for down / up, on 1->on 0->off
-func Elevator_requestButtonLight(f int, b int, on bool) {
-	elevio.SetButtonLamp(2, f, on)
-}
+// func Elevator_requestButtonLight(f int, b int, on bool) {
+// elevio.SetButtonLamp(2, f, on)
+// }
 
 func (e *Elevator) Id() string {
 	return e.id

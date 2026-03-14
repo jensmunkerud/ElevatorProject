@@ -9,11 +9,11 @@ import (
 	"time"
 )
 
-func setAllLights(es es.Elevator) {
+func setAllLights(e es.Elevator) {
 	for floor := 0; floor < config.NumFloors; floor++ {
 		for button := 0; button < 3; button++ { // HARD CODED 2 BUTTONS, MAY BE BAD
 			// es.Elevator_requestButtonLight(floor, btn, es.Requests()[floor][btn])
-			controller.SetButtonLamp(es.ButtonType(button), floor, es.Requests()[floor][button])
+			controller.SetButtonLamp(es.ButtonType(button), floor, e.Requests()[floor][button])
 		}
 	}
 }
