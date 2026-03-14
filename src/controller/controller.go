@@ -72,3 +72,4 @@ func StopElevator() {
 func SetButtonLamp(button es.ButtonType, floor int, value bool) {
 	elevio.SetButtonLamp(elevio.ButtonType(button), floor, value)
 }
+

@@ -122,3 +122,4 @@ func requestsClearAtCurrentFloor(e es.Elevator) es.Elevator {
 
 	return e
 }
+

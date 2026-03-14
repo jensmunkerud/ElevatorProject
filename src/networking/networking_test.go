@@ -1,9 +1,13 @@
 package networking
 
 import (
+	"fmt"
+	"testing"
+	"time"
+
+	"Network-go/network/bcast"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
-	"testing"
 )
 
 func TestMessageFromOrders_RoundTrip(t *testing.T) {
@@ -39,5 +43,65 @@ func TestMessageFromOrders_RoundTrip(t *testing.T) {
 	}
 	if state.Direction != "up" {
 		t.Errorf("ElevatorStates direction: got %q, want %q", state.Direction, "up")
+	}
+}
+
+func TestWorldviewFromMessage_RoundTrip(t *testing.T) {
+	hall := orders.CreateHallOrders()
+	hall.UpdateOrderState(1, 1, orders.CompletedOrderState)
+
+	meCab := orders.CreateCabOrders()
+	meCab.UpdateOrderState(3, orders.UnconfirmedOrderState)
+	allCab := map[string]*orders.CabOrders{"elev-1": meCab}
+
+	elevatorStates := map[string]*elevator.Elevator{
+		"elev-1": elevator.CreateElevator("elev-1", 3, elevator.Down, elevator.Moving),
+		"elev-2": elevator.CreateElevator("elev-2", 0, elevator.Stop, elevator.Idle),
+	}
+
+	msg := messageFromWorldview("elev-1", hall, allCab, elevatorStates)
+	worldview := worldviewFromMessage(msg)
+	gotCab, gotHall, gotElevators := worldview.UnpackForNetworking()
+
+	if got := gotHall.GetOrderState(1, 1); got != orders.CompletedOrderState {
+		t.Fatalf("hall round-trip mismatch: got %v", got)
+	}
+	if got := gotCab["elev-1"].GetOrderState(3); got != orders.UnconfirmedOrderState {
+		t.Fatalf("cab round-trip mismatch: got %v", got)
+	}
+	if got := gotElevators["elev-1"].CurrentFloor(); got != 3 {
+		t.Fatalf("elevator floor round-trip mismatch: got %d", got)
+	}
+	if got := gotElevators["elev-2"].Behaviour(); got != elevator.Idle {
+		t.Fatalf("elevator behaviour round-trip mismatch: got %v", got)
+// TestBroadcastAndReceiveManual is an integration-style test intended to be run
+// on two machines on the same network. It sends a Message on the UDP broadcast
+// channel and prints any received Messages to the terminal.
+func TestBroadcastAndReceiveManual(t *testing.T) {
+	sendCh := make(chan Message)
+	recvCh := make(chan Message)
+
+	// Start broadcaster and receiver on the same port as networking.RunNetworking.
+	go bcast.Transmitter(16569, sendCh)
+	go bcast.Receiver(16569, recvCh)
+
+	// Build a simple message with a recognizable SenderID and no orders.
+	msg := Message{
+		SenderID: fmt.Sprintf("network-test-%d", time.Now().UnixNano()),
+	}
+
+	fmt.Printf("Networking test: sending message with SenderID=%s\n", msg.SenderID)
+	sendCh <- msg
+
+	// Listen for a short period and print anything we receive.
+	timeout := time.After(10 * time.Second)
+	for {
+		select {
+		case m := <-recvCh:
+			fmt.Printf("Networking test: received message from SenderID=%s: %+v\n", m.SenderID, m)
+		case <-timeout:
+			fmt.Println("Networking test: timeout reached, ending test")
+			return
+		}
 	}
 }

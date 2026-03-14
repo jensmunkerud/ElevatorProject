@@ -47,7 +47,7 @@ func TestCostFunc(t *testing.T) {
 	input := make(chan es.OrderDistributorMessage, 1)
 	activeOrders := make(chan [][]bool, 1)
 
-	config.MyID = "bankID"
+	config.SetMyID()
 	go RunCostFunc(input, activeOrders)
 
 	allCabOrdersValue := make(map[string]orders.CabOrders, len(allCabOrders))

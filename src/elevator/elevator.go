@@ -39,13 +39,11 @@ const (
 // }
 
 type Elevator struct {
-	id          string
-	behaviour   Behaviour
-	floor       int
-	direction   Direction
-	requests    [config.NumFloors][config.NumButtons]bool
-	obstruction bool
-	stopPressed bool
+	id        string
+	behaviour Behaviour
+	floor     int
+	direction Direction
+	requests  [config.NumFloors][config.NumButtons]bool
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -64,6 +62,10 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 
 func (e *Elevator) Id() string {
 	return e.id
+}
+
+func getID(elevator Elevator) string {
+	return elevator.id
 }
 
 func (e *Elevator) Requests() [config.NumFloors][config.NumButtons]bool {
@@ -137,4 +139,12 @@ func (e *Elevator) UpdateStopPressed(s bool) {
 
 func (e Elevator) StopPressed() bool {
 	return e.stopPressed
+}
+
+func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
+	e.activeOrders = newActiveOrders
+}
+	
+func (e *Elevator) Copy() Elevator {
+    return *e
 }
