@@ -6,26 +6,8 @@ import (
 	es "elevatorproject/src/elevator"
 )
 
-
-func InitController(ready chan struct{}) *es.ElevatorEvent {
-	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO()
-	c := &es.ElevatorEvent{
-		OrderEvent:       orderEvent,
-		FloorEvent:       floorEvent,
-		ObstructionEvent: obstructionEvent,
-		StopEvent:        stopEvent,
-	}
-	close(ready)
-	return c
-}
-
-// Initializes communication with elevatorserver to receive IO from physical elevator
-func initElevatorIO() (
-	chan es.ButtonEvent,
-	chan int,
-	chan bool,
-	chan bool,
-) {
+func RunController(elevatorEvent chan es.ElevatorEvent) {
+	// Initializes communication with elevatorserver to receive IO from physical elevator
 	elevio.Init("localhost:15657", config.NumFloors)
 
 	orderEventElevio := make(chan elevio.ButtonEvent)
@@ -34,11 +16,14 @@ func initElevatorIO() (
 	obstructionEvent := make(chan bool)
 	stopEvent := make(chan bool)
 
+	// Continually polls hardwarechanges onto the event channels
 	go elevio.PollButtons(orderEventElevio)
 	go elevio.PollFloorSensor(floorEvent)
 	go elevio.PollObstructionSwitch(obstructionEvent)
 	go elevio.PollStopButton(stopEvent)
 
+	// Necessary to make elevio and callhandler "loosely coupled":
+	// orderEvent simply reflects orderEventElevio, but with internal ButtonEvent type
 	go func() {
 		for order := range orderEventElevio {
 			orderEvent <- es.ButtonEvent{
@@ -47,8 +32,6 @@ func initElevatorIO() (
 			}
 		}
 	}()
-
-	return orderEvent, floorEvent, obstructionEvent, stopEvent
 }
 
 func MoveElevatorUp() {
@@ -66,4 +49,3 @@ func StopElevator() {
 func SetButtonLamp(button es.ButtonType, floor int, value bool) {
 	elevio.SetButtonLamp(elevio.ButtonType(button), floor, value)
 }
-

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"elevatorproject/src/callhandler"
 	"elevatorproject/src/config"
+	"elevatorproject/src/controller"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/networking"
 	"elevatorproject/src/orderdistributor"
+	"elevatorproject/src/orders"
 )
 
 func main() {
@@ -24,13 +27,12 @@ func main() {
 	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ActiveLocalOrders := make(chan [][]bool)
 	ElevatorStateLocal := make(chan elevator.Elevator)
+	elevatorEvent := make(chan elevator.ElevatorEvent)
+	myCabOrders := make(chan orders.CabOrders)
 
-	// Ready chan to ensure goroutines start in orderly fashion
-	ready := make(chan struct{})
-	
 	// Start goroutines:
-	go InitController(ready, elevator.ElevatorEvent)
-	go InitCallHandler(ready, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CurrentOrders, ActiveLocalOrders)
+	go controller.RunController(elevatorEvent)
+	go callhandler.RunCallHandler(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, myCabOrders, ActiveLocalOrders)
 	go elevatorserver.RunElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
 	go networking.RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
 	go orderdistributor.RunCostFunc(WorldviewToOrderDistributor, ActiveLocalOrders)

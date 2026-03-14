@@ -9,7 +9,6 @@ package callhandler
 import (
 	"driver-go/elevio"
 	"elevatorproject/src/config"
-	controller "elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
@@ -17,21 +16,16 @@ import (
 	"time"
 )
 
-func InitCallHandler() {
-	ready := make(chan struct{})
-	c := controller.InitController(ready)
-	<-ready
-
-	id, err := getMacAddr()
-	if err != nil {
-		fmt.Printf("Error finding MAC address")
-		return
-	}
-
+func RunCallHandler(
+	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+	elevatorStateLocal chan es.Elevator,
+	myCabOrders chan orders.CabOrders,
+	activeLocalOrders chan [][]bool) {
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
 	doorTimer.Stop()
 
-	localElevator := es.CreateElevator(id, -1, es.Stop, es.Idle)
+	localElevator := es.CreateElevator("yo", -1, es.Stop, es.Idle)
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
 	// updateElevatorState(localElevator)
@@ -46,6 +40,7 @@ func InitCallHandler() {
 			fmt.Printf("%+v\n", order)
 			// ElevatorServer.RequestOrder(order data)
 			// -> Requests elevatorserver to actually create (or not) a new order,
+
 			// callHandler does not have this authority.
 			// localOrders[order.Floor][order.Button] = true
 			// orderChan <- localOrders
