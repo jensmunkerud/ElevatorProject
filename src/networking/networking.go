@@ -25,7 +25,7 @@ func RunNetworking(
 	sendMsg := make(chan Message, 1)
 	recvMsg := make(chan Message, 10)
 
-	go peers.Transmitter(config.PeersPort, config.MyID, enablePeer)
+	go peers.Transmitter(config.PeersPort, config.MyID(), enablePeer)
 
 	go func() {
 		enablePeer <- true
@@ -39,7 +39,7 @@ func RunNetworking(
 	go func() {
 		for worldview := range sendWorldviewIn {
 			allCabOrders, hallOrders, elevatorStates := worldview.UnpackForNetworking()
-			msg := messageFromWorldview(config.MyID, hallOrders, allCabOrders, elevatorStates)
+			msg := messageFromWorldview(config.MyID(), hallOrders, allCabOrders, elevatorStates)
 			select {
 			case sendMsg <- msg:
 			default:
@@ -53,7 +53,7 @@ func RunNetworking(
 	for {
 		select {
 		case msg := <-recvMsg:
-			if msg.SenderID == config.MyID {
+			if msg.SenderID == config.MyID() {
 				continue
 			}
 			receiveWorldviewOut <- worldviewFromMessage(msg)
