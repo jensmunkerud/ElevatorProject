@@ -26,6 +26,6 @@ func main() {
 	// go controller(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal)
 	// go callHandler(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CurrentOrders)
 	// go ElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, WorldviewToCostFunction, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork, CurrentOrders)
-	// go RunNetworking(SendWorldviewToNetwork, ReceiveWorldviewFromNetwork, PeerUpdate)
+	// go RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
 	// go costFunction(WorldviewToCostFunction, ActiveOrders)
 }

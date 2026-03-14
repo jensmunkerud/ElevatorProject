@@ -14,6 +14,8 @@ const (
 	DoorOpenDuration  = 3000 * time.Millisecond
 	Timeout           = 1000 * time.Millisecond
 	HeartbeatInterval = 50 * time.Millisecond
+	PeersPort = 15647
+	BroadcastPort = 16569
 )
 
 var (

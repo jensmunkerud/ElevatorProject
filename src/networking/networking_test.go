@@ -46,6 +46,34 @@ func TestMessageFromOrders_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestWorldviewFromMessage_RoundTrip(t *testing.T) {
+	hall := orders.CreateHallOrders()
+	hall.UpdateOrderState(1, 1, orders.CompletedOrderState)
+
+	meCab := orders.CreateCabOrders()
+	meCab.UpdateOrderState(3, orders.UnconfirmedOrderState)
+	allCab := map[string]*orders.CabOrders{"elev-1": meCab}
+
+	elevatorStates := map[string]*elevator.Elevator{
+		"elev-1": elevator.CreateElevator("elev-1", 3, elevator.Down, elevator.Moving),
+		"elev-2": elevator.CreateElevator("elev-2", 0, elevator.Stop, elevator.Idle),
+	}
+
+	msg := messageFromWorldview("elev-1", hall, allCab, elevatorStates)
+	worldview := worldviewFromMessage(msg)
+	gotCab, gotHall, gotElevators := worldview.UnpackForNetworking()
+
+	if got := gotHall.GetOrderState(1, 1); got != orders.CompletedOrderState {
+		t.Fatalf("hall round-trip mismatch: got %v", got)
+	}
+	if got := gotCab["elev-1"].GetOrderState(3); got != orders.UnconfirmedOrderState {
+		t.Fatalf("cab round-trip mismatch: got %v", got)
+	}
+	if got := gotElevators["elev-1"].CurrentFloor(); got != 3 {
+		t.Fatalf("elevator floor round-trip mismatch: got %d", got)
+	}
+	if got := gotElevators["elev-2"].Behaviour(); got != elevator.Idle {
+		t.Fatalf("elevator behaviour round-trip mismatch: got %v", got)
 // TestBroadcastAndReceiveManual is an integration-style test intended to be run
 // on two machines on the same network. It sends a Message on the UDP broadcast
 // channel and prints any received Messages to the terminal.

@@ -219,6 +219,33 @@ func (m *NetworkingDistributorMessage) SenderID() string {
 	return m.senderID
 }
 
+func NewNetworkingDistributorMessage(
+	allCabOrders map[string]*orders.CabOrders,
+	hallOrders *orders.HallOrders,
+	elevatorState map[string]*elevator.Elevator,
+) NetworkingDistributorMessage {
+	msg := NetworkingDistributorMessage{
+		allCabOrders:  make(map[string]orders.CabOrders, len(allCabOrders)),
+		elevatorState: make(map[string]elevator.Elevator, len(elevatorState)),
+	}
+	if hallOrders != nil {
+		msg.mergedHallOrders = *hallOrders.Copy()
+	}
+	for id, cab := range allCabOrders {
+		if cab == nil {
+			continue
+		}
+		msg.allCabOrders[id] = *cab.Copy()
+	}
+	for id, elev := range elevatorState {
+		if elev == nil {
+			continue
+		}
+		msg.elevatorState[id] = *elev
+	}
+	return msg
+}
+
 // UnpackForNetworking returns pointer-based snapshots for networking consumers.
 func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
@@ -333,6 +360,24 @@ func distributeResultsToUsers(
 			select {
 			case <-channelForOrderDistributor:
 			default:
+			}
+
+			select {
+			case <-networkingDistributorOutput:
+			default:
+			}
+			// Then writing your new message to the channels
+			callHandlerOutput <- chMsg
+			orderDistributorOutput <- odMsg
+			networkingDistributorOutput <- netMsg
+		}
+
+		publishNetworkingOnly := func() {
+			netMsg := NetworkingDistributorMessage{
+				allCabOrders:     currentAllCab,
+				mergedHallOrders: currentMergedHall,
+				elevatorState:    currentElevState,
+				isSharingId:      currentSharing,
 			}
 
 			select {
