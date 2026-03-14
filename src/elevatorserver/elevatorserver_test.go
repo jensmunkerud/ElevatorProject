@@ -177,7 +177,7 @@ func TestRunElevatorServer_CabUpdateStoresUnderCorrectOwner(t *testing.T) {
 	t.Fatal("expected B's cab order at floor 2 to be Confirmed in the broadcast map")
 }
 
-func TestDistributeResultsToUsers_PublishesAllOnStateUpdates_NetworkOnlyOnSharingUpdate(t *testing.T) {
+func TestDistributeResultsToUsers_PublishesAllOnStateUpdates(t *testing.T) {
 	origID := config.MyID
 	config.MyID = "me"
 	t.Cleanup(func() { config.MyID = origID })
@@ -185,9 +185,8 @@ func TestDistributeResultsToUsers_PublishesAllOnStateUpdates_NetworkOnlyOnSharin
 	hallIn := make(chan *orders.HallOrders, 10)
 	cabIn := make(chan map[string]*orders.CabOrders, 10)
 	elevIn := make(chan map[string]*elevator.Elevator, 10)
-	sharingIn := make(chan bool, 10)
 
-	callCh, orderCh, netCh := distributeResultsToUsers(hallIn, cabIn, elevIn, sharingIn)
+	callCh, orderCh, netCh := distributeResultsToUsers(hallIn, cabIn, elevIn)
 
 	// Prepare synthetic inputs
 	h := orders.CreateHallOrders()
@@ -278,21 +277,4 @@ func TestDistributeResultsToUsers_PublishesAllOnStateUpdates_NetworkOnlyOnSharin
 		t.Fatalf("elevatorState not propagated correctly")
 	}
 
-	// 4) Sharing update should publish ONLY to networking.
-	sharingIn <- true
-	select {
-	case <-netCh:
-		// ok
-	case <-time.After(200 * time.Millisecond):
-		t.Fatalf("expected networking message on sharing update")
-	}
-
-	select {
-	case <-callCh:
-		t.Fatalf("did not expect callhandler message on sharing update")
-	case <-orderCh:
-		t.Fatalf("did not expect orderdistributor message on sharing update")
-	case <-time.After(50 * time.Millisecond):
-		// ok: no messages
-	}
 }

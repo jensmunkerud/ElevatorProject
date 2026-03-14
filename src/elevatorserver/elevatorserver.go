@@ -295,11 +295,10 @@ type NetworkingDistributorMessage struct {
 	allCabOrders     map[string]orders.CabOrders
 	mergedHallOrders orders.HallOrders
 	elevatorState    map[string]elevator.Elevator
-	isSharingId      bool
 }
 
 // UnpackForNetworking returns pointer-based snapshots for networking consumers.
-func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator, bool) {
+func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
 	for id, cab := range m.allCabOrders {
 		allCabOrders[id] = cab.Copy()
@@ -313,7 +312,7 @@ func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.
 		elevatorState[id] = &elevCopy
 	}
 
-	return allCabOrders, hallOrders, elevatorState, m.isSharingId
+	return allCabOrders, hallOrders, elevatorState
 }
 
 // Takes in the results of the merging of orders and distributes it to
@@ -322,7 +321,6 @@ func distributeResultsToUsers(
 	hallOut <-chan *orders.HallOrders,
 	cabOut <-chan map[string]*orders.CabOrders,
 	elevatorState <-chan map[string]*elevator.Elevator,
-	isDistributing <-chan bool,
 ) (<-chan CallHandlerMessage, <-chan OrderDistributorMessage, <-chan NetworkingDistributorMessage) {
 
 	// Latest-only outputs (buffer size 1): never block the distributor goroutine.
@@ -371,7 +369,6 @@ func distributeResultsToUsers(
 			currentMergedHall orders.HallOrders
 			currentAllCab     map[string]orders.CabOrders
 			currentElevState  map[string]elevator.Elevator
-			currentSharing    bool
 		)
 
 		publish := func() {
@@ -393,7 +390,6 @@ func distributeResultsToUsers(
 				allCabOrders:     currentAllCab,
 				mergedHallOrders: currentMergedHall,
 				elevatorState:    currentElevState,
-				isSharingId:      currentSharing,
 			}
 
 			//Start by emptying all the channels
@@ -417,21 +413,6 @@ func distributeResultsToUsers(
 			networkingDistributorOutput <- netMsg
 		}
 
-		publishNetworkingOnly := func() {
-			netMsg := NetworkingDistributorMessage{
-				allCabOrders:     currentAllCab,
-				mergedHallOrders: currentMergedHall,
-				elevatorState:    currentElevState,
-				isSharingId:      currentSharing,
-			}
-
-			select {
-			case <-networkingDistributorOutput:
-			default:
-			}
-			networkingDistributorOutput <- netMsg
-		}
-
 		for {
 			select {
 			case h := <-hallOut:
@@ -451,10 +432,6 @@ func distributeResultsToUsers(
 					currentElevState = ev
 				}
 				publish()
-
-			case sharing := <-isDistributing:
-				currentSharing = sharing
-				publishNetworkingOnly()
 			}
 		}
 	}()
