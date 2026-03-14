@@ -33,6 +33,7 @@ type Elevator struct {
 	direction   Direction
 	requests    [config.NumFloors][config.NumButtons]bool
 	obstruction bool
+	stopPressed bool
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -116,4 +117,16 @@ func (e *Elevator) UpdateObstruction(o bool) {
 
 func (e Elevator) Obstruction() bool {
 	return e.obstruction
+}
+
+func (e *Elevator) UpdateStopPressed(s bool) {
+	e.stopPressed = s
+}
+
+func (e Elevator) StopPressed() bool {
+	return e.stopPressed
+}
+
+func (e Elevator) SafetyActive() bool {
+	return e.stopPressed || e.obstruction
 }

@@ -60,17 +60,23 @@ func InitCallHandler() {
 		case obstruction := <-c.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
 			localElevator.UpdateObstruction(obstruction)
+			if localElevator.SafetyActive() {
+				elevio.SetMotorDirection(elevio.MD_Stop)
+			} else if localElevator.Behaviour() == es.Moving {
+				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
+			}
+
 			break
 
 		case stop := <-c.StopEvent:
 			fmt.Printf("%+v\n", stop)
-			if stop {
-				localElevator.UpdateBehaviour(es.Idle)
-			} else {
-				localElevator.UpdateBehaviour(es.Moving)
+			localElevator.UpdateStopPressed(stop)
+
+			if localElevator.SafetyActive() {
+				elevio.SetMotorDirection(elevio.MD_Stop)
+			} else if localElevator.Behaviour() == es.Moving {
+				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
 			}
-			// localElevator.UpdateCurrentDirection(es.Stop)
-			break
 
 		// case newOrders := <-orderChan:
 		// break
