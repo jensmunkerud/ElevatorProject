@@ -4,12 +4,11 @@ package main
 
 func main() {
 	// Initialize config, get my id, then lock to read only.
-	// Lage channels for communication between goroutines:
-
-	// HallOrderUpdate := make(chan orders.HallOrders)
-	// CabOrderUpdate := make(chan map[string]orders.CabOrders)
+	// Channels for communication between goroutines.
+	// Input channels:
 	// ElevatorStateLocal := make(chan elevator.Elevator)
 	// CurrentOrders := make(chan elevatorserver.CallHandlerMessage)
+	// SendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage)
 
 	// PeerUpdate := make(chan []string) MAYBE?
 	// WorldviewToOrderDistributor:= make(chan elevatorserver.OrderDistributorMessage)
@@ -22,6 +21,6 @@ func main() {
 	// go controller(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal)
 	// go callHandler(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CurrentOrders)
 	// go ElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, WorldviewToCostFunction, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork, CurrentOrders)
-	// go RunNetworking(SendWorldviewToNetwork, ReceiveWorldviewFromNetwork, PeerUpdate)
+	// go RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
 	// go costFunction(WorldviewToCostFunction, ActiveOrders)
 }

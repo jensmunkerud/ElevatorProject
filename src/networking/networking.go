@@ -4,53 +4,42 @@ import (
 	"Network-go/network/bcast"
 	"Network-go/network/peers"
 	"elevatorproject/src/config"
-	es "elevatorproject/src/elevatorserver"
 	"elevatorproject/src/elevator"
+	es "elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
+	"time"
 )
 
 // RunNetworking bridges the elevator server with the UDP broadcast network.
-// Outbound: hall, cab, and elevator state snapshots are combined into wire Messages
-// and broadcast to all peers on port 16569.
-// Inbound: received Messages are decoded into HallOrderUpdates, CabOrderUpdates,
-// and elevator state updates forwarded into the provided output channels.
-// Peer discovery runs on port 15647; the current peer list is forwarded to peerUpdates.
+// Input: worldview snapshots are serialized into wire Messages and broadcast to peers.
+// Output: received worldview snapshots and peer discovery updates are forwarded
+// to the provided output channels.
+// Ports are defined in config.go.
 func RunNetworking(
-	receiverID string,
-	hallOut <-chan *orders.HallOrders,
-	cabOut <-chan map[string]*orders.CabOrders,
-	elevatorStateIn <-chan elevator.Elevator,
-	hallUpdates chan<- es.HallOrderUpdate,
-	cabUpdates chan<- es.CabOrderUpdate,
+	sendWorldviewIn <-chan es.NetworkingDistributorMessage,
 	peerUpdates chan<- []string,
-	elevatorStatesOut chan<- ElevatorStateUpdate,
+	receiveWorldviewOut chan<- es.NetworkingDistributorMessage,
 ) {
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	enablePeer := make(chan bool)
 	sendMsg := make(chan Message, 1)
 	recvMsg := make(chan Message, 10)
 
-	go peers.Transmitter(15647, receiverID, enablePeer)
-	go peers.Receiver(15647, peerUpdateCh)
-	go bcast.Transmitter(16569, sendMsg)
-	go bcast.Receiver(16569, recvMsg)
+	go peers.Transmitter(config.PeersPort, config.MyID, enablePeer)
 
-	// Outbound goroutine: rebuild and queue a message whenever a new snapshot arrives.
-	// A non-blocking send keeps only the latest message in the buffer.
 	go func() {
-		latestHall := orders.CreateHallOrders()
-		latestCab := map[string]*orders.CabOrders{}
-		latestElevState := elevator.Elevator{}
-		for {
-			select {
-			case h := <-hallOut:
-				latestHall = h
-			case c := <-cabOut:
-				latestCab = c
-			case s := <-elevatorStateIn:
-				latestElevState = s
-			}
-			msg := messageFromOrders(receiverID, latestHall, latestCab, latestElevState)
+		enablePeer <- true
+		time.Sleep(200 * time.Millisecond)
+	}()
+
+	go peers.Receiver(config.PeersPort, peerUpdateCh)
+	go bcast.Transmitter(config.BroadcastPort, sendMsg)
+	go bcast.Receiver(config.BroadcastPort, recvMsg)
+
+	go func() {
+		for worldview := range sendWorldviewIn {
+			allCabOrders, hallOrders, elevatorStates := worldview.UnpackForNetworking()
+			msg := messageFromWorldview(config.MyID, hallOrders, allCabOrders, elevatorStates)
 			select {
 			case sendMsg <- msg:
 			default:
@@ -64,37 +53,65 @@ func RunNetworking(
 	for {
 		select {
 		case msg := <-recvMsg:
-			if msg.SenderID == receiverID {
+			if msg.SenderID == config.MyID {
 				continue
-			} 
-			hallOrds := orders.CreateHallOrders()
-			for floor := 0; floor < config.NumFloors; floor++ {
-				for dir := 0; dir < 2; dir++ {
-					hallOrds.UpdateOrderState(floor, dir, orders.OrderState(msg.HallOrders[floor][dir]))
-				}
 			}
-			for _, upd := range es.HallOrderUpdatesFromNetwork(msg.SenderID, hallOrds) {
-				hallUpdates <- upd
-			}
-
-			allCab := make(map[string]*orders.CabOrders, len(msg.AllCabOrders))
-			for id, arr := range msg.AllCabOrders {
-				cab := orders.CreateCabOrders()
-				for floor := 0; floor < config.NumFloors; floor++ {
-					cab.UpdateOrderState(floor, orders.OrderState(arr[floor]))
-				}
-				allCab[id] = cab
-			}
-			for _, upd := range es.CabOrderUpdatesFromNetwork(allCab) {
-				cabUpdates <- upd
-			}
-
-			if state, ok := msg.ElevatorStates[msg.SenderID]; ok {
-				elevatorStatesOut <- ElevatorStateUpdate{SenderID: msg.SenderID, State: state}
-			}
+			receiveWorldviewOut <- worldviewFromMessage(msg)
 
 		case pu := <-peerUpdateCh:
 			peerUpdates <- pu.Peers
 		}
+	}
+}
+
+func worldviewFromMessage(msg Message) es.NetworkingDistributorMessage {
+	hallOrders := orders.CreateHallOrders()
+	for floorIdx, floorOrders := range msg.HallOrders {
+		for dirIdx, orderState := range floorOrders {
+			hallOrders.UpdateOrderState(floorIdx, dirIdx, orders.OrderState(orderState))
+		}
+	}
+
+	allCabOrders := make(map[string]*orders.CabOrders, len(msg.AllCabOrders))
+	for id, cabOrderStates := range msg.AllCabOrders {
+		cab := orders.CreateCabOrders()
+		for floor, state := range cabOrderStates {
+			cab.UpdateOrderState(floor, orders.OrderState(state))
+		}
+		allCabOrders[id] = cab
+	}
+
+	elevatorStates := make(map[string]*elevator.Elevator, len(msg.ElevatorStates))
+	for id, state := range msg.ElevatorStates {
+		elevatorStates[id] = elevator.CreateElevator(
+			id,
+			state.Floor,
+			directionFromString(state.Direction),
+			behaviourFromString(state.Behaviour),
+		)
+	}
+
+	return es.NewNetworkingDistributorMessage(allCabOrders, hallOrders, elevatorStates)
+}
+
+func directionFromString(direction string) elevator.Direction {
+	switch direction {
+	case "up":
+		return elevator.Up
+	case "down":
+		return elevator.Down
+	default:
+		return elevator.Stop
+	}
+}
+
+func behaviourFromString(behaviour string) elevator.Behaviour {
+	switch behaviour {
+	case "moving":
+		return elevator.Moving
+	case "doorOpen":
+		return elevator.DoorOpen
+	default:
+		return elevator.Idle
 	}
 }

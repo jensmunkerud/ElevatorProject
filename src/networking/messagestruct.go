@@ -33,10 +33,19 @@ type Message struct {
 
 // messageFromOrders builds a wire Message from the current hall, cab, and elevator state snapshots.
 func messageFromOrders(senderID string, hall *orders.HallOrders, allCab map[string]*orders.CabOrders, elev elevator.Elevator) Message {
+	return messageFromWorldview(senderID, hall, allCab, map[string]*elevator.Elevator{senderID: &elev})
+}
+
+func messageFromWorldview(
+	senderID string,
+	hall *orders.HallOrders,
+	allCab map[string]*orders.CabOrders,
+	elevatorStates map[string]*elevator.Elevator,
+) Message {
 	msg := Message{
 		SenderID:       senderID,
 		AllCabOrders:   make(map[string][config.NumFloors]int, len(allCab)),
-		ElevatorStates: make(map[string]ElevatorState, 1),
+		ElevatorStates: make(map[string]ElevatorState, len(elevatorStates)),
 	}
 	for floor := 0; floor < config.NumFloors; floor++ {
 		for dir := 0; dir < 2; dir++ {
@@ -50,10 +59,15 @@ func messageFromOrders(senderID string, hall *orders.HallOrders, allCab map[stri
 		}
 		msg.AllCabOrders[id] = arr
 	}
-	msg.ElevatorStates[senderID] = ElevatorState{
-		Behaviour: elev.BehaviourString(),
-		Floor:     elev.CurrentFloor(),
-		Direction: elev.DirectionString(),
+	for id, elev := range elevatorStates {
+		if elev == nil {
+			continue
+		}
+		msg.ElevatorStates[id] = ElevatorState{
+			Behaviour: elev.BehaviourString(),
+			Floor:     elev.CurrentFloor(),
+			Direction: elev.DirectionString(),
+		}
 	}
 	return msg
 }
