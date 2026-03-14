@@ -14,36 +14,30 @@ func RunCostFunc(
 	input <-chan elevatorserver.OrderDistributorMessage,
 	activeOrders chan<- [][]bool,
 ) {
-	for {
-		select {
-		case parts, ok := <-input:
-			if !ok {
-				return
-			}
+	for parts := range input {
 
-			allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
-			jsonInput, err := ConvertToJson(config.MyID, allCabOrders, mergedHallOrders, elevators)
-			if err != nil {
-				fmt.Printf("Error converting to JSON: %v\n", err)
-				activeOrders <- nil
-				continue
-			}
-
-			// Executes hall_request_assigner command
-			jsonOutput, err := executeCostFunction(jsonInput)
-			if err != nil {
-				fmt.Print("Error executing hall_request_assigner command")
-				activeOrders <- nil
-				continue
-			}
-
-			assignments, err := ConvertFromJson(jsonOutput)
-			if err != nil {
-				activeOrders <- nil
-				continue
-			}
-			activeOrders <- assignments[config.MyID]
+		allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
+		jsonInput, err := ConvertToJson(config.MyID(), allCabOrders, mergedHallOrders, elevators)
+		if err != nil {
+			fmt.Printf("Error converting to JSON: %v\n", err)
+			activeOrders <- nil
+			continue
 		}
+
+		// Executes hall_request_assigner command
+		jsonOutput, err := executeCostFunction(jsonInput)
+		if err != nil {
+			fmt.Print("Error executing hall_request_assigner command")
+			activeOrders <- nil
+			continue
+		}
+
+		assignments, err := ConvertFromJson(jsonOutput)
+		if err != nil {
+			activeOrders <- nil
+			continue
+		}
+		activeOrders <- assignments[config.MyID()]
 	}
 }
 

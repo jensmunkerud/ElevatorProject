@@ -216,3 +216,11 @@ func setElevatorLights(msg elevatorserver.CallHandlerMessage) {
 		}
 	}
 }
+
+func handleActiveOrdersFromOrderDistributor(e *es.Elevator, orders <-chan [][]bool) {
+	go func() {
+		for newOrder := range orders {
+			e.UpdateActiveOrder(newOrder)
+		}
+	}()
+}
