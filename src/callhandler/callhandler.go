@@ -51,7 +51,6 @@ func InitCallHandler() {
 			// localOrders[order.Floor][order.Button] = true
 			// orderChan <- localOrders
 			fsmOnRequestButtonPress(localElevator, order.Floor, order.Button, doorTimer)
-			break
 
 		case floor := <-c.FloorEvent:
 			fmt.Printf("%+v\n", floor)
@@ -66,7 +65,6 @@ func InitCallHandler() {
 				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
 			}
 
-			break
 
 		case stop := <-c.StopEvent:
 			fmt.Printf("%+v\n", stop)
@@ -103,10 +101,8 @@ func getMacAddr() (string, error) {
 	return "", fmt.Errorf("no MAC address found")
 }
 
-func getLocalOrders(e *es.Elevator, orders [config.NumFloors][config.NumButtons]bool) [config.NumFloors][config.NumButtons]bool {
-	return orders
-}
-
+// Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
+// serves the intended purpose of this function
 func setElevatorLights(msg elevatorserver.CallHandlerMessage) {
 	hallOrders, cabOrders := msg.UnpackForCallHandler()
 	for floorIndex := range hallOrders.Orders {
