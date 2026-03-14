@@ -71,6 +71,7 @@ func InitCallHandler() {
 		case stop := <-c.StopEvent:
 			fmt.Printf("%+v\n", stop)
 			localElevator.UpdateStopPressed(stop)
+			elevio.SetStopLamp(stop)
 
 			if localElevator.SafetyActive() {
 				elevio.SetMotorDirection(elevio.MD_Stop)
