@@ -126,7 +126,3 @@ func (e *Elevator) UpdateStopPressed(s bool) {
 func (e Elevator) StopPressed() bool {
 	return e.stopPressed
 }
-
-func (e Elevator) SafetyActive() bool {
-	return e.stopPressed || e.obstruction
-}

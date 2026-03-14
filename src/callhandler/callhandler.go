@@ -60,7 +60,7 @@ func InitCallHandler() {
 		case obstruction := <-c.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
 			localElevator.UpdateObstruction(obstruction)
-			if localElevator.SafetyActive() {
+			if localElevator.StopPressed() {
 				elevio.SetMotorDirection(elevio.MD_Stop)
 			} else if localElevator.Behaviour() == es.Moving {
 				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
@@ -73,7 +73,7 @@ func InitCallHandler() {
 			localElevator.UpdateStopPressed(stop)
 			elevio.SetStopLamp(stop)
 
-			if localElevator.SafetyActive() {
+			if localElevator.StopPressed() {
 				elevio.SetMotorDirection(elevio.MD_Stop)
 			} else if localElevator.Behaviour() == es.Moving {
 				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))

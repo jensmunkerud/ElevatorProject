@@ -48,7 +48,7 @@ func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.Button
 			*e = requestsClearAtCurrentFloor(*e)
 
 		case es.Moving:
-			if !e.SafetyActive() {
+			if !e.StopPressed() {
 				elevio.SetMotorDirection(elevio.MotorDirection(e.CurrentDirection()))
 			}
 
