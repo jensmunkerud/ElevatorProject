@@ -144,7 +144,7 @@ func (e Elevator) StopPressed() bool {
 func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
 	e.activeOrders = newActiveOrders
 }
-	
+
 func (e *Elevator) Copy() Elevator {
-    return *e
+	return *e
 }
