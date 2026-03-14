@@ -53,6 +53,10 @@ func (e *Elevator) Id() string {
 	return e.id
 }
 
+func getID(elevator Elevator) string {
+	return elevator.id
+}
+
 func (e *Elevator) Requests() [config.NumFloors][config.NumButtons]bool {
 	return e.requests
 }
@@ -112,4 +116,8 @@ func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 
 func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
 	e.activeOrders = newActiveOrders
+}
+	
+func (e *Elevator) Copy() Elevator {
+    return *e
 }
