@@ -52,6 +52,10 @@ func (e *Elevator) Id() string {
 	return e.id
 }
 
+func getID(elevator Elevator) string {
+	return elevator.id
+}
+
 func (e *Elevator) Requests() [config.NumFloors][config.NumButtons]bool {
 	return e.requests
 }
@@ -107,4 +111,8 @@ func (e *Elevator) DirectionString() string {
 
 func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 	e.direction = direction
+}
+
+func (e *Elevator) Copy() Elevator {
+    return *e
 }
