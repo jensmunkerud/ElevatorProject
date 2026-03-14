@@ -14,7 +14,6 @@ import (
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
 	"fmt"
-	"net"
 	"time"
 )
 
@@ -65,7 +64,6 @@ func InitCallHandler() {
 				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
 			}
 
-
 		case stop := <-c.StopEvent:
 			fmt.Printf("%+v\n", stop)
 			localElevator.UpdateStopPressed(stop)
@@ -83,22 +81,6 @@ func InitCallHandler() {
 			fsmOnDoorTimeout(localElevator, doorTimer)
 		}
 	}
-}
-
-func getMacAddr() (string, error) {
-	ifas, err := net.Interfaces()
-	if err != nil {
-		return "", err
-	}
-
-	for _, ifa := range ifas {
-		a := ifa.HardwareAddr.String()
-		if a != "" {
-			return a, nil
-		}
-	}
-
-	return "", fmt.Errorf("no MAC address found")
 }
 
 // Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
