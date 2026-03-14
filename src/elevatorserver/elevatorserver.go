@@ -417,6 +417,22 @@ func RunElevatorServer(
 		}
 	}()
 
+	go func() {
+		for message := range channelFromNetworking {
+			tempCab, tempHall, tempElevator := message.UnpackForNetworking()
+			newHallOrders := HallOrderUpdatesFromNetwork(message.SenderID(), tempHall)
+			for _, u := range newHallOrders {
+				hallUpdate <- u
+			}
+			newCabOrders := CabOrderUpdatesFromNetwork(tempCab)
+			for _, u := range newCabOrders {
+				cabUpdate <- u
+			}
+			elevCopy := tempElevator[message.SenderID()].Copy()
+			elevatorStateUpdate <- elevCopy
+		}
+	}()
+
 	for {
 		select {
 		case u := <-hallUpdate:
@@ -462,21 +478,6 @@ func RunElevatorServer(
 		case es := <-elevatorStateUpdate:
 			// Always overwrite the elevator state for the sender, since it's a direct report of its physical state, not a distributed consensus like the orders.
 			allElevatorStates[es.Id()] = &es
-		// Consider turning message unpacking and distribution into its own goroutine, to avoid blocking the main update loop while processing a large message.
 		}
-		go func ()  {
-			message := <- channelFromNetworking
-			tempCab, tempHall, tempElevator := message.UnpackForNetworking()
-			newHallOrders := HallOrderUpdatesFromNetwork(message.SenderID(), tempHall)
-			for _, u := range newHallOrders {
-				hallUpdate <- u
-			}
-			newCabOrders :=CabOrderUpdatesFromNetwork(tempCab)
-			for _, u := range newCabOrders {
-				cabUpdate <- u
-			}
-			elevCopy := tempElevator[message.SenderID()].Copy()
-			elevatorStateUpdate <- elevCopy
-	}()
 	}
 }
