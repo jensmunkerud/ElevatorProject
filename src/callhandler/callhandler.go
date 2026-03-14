@@ -52,12 +52,12 @@ func InitCallHandler() {
 
 		case obstruction := <-c.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
-			if obstruction {
-				localElevator.UpdateBehaviour(es.Idle)
-				// localElevator.UpdateCurrentDirection(es.Stop)
-			} else {
-				localElevator.UpdateBehaviour(es.Moving) // Possibly dangerous?
-			}
+			// if obstruction {
+			// 	localElevator.UpdateBehaviour(es.Idle)
+			// 	// localElevator.UpdateCurrentDirection(es.Stop)
+			// } else {
+			// 	localElevator.UpdateBehaviour(es.Moving) // Possibly dangerous?
+			// }
 			// updateElevatorState(localElevator)
 			break
 
@@ -95,34 +95,6 @@ func getMacAddr() (string, error) {
 
 	return "", fmt.Errorf("no MAC address found")
 }
-
-// func updateElevatorState(localElevator *es.Elevator) {
-// 	switch localElevator.Behaviour() {
-// 	case es.Idle:
-// 		elevio.SetDoorOpenLamp(false)
-// 		elevio.SetMotorDirection(elevio.MD_Stop)
-// 		break
-// 	case es.Moving:
-// 		elevio.SetDoorOpenLamp(false)
-
-// 		switch localElevator.CurrentDirection() {
-// 		case es.Stop:
-// 			elevio.SetMotorDirection(elevio.MD_Stop)
-// 			break
-// 		case es.Up:
-// 			elevio.SetMotorDirection(elevio.MD_Up)
-// 			break
-// 		case es.Down:
-// 			elevio.SetMotorDirection(elevio.MD_Down)
-// 			break
-// 		}
-
-// 		break
-// 	case es.DoorOpen:
-// 		elevio.SetDoorOpenLamp(true)
-// 		elevio.SetMotorDirection(elevio.MD_Stop)
-// 	}
-// }
 
 func getLocalOrders(e *es.Elevator, orders [config.NumFloors][config.NumButtons]bool) [config.NumFloors][config.NumButtons]bool {
 	return orders
