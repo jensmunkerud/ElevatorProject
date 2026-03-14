@@ -363,24 +363,6 @@ func distributeResultsToUsers(
 			}
 
 			select {
-			case <-networkingDistributorOutput:
-			default:
-			}
-			// Then writing your new message to the channels
-			callHandlerOutput <- chMsg
-			orderDistributorOutput <- odMsg
-			networkingDistributorOutput <- netMsg
-		}
-
-		publishNetworkingOnly := func() {
-			netMsg := NetworkingDistributorMessage{
-				allCabOrders:     currentAllCab,
-				mergedHallOrders: currentMergedHall,
-				elevatorState:    currentElevState,
-				isSharingId:      currentSharing,
-			}
-
-			select {
 			case <-channelForNetworking:
 			default:
 			}

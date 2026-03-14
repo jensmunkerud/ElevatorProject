@@ -7,9 +7,8 @@ import (
 	"os/exec"
 )
 
-
-//Receives OrderDistributorMessage, unpacks the message, converts to JSON, executes cost function, and sends active orders assigned to self
-//  to call handler.
+// Receives OrderDistributorMessage, unpacks the message, converts to JSON, executes cost function, and sends active orders assigned to self
+//	to call handler.
 func RunCostFunc(
 	input <-chan elevatorserver.OrderDistributorMessage,
 	activeOrders chan<- [][]bool,
@@ -17,24 +16,24 @@ func RunCostFunc(
 	for parts := range input {
 
 		allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
+		//Prevent running cost function if we have no elevators.
+		if len(elevators) == 0 {
+			continue
+		}
 		jsonInput, err := ConvertToJson(config.MyID(), allCabOrders, mergedHallOrders, elevators)
 		if err != nil {
 			fmt.Printf("Error converting to JSON: %v\n", err)
-			activeOrders <- nil
 			continue
 		}
 
 		// Executes hall_request_assigner command
 		jsonOutput, err := executeCostFunction(jsonInput)
 		if err != nil {
-			fmt.Print("Error executing hall_request_assigner command")
-			activeOrders <- nil
 			continue
 		}
 
 		assignments, err := ConvertFromJson(jsonOutput)
 		if err != nil {
-			activeOrders <- nil
 			continue
 		}
 		activeOrders <- assignments[config.MyID()]
@@ -47,10 +46,7 @@ func executeCostFunction(jsonInput string) (string, error) {
 		"--input",
 		jsonInput,
 	)
-
 	cmd.Dir = "../../libs/project-resources/cost_fns/hall_request_assigner"
-
 	output, err := cmd.CombinedOutput()
-	fmt.Print(string(output))
 	return string(output), err
 }
