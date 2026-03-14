@@ -6,16 +6,10 @@ import (
 	es "elevatorproject/src/elevator"
 )
 
-type ElevatorEvent struct {
-	OrderEvent       chan es.ButtonEvent
-	FloorEvent       chan int
-	ObstructionEvent chan bool
-	StopEvent        chan bool
-}
 
-func InitController(ready chan struct{}) *ElevatorEvent {
+func InitController(ready chan struct{}) *es.ElevatorEvent {
 	orderEvent, floorEvent, obstructionEvent, stopEvent := initElevatorIO()
-	c := &ElevatorEvent{
+	c := &es.ElevatorEvent{
 		OrderEvent:       orderEvent,
 		FloorEvent:       floorEvent,
 		ObstructionEvent: obstructionEvent,

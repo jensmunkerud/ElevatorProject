@@ -45,6 +45,13 @@ type Elevator struct {
 	stopPressed  bool
 }
 
+type ElevatorEvent struct {
+	OrderEvent       chan ButtonEvent
+	FloorEvent       chan int
+	ObstructionEvent chan bool
+	StopEvent        chan bool
+}
+
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
 	return &Elevator{
 		id:        id,

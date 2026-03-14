@@ -29,7 +29,7 @@ func main() {
 	ready := make(chan struct{})
 	
 	// Start goroutines:
-	go InitController(ready, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal)
+	go InitController(ready, elevator.ElevatorEvent)
 	go InitCallHandler(ready, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CurrentOrders, ActiveLocalOrders)
 	go elevatorserver.RunElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
 	go networking.RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
