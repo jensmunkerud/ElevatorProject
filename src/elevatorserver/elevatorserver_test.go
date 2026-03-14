@@ -307,7 +307,7 @@ func startServer(t *testing.T, myID string) (
 	channelFromNetworking chan NetworkingDistributorMessage,
 ) {
 	t.Helper()
-	config.MyID = myID
+	config.SetMyID()
 	// Not restoring config.MyID in cleanup: leaked RunElevatorServer
 	// goroutines read it and would panic on a nil map lookup.
 
@@ -432,7 +432,7 @@ func TestRunElevatorServer_NetworkingGoroutineForwardsUpdates(t *testing.T) {
 // --- distributeResultsToUsers ---
 
 func TestDistributeResultsToUsers_PublishesAllOnStateUpdates(t *testing.T) {
-	config.MyID = "A"
+	config.SetMyID()
 
 	hallIn := make(chan *orders.HallOrders, 10)
 	cabIn := make(chan map[string]*orders.CabOrders, 10)
@@ -457,8 +457,8 @@ func TestDistributeResultsToUsers_PublishesAllOnStateUpdates(t *testing.T) {
 		"other": otherCab,
 	}
 
-	meElev := elevator.CreateElevator("A", 2, elevator.Down, elevator.Moving)
-	elevState := map[string]*elevator.Elevator{"A": meElev}
+	meElev := elevator.CreateElevator(config.MyID(), 2, elevator.Down, elevator.Moving)
+	elevState := map[string]*elevator.Elevator{config.MyID(): meElev}
 
 	// 1) Hall update should publish to all three channels.
 	hallIn <- h
@@ -507,12 +507,12 @@ func TestDistributeResultsToUsers_PublishesAllOnStateUpdates(t *testing.T) {
 	if (&callMsg.myCabOrders).GetOrderState(2) != orders.ConfirmedOrderState {
 		t.Fatalf("expected myCabOrders[2] Confirmed, got %v", (&callMsg.myCabOrders).GetOrderState(2))
 	}
-	gotMeCab, ok := orderMsg.allCabOrders["A"]
+	gotMeCab, ok := orderMsg.allCabOrders[config.MyID()]
 	if !ok {
-		t.Fatalf("expected allCabOrders to include key %q", "A")
+		t.Fatalf("expected allCabOrders to include key %q", config.MyID())
 	}
 	if (&gotMeCab).GetOrderState(2) != orders.ConfirmedOrderState {
-		t.Fatalf("expected allCabOrders[A][2] Confirmed")
+		t.Fatalf("expected allCabOrders[%q][2] Confirmed", config.MyID())
 	}
 	gotOtherCab, ok := netMsg.allCabOrders["other"]
 	if !ok {

@@ -1,22 +1,26 @@
 package main
 
-
+import (
+	"elevatorproject/src/config"
+	"elevatorproject/src/elevator"
+	"elevatorproject/src/elevatorserver"
+)
 
 func main() {
-	// Initialize config, get my id, then lock to read only.
-	// Lage channels for communication between goroutines:
+	//Set my ID before starting any goroutines.
+	config.SetMyID()
+	// Initialize channels for communication between goroutines:
+	hallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*10) // Buffered to avoid blocking on sends
+	cabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*10)
+	elevatorStateLocal := make(chan elevator.Elevator, config.NumFloors*4)
+	currentOrders := make(chan elevatorserver.CallHandlerMessage, config.NumFloors*10)
+	PeerUpdate := make(chan []string, 10) // Buffered to avoid blocking on sends
 
-	// HallOrderUpdate := make(chan orders.HallOrders)
-	// CabOrderUpdate := make(chan map[string]orders.CabOrders)
-	// ElevatorStateLocal := make(chan elevator.Elevator)
-	// CurrentOrders := make(chan elevatorserver.CallHandlerMessage)
+	WorldviewToOrderDistributor:= make(chan elevatorserver.OrderDistributorMessage, 5)
+	SendWorldviewToNetwork:= make(chan elevatorserver.NetworkingDistributorMessage, 5)
+	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 
-	// PeerUpdate := make(chan []string) MAYBE?
-	// WorldviewToOrderDistributor:= make(chan elevatorserver.OrderDistributorMessage)
-	// SendWorldviewToNetwork:= make(chan elevatorserver.NetworkingDistributorMessage)
-	// ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage)
-
-	// ActiveOrders := make(chan [][]bool)
+	ActiveOrders := make(chan [][]bool)
 
 	// Start goroutines:
 	// go controller(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal)

@@ -303,7 +303,7 @@ func distributeResultsToUsers(
 		)
 
 		publish := func() {
-			myCab, ok := currentAllCab[config.MyID]
+			myCab, ok := currentAllCab[config.MyID()]
 			if !ok {
 				myCab = orders.CabOrders{}
 			}
@@ -318,7 +318,7 @@ func distributeResultsToUsers(
 				elevatorState:    currentElevState,
 			}
 			netMsg := NetworkingDistributorMessage{
-				senderID:         config.MyID,
+				senderID:         config.MyID(),
 				allCabOrders:     currentAllCab,
 				mergedHallOrders: currentMergedHall,
 				elevatorState:    currentElevState,
@@ -389,10 +389,10 @@ func RunElevatorServer(
 	elevatorsOnNetwork := []string{}
 
 	// Create your own orders first
-	allHall[config.MyID] = orders.CreateHallOrders()
-	allCab[config.MyID] = orders.CreateCabOrders()
+	allHall[config.MyID()] = orders.CreateHallOrders()
+	allCab[config.MyID()] = orders.CreateCabOrders()
 	initialElevatorState := <-elevatorStateUpdate
-	allElevatorStates[config.MyID] = &initialElevatorState
+	allElevatorStates[config.MyID()] = &initialElevatorState
 
 	hallOut := make(chan *orders.HallOrders, 1)
 	cabOut := make(chan map[string]*orders.CabOrders, 1)
@@ -409,7 +409,7 @@ func RunElevatorServer(
 	go func() {
 		ticker := time.NewTicker(config.HeartbeatInterval)
 		defer ticker.Stop()
-		latestHall := allHall[config.MyID]
+		latestHall := allHall[config.MyID()]
 		latestCab := orders.CopyAllCab(allCab)
 		latestElevState := copyAllElevState(allElevatorStates)
 		for {
@@ -456,14 +456,14 @@ func RunElevatorServer(
 				allHall[u.SenderID] = orders.CreateHallOrders()
 			}
 			allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
-			nextState := mergeHallOrderState(u, config.MyID, allHall, elevatorsOnNetwork)
-			allHall[config.MyID].UpdateOrderState(u.Floor, u.Direction, nextState)
+			nextState := mergeHallOrderState(u, config.MyID(), allHall, elevatorsOnNetwork)
+			allHall[config.MyID()].UpdateOrderState(u.Floor, u.Direction, nextState)
 			// Empty the channel to always have the lates snapshot
 			select {
 			case <-hallSnap:
 			default:
 			}
-			hallSnap <- allHall[config.MyID].Copy()
+			hallSnap <- allHall[config.MyID()].Copy()
 
 		case u := <-cabUpdate:
 			if _, ok := allCab[u.SenderID]; !ok {
