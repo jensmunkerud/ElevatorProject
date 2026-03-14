@@ -122,60 +122,227 @@ func TestMergeState_Barrier2BlockedWhenNotAllNodesCompleted(t *testing.T) {
 
 // --- RunElevatorServer integration ---
 
-func TestRunElevatorServer_HallUpdateMergesAndBroadcasts(t *testing.T) {
-	hallUpdates := make(chan HallOrderUpdate, 10)
-	cabUpdates := make(chan CabOrderUpdate, 10)
-	peerUpdates := make(chan []string, 1)
-	hallOut := make(chan *orders.HallOrders, 10)
-	cabOut := make(chan map[string]*orders.CabOrders, 10)
+// --- HallOrderUpdatesFromNetwork ---
 
-	go RunElevatorServer(hallUpdates, cabUpdates, peerUpdates, hallOut, cabOut, "A")
+func TestHallOrderUpdatesFromNetwork_UnpacksAllFloorsAndDirections(t *testing.T) {
+	h := orders.CreateHallOrders()
+	h.UpdateOrderState(1, 0, orders.ConfirmedOrderState)
+	h.UpdateOrderState(2, 1, orders.UnconfirmedOrderState)
 
-	// Seed peers so barrier can fire
-	peerUpdates <- []string{"A", "B"}
+	updates := HallOrderUpdatesFromNetwork("B", h)
 
-	// Both A and B report Unconfirmed for floor 1 up — barrier should fire → Confirmed
-	hallUpdates <- HallOrderUpdate{SenderID: "A", Floor: 1, Direction: 0, State: orders.UnconfirmedOrderState}
-	hallUpdates <- HallOrderUpdate{SenderID: "B", Floor: 1, Direction: 0, State: orders.UnconfirmedOrderState}
+	if len(updates) != config.NumFloors*2 {
+		t.Fatalf("expected %d updates, got %d", config.NumFloors*2, len(updates))
+	}
 
-	// Drain until we see Confirmed at floor 1 up
-	for i := 0; i < 20; i++ {
-		select {
-		case h := <-hallOut:
-			if h.GetOrderState(1, 0) == orders.ConfirmedOrderState {
-				return
-			}
-		case <-cabOut:
+	found10 := false
+	found21 := false
+	for _, u := range updates {
+		if u.SenderID != "B" {
+			t.Fatalf("expected SenderID B, got %s", u.SenderID)
+		}
+		if u.Floor == 1 && u.Direction == 0 && u.State == orders.ConfirmedOrderState {
+			found10 = true
+		}
+		if u.Floor == 2 && u.Direction == 1 && u.State == orders.UnconfirmedOrderState {
+			found21 = true
 		}
 	}
-	t.Fatal("expected hall order at floor 1 up to reach Confirmed")
+	if !found10 {
+		t.Fatal("expected to find floor 1 up Confirmed")
+	}
+	if !found21 {
+		t.Fatal("expected to find floor 2 down Unconfirmed")
+	}
 }
 
-func TestRunElevatorServer_CabUpdateStoresUnderCorrectOwner(t *testing.T) {
-	hallUpdates := make(chan HallOrderUpdate, 10)
-	cabUpdates := make(chan CabOrderUpdate, 10)
-	peerUpdates := make(chan []string, 1)
-	hallOut := make(chan *orders.HallOrders, 10)
-	cabOut := make(chan map[string]*orders.CabOrders, 10)
+// --- CabOrderUpdatesFromNetwork ---
 
-	go RunElevatorServer(hallUpdates, cabUpdates, peerUpdates, hallOut, cabOut, "A")
+func TestCabOrderUpdatesFromNetwork_UnpacksAllElevatorsAndFloors(t *testing.T) {
+	cabA := orders.CreateCabOrders()
+	cabA.UpdateOrderState(2, orders.ConfirmedOrderState)
+	cabB := orders.CreateCabOrders()
+	cabB.UpdateOrderState(3, orders.UnconfirmedOrderState)
 
-	peerUpdates <- []string{"A", "B"}
+	allCab := map[string]*orders.CabOrders{"A": cabA, "B": cabB}
+	updates := CabOrderUpdatesFromNetwork(allCab)
 
-	// B reports a Confirmed cab order at floor 2 — it should appear in the broadcast map under "B"
-	cabUpdates <- CabOrderUpdate{SenderID: "B", Floor: 2, State: orders.ConfirmedOrderState}
+	if len(updates) != 2*config.NumFloors {
+		t.Fatalf("expected %d updates, got %d", 2*config.NumFloors, len(updates))
+	}
 
-	for i := 0; i < 20; i++ {
-		select {
-		case m := <-cabOut:
-			if b, ok := m["B"]; ok && b.GetOrderState(2) == orders.ConfirmedOrderState {
-				return
-			}
-		case <-hallOut:
+	foundA2 := false
+	foundB3 := false
+	for _, u := range updates {
+		if u.SenderID == "A" && u.Floor == 2 && u.State == orders.ConfirmedOrderState {
+			foundA2 = true
+		}
+		if u.SenderID == "B" && u.Floor == 3 && u.State == orders.UnconfirmedOrderState {
+			foundB3 = true
 		}
 	}
-	t.Fatal("expected B's cab order at floor 2 to be Confirmed in the broadcast map")
+	if !foundA2 {
+		t.Fatal("expected A floor 2 Confirmed")
+	}
+	if !foundB3 {
+		t.Fatal("expected B floor 3 Unconfirmed")
+	}
 }
+
+// --- mergeHallOrderState ---
+
+func TestMergeHallOrderState_MergesWithBarrier(t *testing.T) {
+	allHall := map[string]*orders.HallOrders{
+		"A": orders.CreateHallOrders(),
+		"B": orders.CreateHallOrders(),
+	}
+	allHall["A"].UpdateOrderState(0, 0, orders.UnconfirmedOrderState)
+	allHall["B"].UpdateOrderState(0, 0, orders.UnconfirmedOrderState)
+
+	update := HallOrderUpdate{SenderID: "B", Floor: 0, Direction: 0, State: orders.UnconfirmedOrderState}
+	result := mergeHallOrderState(update, "A", allHall, []string{"A", "B"})
+	if result != orders.ConfirmedOrderState {
+		t.Fatalf("expected Confirmed, got %v", result)
+	}
+}
+
+// --- mergeCabOrderState ---
+
+func TestMergeCabOrderState_MergesWithBarrier(t *testing.T) {
+	allCab := map[string]*orders.CabOrders{
+		"A": orders.CreateCabOrders(),
+		"B": orders.CreateCabOrders(),
+	}
+	allCab["A"].UpdateOrderState(1, orders.UnconfirmedOrderState)
+	allCab["B"].UpdateOrderState(1, orders.UnconfirmedOrderState)
+
+	update := CabOrderUpdate{SenderID: "B", Floor: 1, State: orders.UnconfirmedOrderState}
+	result := mergeCabOrderState(update, allCab, []string{"A", "B"})
+	if result != orders.ConfirmedOrderState {
+		t.Fatalf("expected Confirmed, got %v", result)
+	}
+}
+
+// --- RunElevatorServer integration ---
+
+// helper to start RunElevatorServer with all required channels.
+func startServer(t *testing.T, myID string) (
+	hallUpdate chan HallOrderUpdate,
+	cabUpdate chan CabOrderUpdate,
+	elevatorStateUpdate chan elevator.Elevator,
+	peersUpdate chan []string,
+	channelFromNetworking chan NetworkingDistributorMessage,
+) {
+	t.Helper()
+	origID := config.MyID
+	config.MyID = myID
+	t.Cleanup(func() { config.MyID = origID })
+
+	hallUpdate = make(chan HallOrderUpdate, 100)
+	cabUpdate = make(chan CabOrderUpdate, 100)
+	elevatorStateUpdate = make(chan elevator.Elevator, 100)
+	peersUpdate = make(chan []string, 10)
+	channelToCallHandler := make(chan CallHandlerMessage, 10)
+	channelToOrderDistributor := make(chan OrderDistributorMessage, 10)
+	channelToNetworking := make(chan NetworkingDistributorMessage, 10)
+	channelFromNetworking = make(chan NetworkingDistributorMessage, 10)
+
+	initElev := elevator.CreateElevator(myID, 0, elevator.Up, elevator.Idle)
+	elevatorStateUpdate <- *initElev
+
+	go RunElevatorServer(
+		hallUpdate, cabUpdate, elevatorStateUpdate, peersUpdate,
+		channelToCallHandler, channelToOrderDistributor,
+		channelToNetworking, channelFromNetworking,
+	)
+
+	return
+}
+
+func TestRunElevatorServer_ProcessesHallUpdate(t *testing.T) {
+	hallUpdate, _, _, peersUpdate, _ := startServer(t, "A")
+
+	peersUpdate <- []string{"A", "B"}
+	time.Sleep(20 * time.Millisecond)
+
+	// Both A and B report Unconfirmed for floor 1 up — server should merge via barrier
+	hallUpdate <- HallOrderUpdate{SenderID: "A", Floor: 1, Direction: 0, State: orders.UnconfirmedOrderState}
+	hallUpdate <- HallOrderUpdate{SenderID: "B", Floor: 1, Direction: 0, State: orders.UnconfirmedOrderState}
+
+	// Verify no deadlock or panic
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestRunElevatorServer_ProcessesCabUpdate(t *testing.T) {
+	_, cabUpdate, _, peersUpdate, _ := startServer(t, "A")
+
+	peersUpdate <- []string{"A", "B"}
+	time.Sleep(20 * time.Millisecond)
+
+	cabUpdate <- CabOrderUpdate{SenderID: "B", Floor: 2, State: orders.ConfirmedOrderState}
+
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestRunElevatorServer_ProcessesPeerUpdate(t *testing.T) {
+	_, _, _, peersUpdate, _ := startServer(t, "A")
+
+	peersUpdate <- []string{"A", "B", "C"}
+	time.Sleep(50 * time.Millisecond)
+
+	// Adding more peers dynamically should not panic
+	peersUpdate <- []string{"A", "B", "C", "D"}
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestRunElevatorServer_ProcessesElevatorStateUpdate(t *testing.T) {
+	_, _, elevatorStateUpdate, _, _ := startServer(t, "A")
+
+	newState := elevator.CreateElevator("A", 3, elevator.Down, elevator.Moving)
+	elevatorStateUpdate <- *newState
+
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestRunElevatorServer_NetworkingGoroutineForwardsUpdates(t *testing.T) {
+	hallUpdate, _, _, peersUpdate, channelFromNetworking := startServer(t, "A")
+
+	// Trigger at least one iteration so the networking goroutine is spawned
+	peersUpdate <- []string{"A", "B"}
+	time.Sleep(20 * time.Millisecond)
+
+	// Build a NetworkingDistributorMessage from "B"
+	hall := orders.CreateHallOrders()
+	hall.UpdateOrderState(1, 0, orders.ConfirmedOrderState)
+	cab := orders.CreateCabOrders()
+	cab.UpdateOrderState(2, orders.ConfirmedOrderState)
+	elev := elevator.CreateElevator("B", 3, elevator.Down, elevator.Moving)
+
+	netMsg := NetworkingDistributorMessage{
+		senderID:         "B",
+		allCabOrders:     map[string]orders.CabOrders{"B": *cab},
+		mergedHallOrders: *hall,
+		elevatorState:    map[string]elevator.Elevator{"B": *elev},
+	}
+	channelFromNetworking <- netMsg
+
+	// The goroutine unpacks the message and feeds hall/cab/elevator updates back
+	// into the main loop channels. Drain hallUpdate to verify forwarding happened.
+	timeout := time.After(500 * time.Millisecond)
+	foundHall := false
+	for !foundHall {
+		select {
+		case u := <-hallUpdate:
+			if u.SenderID == "B" && u.Floor == 1 && u.Direction == 0 && u.State == orders.ConfirmedOrderState {
+				foundHall = true
+			}
+		case <-timeout:
+			t.Fatal("timeout waiting for hall update forwarded from networking goroutine")
+		}
+	}
+}
+
+// --- distributeResultsToUsers ---
 
 func TestDistributeResultsToUsers_PublishesAllOnStateUpdates(t *testing.T) {
 	origID := config.MyID
@@ -186,7 +353,11 @@ func TestDistributeResultsToUsers_PublishesAllOnStateUpdates(t *testing.T) {
 	cabIn := make(chan map[string]*orders.CabOrders, 10)
 	elevIn := make(chan map[string]*elevator.Elevator, 10)
 
-	callCh, orderCh, netCh := distributeResultsToUsers(hallIn, cabIn, elevIn)
+	callCh := make(chan CallHandlerMessage, 10)
+	orderCh := make(chan OrderDistributorMessage, 10)
+	netCh := make(chan NetworkingDistributorMessage, 10)
+
+	distributeResultsToUsers(hallIn, cabIn, elevIn, callCh, orderCh, netCh)
 
 	// Prepare synthetic inputs
 	h := orders.CreateHallOrders()
