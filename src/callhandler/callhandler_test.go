@@ -11,6 +11,11 @@ import (
 	"elevatorproject/src/orders"
 )
 
+func TestCallHandler(t *testing.T) {
+	go InitCallHandler()
+	select {}
+}
+
 // TestSetElevatorLightsBlinkInHardware drives setElevatorLights with artificial
 // CallHandlerMessages. It prints to the terminal which light should be on for
 // one-second intervals so the physical panel can be inspected manually while
