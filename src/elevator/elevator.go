@@ -22,6 +22,11 @@ const (
 	Cab      ButtonType = 2
 )
 
+type ButtonEvent struct {
+	Floor  int
+	Button ButtonType
+}
+
 type Behaviour int
 
 const (
