@@ -17,7 +17,7 @@ func RunCostFunc(
 	for parts := range input {
 
 		allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
-		jsonInput, err := ConvertToJson(config.MyID, allCabOrders, mergedHallOrders, elevators)
+		jsonInput, err := ConvertToJson(config.MyID(), allCabOrders, mergedHallOrders, elevators)
 		if err != nil {
 			fmt.Printf("Error converting to JSON: %v\n", err)
 			activeOrders <- nil
@@ -37,7 +37,7 @@ func RunCostFunc(
 			activeOrders <- nil
 			continue
 		}
-		activeOrders <- assignments[config.MyID]
+		activeOrders <- assignments[config.MyID()]
 	}
 }
 
