@@ -105,7 +105,9 @@ func fsmOnDoorTimeout(e *es.Elevator, doorTimer *time.Timer) {
 			setAllLights(*e)
 		case es.Moving, es.Idle:
 			elevio.SetDoorOpenLamp(false)
-			elevio.SetMotorDirection(elevio.MotorDirection(e.CurrentDirection()))
+			if e.StopPressed() {
+				elevio.SetMotorDirection(elevio.MotorDirection(e.CurrentDirection()))
+			}
 		}
 
 	default:
