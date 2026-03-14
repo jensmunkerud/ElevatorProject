@@ -23,10 +23,14 @@ func main() {
 	SendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ActiveLocalOrders := make(chan [][]bool)
+	ElevatorStateLocal := make(chan elevator.Elevator)
 
+	// Ready chan to ensure goroutines start in orderly fashion
+	ready := make(chan struct{})
+	
 	// Start goroutines:
-	// go controller(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal)
-	// go callHandler(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CurrentOrders, ActiveLocalOrders)
+	go InitController(ready, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal)
+	go InitCallHandler(ready, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CurrentOrders, ActiveLocalOrders)
 	go elevatorserver.RunElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
 	go networking.RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
 	go orderdistributor.RunCostFunc(WorldviewToOrderDistributor, ActiveLocalOrders)
