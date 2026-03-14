@@ -10,3 +10,7 @@ const (
 	Timeout           = 1000 * time.Millisecond
 	HeartbeatInterval = 50 * time.Millisecond
 )
+
+var (
+	MyID = "placeholder"
+)

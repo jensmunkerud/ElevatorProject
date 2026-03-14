@@ -7,9 +7,12 @@ package callhandler
 // restart the controller
 
 import (
+	"driver-go/elevio"
 	"elevatorproject/src/config"
 	controller "elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
+	"elevatorproject/src/elevatorserver"
+	"elevatorproject/src/orders"
 	"fmt"
 	"net"
 )
@@ -98,4 +101,25 @@ func getMacAddr() (string, error) {
 
 func getLocalOrders(e *es.Elevator, orders [config.NumFloors][config.NumButtons]bool) [config.NumFloors][config.NumButtons]bool {
 	return orders
+}
+
+func setElevatorLights(msg elevatorserver.CallHandlerMessage) {
+	hallOrders, cabOrders := msg.UnpackForCallHandler()
+	for floorIndex := range hallOrders.Orders {
+		for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
+			orderState := hallOrders.GetOrderState(floorIndex, b)
+			if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
+				elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
+			} else {
+				elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, false)
+			}
+		}
+		// Assuming one cab button per floor (b = 0)
+		orderState := cabOrders.GetOrderState(floorIndex)
+		if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
+			elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, true)
+		} else {
+			elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, false)
+		}
+	}
 }
