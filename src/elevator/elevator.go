@@ -34,17 +34,15 @@ const (
 	DoorOpen
 )
 
-// type ElevatorButtons struct {
-// 	Buttons [config.NumFloors][2]bool //[up, down]
-// }
-
 type Elevator struct {
-	id        string
-	behaviour Behaviour
-	floor     int
-	direction Direction
-	requests  [config.NumFloors][config.NumButtons]bool
+	id           string
+	behaviour    Behaviour
+	floor        int
+	direction    Direction
+	requests     [config.NumFloors][config.NumButtons]bool
 	activeOrders [][]bool // May be overlapping with requests. Double check with team :).
+	obstruction  bool
+	stopPressed  bool
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -55,11 +53,6 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 		direction: direction,
 	}
 }
-
-// Sets corresponding light on floor, f -> floor, b -> 0 / 1 for down / up, on 1->on 0->off
-// func Elevator_requestButtonLight(f int, b int, on bool) {
-// elevio.SetButtonLamp(2, f, on)
-// }
 
 func (e *Elevator) Id() string {
 	return e.id
