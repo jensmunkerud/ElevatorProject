@@ -32,7 +32,7 @@ type Elevator struct {
 	floor     int
 	direction Direction
 	requests  [config.NumFloors][config.NumButtons]bool
-	activeOrders [][]bool // May be overlapping with requests. Double check with team.
+	activeOrders [][]bool // May be overlapping with requests. Double check with team :).
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
