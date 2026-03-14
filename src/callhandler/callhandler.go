@@ -59,13 +59,7 @@ func InitCallHandler() {
 
 		case obstruction := <-c.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
-			// if obstruction {
-			// 	localElevator.UpdateBehaviour(es.Idle)
-			// 	// localElevator.UpdateCurrentDirection(es.Stop)
-			// } else {
-			// 	localElevator.UpdateBehaviour(es.Moving) // Possibly dangerous?
-			// }
-			// updateElevatorState(localElevator)
+			localElevator.UpdateObstruction(obstruction)
 			break
 
 		case stop := <-c.StopEvent:

@@ -85,7 +85,11 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int, doorTimer *time.Timer) {
 
 func fsmOnDoorTimeout(e *es.Elevator, doorTimer *time.Timer) {
 	fmt.Printf("\n\nfsmOnDoorTimeout()\n")
-
+	if e.Obstruction() {
+		// Keep door open
+		startDoorTimer(doorTimer)
+		return
+	}
 	switch e.Behaviour() {
 	case es.DoorOpen:
 		newDirection, newBehaviour := requestsChooseDirection(*e)

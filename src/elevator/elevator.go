@@ -27,11 +27,12 @@ const (
 // }
 
 type Elevator struct {
-	id        string
-	behaviour Behaviour
-	floor     int
-	direction Direction
-	requests  [config.NumFloors][config.NumButtons]bool
+	id          string
+	behaviour   Behaviour
+	floor       int
+	direction   Direction
+	requests    [config.NumFloors][config.NumButtons]bool
+	obstruction bool
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -107,4 +108,12 @@ func (e *Elevator) DirectionString() string {
 
 func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 	e.direction = direction
+}
+
+func (e *Elevator) UpdateObstruction(o bool) {
+	e.obstruction = o
+}
+
+func (e Elevator) Obstruction() bool {
+	return e.obstruction
 }
