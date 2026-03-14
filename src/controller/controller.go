@@ -7,7 +7,7 @@ import (
 )
 
 type ElevatorEvent struct {
-	OrderEvent       chan elevio.ButtonEvent
+	OrderEvent       chan es.ButtonType
 	FloorEvent       chan int
 	ObstructionEvent chan bool
 	StopEvent        chan bool
@@ -34,17 +34,17 @@ func initElevatorIO() (
 ) {
 	elevio.Init("localhost:15657", config.NumFloors)
 
-	orderEvent := make(chan elevio.ButtonEvent)
+	orderEventElevio := make(chan elevio.ButtonEvent)
 	floorEvent := make(chan int)
 	obstructionEvent := make(chan bool)
 	stopEvent := make(chan bool)
 
-	go elevio.PollButtons(orderEvent)
+	go elevio.PollButtons(orderEventElevio)
 	go elevio.PollFloorSensor(floorEvent)
 	go elevio.PollObstructionSwitch(obstructionEvent)
 	go elevio.PollStopButton(stopEvent)
 
-	return orderEvent, floorEvent, obstructionEvent, stopEvent
+	return orderEventElevio, floorEvent, obstructionEvent, stopEvent
 }
 
 func MoveElevatorUp() {
