@@ -19,7 +19,7 @@ func requestsAbove(e es.Elevator) bool {
 
 func requestsBelow(e es.Elevator) bool {
 	for f := 0; f < e.CurrentFloor(); f++ {
-		for btn := 0; btn < config.NumFloors; btn++ {
+		for btn := 0; btn < config.NumButtons; btn++ {
 			if e.Requests()[f][btn] {
 				return true
 			}
