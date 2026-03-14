@@ -10,9 +10,9 @@ import (
 
 func setAllLights(es es.Elevator) {
 	for floor := 0; floor < config.NumFloors; floor++ {
-		for btn := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown, elevio.BT_Cab} { // HARD CODED 2 BUTTONS, MAY BE BAD
+		for btn := 0; btn < 3; btn++ { // HARD CODED 2 BUTTONS, MAY BE BAD
 			// es.Elevator_requestButtonLight(floor, btn, es.Requests()[floor][btn])
-			elevio.SetButtonLamp(btn, floor, es.Requests()[floor][btn])
+			elevio.SetButtonLamp(elevio.ButtonType(btn), floor, es.Requests()[floor][btn])
 		}
 	}
 }
