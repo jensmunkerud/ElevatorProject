@@ -23,13 +23,12 @@ func fsmOnInitBetweenFloors(e *es.Elevator) {
 	e.UpdateBehaviour(es.Moving)
 }
 
-func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.ButtonType) {
+func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.ButtonType, doorTimer *time.Timer) {
 
 	switch e.Behaviour() {
 	case es.DoorOpen:
 		if requestsShouldClearImmediately(*e, btnFloor, btnType) {
-			doorTimer := time.NewTimer(config.DoorOpenDuration)
-			doorTimer.Stop()
+			startDoorTimer(doorTimer)
 		} else {
 			e.UpdateRequest(btnFloor, btnType, true)
 		}
@@ -45,8 +44,7 @@ func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.Button
 		switch newBehaviour {
 		case es.DoorOpen:
 			elevio.SetDoorOpenLamp(true)
-			doorTimer := time.NewTimer(config.DoorOpenDuration)
-			doorTimer.Stop()
+			startDoorTimer(doorTimer)
 			*e = requestsClearAtCurrentFloor(*e)
 
 		case es.Moving:
@@ -62,7 +60,7 @@ func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.Button
 	fmt.Println("\nNew state!!")
 }
 
-func fsmOnFloorArrival(e *es.Elevator, newFloor int) {
+func fsmOnFloorArrival(e *es.Elevator, newFloor int, doorTimer *time.Timer) {
 	fmt.Printf("\n\nfsmOnFloorArrival(%d)\n", newFloor)
 
 	e.UpdateCurrentFloor(newFloor)
@@ -74,8 +72,7 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int) {
 			elevio.SetMotorDirection(elevio.MotorDirection(es.Stop))
 			elevio.SetDoorOpenLamp(true)
 			*e = requestsClearAtCurrentFloor(*e)
-			doorTimer := time.NewTimer(config.DoorOpenDuration)
-			doorTimer.Stop()
+			startDoorTimer(doorTimer)
 			setAllLights(*e)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
@@ -86,7 +83,7 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int) {
 	fmt.Println("\nNew state yea!")
 }
 
-func fsmOnDoorTimeout(e *es.Elevator) {
+func fsmOnDoorTimeout(e *es.Elevator, doorTimer *time.Timer) {
 	fmt.Printf("\n\nfsmOnDoorTimeout()\n")
 
 	switch e.Behaviour() {
@@ -97,8 +94,7 @@ func fsmOnDoorTimeout(e *es.Elevator) {
 
 		switch e.Behaviour() {
 		case es.DoorOpen:
-			doorTimer := time.NewTimer(config.DoorOpenDuration)
-			doorTimer.Stop()
+			startDoorTimer(doorTimer)
 			*e = requestsClearAtCurrentFloor(*e)
 			setAllLights(*e)
 		case es.Moving, es.Idle:
@@ -111,4 +107,13 @@ func fsmOnDoorTimeout(e *es.Elevator) {
 	}
 
 	fmt.Println("\nNew state again babbasjan!")
+}
+
+func startDoorTimer(t *time.Timer) {
+	t.Stop()
+	select {
+	case <-t.C:
+	default:
+	}
+	t.Reset(config.DoorOpenDuration)
 }

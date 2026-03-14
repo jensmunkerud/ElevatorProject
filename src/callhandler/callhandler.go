@@ -15,6 +15,7 @@ import (
 	"elevatorproject/src/orders"
 	"fmt"
 	"net"
+	"time"
 )
 
 func InitCallHandler() {
@@ -28,13 +29,16 @@ func InitCallHandler() {
 		return
 	}
 
+	doorTimer := time.NewTimer(config.DoorOpenDuration)
+	doorTimer.Stop()
+
 	localElevator := es.CreateElevator(id, -1, es.Stop, es.Idle)
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
 	// updateElevatorState(localElevator)
 	fsmOnInitBetweenFloors(localElevator)
 
-	orderChan := make(chan [config.NumFloors][config.NumButtons]bool, 10)
+	// orderChan := make(chan [config.NumFloors][config.NumButtons]bool, 10)
 	// var localOrders [config.NumFloors][config.NumButtons]bool
 
 	for {
@@ -46,12 +50,12 @@ func InitCallHandler() {
 			// callHandler does not have this authority.
 			// localOrders[order.Floor][order.Button] = true
 			// orderChan <- localOrders
-			fsmOnRequestButtonPress(localElevator, order.Floor, order.Button)
+			fsmOnRequestButtonPress(localElevator, order.Floor, order.Button, doorTimer)
 			break
 
 		case floor := <-c.FloorEvent:
 			fmt.Printf("%+v\n", floor)
-			fsmOnFloorArrival(localElevator, floor)
+			fsmOnFloorArrival(localElevator, floor, doorTimer)
 
 		case obstruction := <-c.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
@@ -74,11 +78,10 @@ func InitCallHandler() {
 			// localElevator.UpdateCurrentDirection(es.Stop)
 			break
 
-		case newOrders := <-orderChan:
-			updateElevatorFromOrders(localElevator, newOrders)
-			updateElevatorState(localElevator)
+		// case newOrders := <-orderChan:
+		// break
 		case <-doorTimer.C:
-			fsmOnDoorTimeout(localElevator)
+			fsmOnDoorTimeout(localElevator, doorTimer)
 		}
 	}
 }
