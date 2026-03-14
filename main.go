@@ -10,11 +10,9 @@ func main() {
 	// CurrentOrders := make(chan elevatorserver.CallHandlerMessage)
 	// SendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage)
 
-	// Output channels:
-	// HallOrderUpdate := make(chan elevatorserver.HallOrderUpdate)
-	// CabOrderUpdate := make(chan elevatorserver.CabOrderUpdate)
-	// PeerUpdate := make(chan []string)
-	// WorldviewToCostFunction := make(chan elevatorserver.OrderDistributorMessage)
+	// PeerUpdate := make(chan []string) MAYBE?
+	// WorldviewToOrderDistributor:= make(chan elevatorserver.OrderDistributorMessage)
+	// SendWorldviewToNetwork:= make(chan elevatorserver.NetworkingDistributorMessage)
 	// ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage)
 
 	// ActiveOrders := make(chan [][]bool)
