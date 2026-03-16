@@ -12,8 +12,9 @@ import (
 //	to call handler.
 func Run(
 	input <-chan elevatorserver.OrderDistributorMessage,
-	activeOrders chan<- [][]bool,
+	activeOrders chan<- [config.NumFloors][config.NumButtons]bool,
 ) {
+	myID := config.MyID()
 	for parts := range input {
 
 		allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
@@ -37,7 +38,7 @@ func Run(
 		if err != nil {
 			continue
 		}
-		activeOrders <- assignments[config.MyID()]
+		activeOrders <- assignments[myID]
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/networking"
 	"elevatorproject/src/orderdistributor"
+	"time"
 )
 
 func main() {
@@ -24,17 +25,19 @@ func main() {
 	WorldviewToOrderDistributor := make(chan elevatorserver.OrderDistributorMessage, 5)
 	SendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
-	ActiveLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool)
-	ElevatorStateLocal := make(chan elevator.Elevator)
-	elevatorEvent := make(chan elevator.ElevatorEvent)
-	CallHandlerMessage := make(chan elevatorserver.CallHandlerMessage)
+	ActiveLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
+	ElevatorStateLocal := make(chan elevator.Elevator, 5)
+	elevatorEvent := make(chan elevator.ElevatorEvent, 5)
+	CallHandlerMessage := make(chan elevatorserver.CallHandlerMessage, 5)
 	ready := make(chan struct{})
 
 	// Start goroutines:
 	go controller.RunController(elevatorEvent)
+	time.Sleep(1 * time.Second)
 	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CallHandlerMessage, ActiveLocalOrders)
 	<-ready
-	go elevatorserver.RunElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
-	go networking.RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
-	go orderdistributor.RunCostFunc(WorldviewToOrderDistributor, ActiveLocalOrders)
+	go elevatorserver.Run(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
+	go networking.Run(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
+	go orderdistributor.Run(WorldviewToOrderDistributor, ActiveLocalOrders)
+	select{} // Block forever
 }
