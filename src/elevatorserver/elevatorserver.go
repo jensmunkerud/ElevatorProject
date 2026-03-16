@@ -41,7 +41,6 @@ func HallOrderUpdatesFromNetwork(senderID string, hallOrders *orders.HallOrders)
 
 // CabOrderUpdatesFromNetwork unpacks a received allCabOrders map into individual
 // CabOrderUpdate values, one per elevator per floor, ready to send into cabUpdates.
-// SenderID is set to the owning elevator's ID, not the relaying node's ID.
 func CabOrderUpdatesFromNetwork(allCabOrders map[string]*orders.CabOrders) []CabOrderUpdate {
 	updates := make([]CabOrderUpdate, 0, len(allCabOrders)*config.NumFloors)
 	for elevID, cab := range allCabOrders {
@@ -188,7 +187,7 @@ type OrderDistributorMessage struct {
 	elevatorState    map[string]elevator.Elevator
 }
 
-// UnpackForConvertToJson returns pointer-based snapshots compatible with orderdistributor.ConvertToJson.
+// UnpackForOrderDistributor returns pointer-based snapshots for order distributor consumers.
 func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
 	for id, cab := range m.allCabOrders {
@@ -264,6 +263,33 @@ func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.
 	return allCabOrders, hallOrders, elevatorState
 }
 
+// processNetworkMessages receives messages from the network and forwards the
+// unpacked orders and elevator state into the local update channels.
+func processNetworkMessages(
+	channelFromNetworking <-chan NetworkingDistributorMessage,
+	hallUpdate chan<- HallOrderUpdate,
+	cabUpdate chan<- CabOrderUpdate,
+	elevatorStateUpdate chan<- elevator.Elevator,
+) {
+	for message := range channelFromNetworking {
+		tempCab, tempHall, tempElevator := message.UnpackForNetworking()
+		newHallOrders := HallOrderUpdatesFromNetwork(message.SenderID(), tempHall)
+		for _, u := range newHallOrders {
+			hallUpdate <- u
+		}
+		newCabOrders := CabOrderUpdatesFromNetwork(tempCab)
+		for _, u := range newCabOrders {
+			cabUpdate <- u
+		}
+		elev, ok := tempElevator[message.SenderID()]
+		if !ok || elev == nil {
+			continue
+		}
+		elevCopy := elev.Copy()
+		elevatorStateUpdate <- elevCopy
+	}
+}
+
 func copyAllElevState(m map[string]*elevator.Elevator) map[string]*elevator.Elevator {
 	cp := make(map[string]*elevator.Elevator, len(m))
 	for id, e := range m {
@@ -275,125 +301,74 @@ func copyAllElevState(m map[string]*elevator.Elevator) map[string]*elevator.Elev
 	return cp
 }
 
-// Takes in the results of the merging of orders and distributes it to
-// any packages that may need it.
-func distributeResultsToUsers(
-	hallOut <-chan *orders.HallOrders,
-	cabOut <-chan map[string]*orders.CabOrders,
-	elevatorState chan map[string]*elevator.Elevator,
+// publishToConsumers builds messages from the latest snapshots and publishes
+// them to the call handler, order distributor, and networking channels.
+func publishToConsumers(
+	latestHall *orders.HallOrders,
+	latestCab map[string]*orders.CabOrders,
+	latestElevState map[string]*elevator.Elevator,
 	channelForCallHandler chan CallHandlerMessage,
 	channelForOrderDistributor chan OrderDistributorMessage,
 	channelForNetworking chan NetworkingDistributorMessage,
 ) {
-
-	// Helpers to deep-copy pointer snapshots into value-based message fields.
-	copyHallValue := func(h *orders.HallOrders) (orders.HallOrders, bool) {
-		if h == nil {
-			return orders.HallOrders{}, false
+	var hallValue orders.HallOrders
+	if latestHall != nil {
+		if cp := latestHall.Copy(); cp != nil {
+			hallValue = *cp
 		}
-		cp := h.Copy()
-		return *cp, true
-	}
-	copyAllCabValue := func(m map[string]*orders.CabOrders) (map[string]orders.CabOrders, bool) {
-		if m == nil {
-			return nil, false
-		}
-		cp := make(map[string]orders.CabOrders, len(m))
-		for id, cab := range m {
-			if cab == nil {
-				continue
-			}
-			cc := cab.Copy()
-			cp[id] = *cc
-		}
-		return cp, true
-	}
-	copyElevStateValue := func(m map[string]*elevator.Elevator) (map[string]elevator.Elevator, bool) {
-		if m == nil {
-			return nil, false
-		}
-		cp := make(map[string]elevator.Elevator, len(m))
-		for id, e := range m {
-			if e == nil {
-				continue
-			}
-			cp[id] = *e
-		}
-		return cp, true
 	}
 
-	go func() {
-		var (
-			currentMergedHall orders.HallOrders
-			currentAllCab     map[string]orders.CabOrders
-			currentElevState  map[string]elevator.Elevator
-		)
-
-		publish := func() {
-			myCab, ok := currentAllCab[config.MyID()]
-			if !ok {
-				myCab = orders.CabOrders{}
-			}
-
-			chMsg := CallHandlerMessage{
-				mergedHallOrders: currentMergedHall,
-				myCabOrders:      myCab,
-			}
-			odMsg := OrderDistributorMessage{
-				mergedHallOrders: currentMergedHall,
-				allCabOrders:     currentAllCab,
-				elevatorState:    currentElevState,
-			}
-			netMsg := NetworkingDistributorMessage{
-				senderID:         config.MyID(),
-				allCabOrders:     currentAllCab,
-				mergedHallOrders: currentMergedHall,
-				elevatorState:    currentElevState,
-			}
-
-			//Start by emptying all the channels
-			select {
-			case <-channelForCallHandler:
-			default:
-			}
-
-			select {
-			case <-channelForOrderDistributor:
-			default:
-			}
-
-			select {
-			case <-channelForNetworking:
-			default:
-			}
-			// Then writing your new message to the channels
-			channelForCallHandler <- chMsg
-			channelForOrderDistributor <- odMsg
-			channelForNetworking <- netMsg
+	cabValue := make(map[string]orders.CabOrders, len(latestCab))
+	for id, cab := range latestCab {
+		if cab != nil {
+			cabValue[id] = *cab.Copy()
 		}
+	}
 
-		for {
-			select {
-			case h := <-hallOut:
-				if hv, ok := copyHallValue(h); ok {
-					currentMergedHall = hv
-				}
-				publish()
-
-			case c := <-cabOut:
-				if cv, ok := copyAllCabValue(c); ok {
-					currentAllCab = cv
-				}
-				publish()
-
-			case es := <-elevatorState:
-				if ev, ok := copyElevStateValue(es); ok {
-					currentElevState = ev
-				}
-				publish()
-			}
+	elevValue := make(map[string]elevator.Elevator, len(latestElevState))
+	for id, e := range latestElevState {
+		if e != nil {
+			elevValue[id] = *e
 		}
-	}()
+	}
+
+	myCab, ok := cabValue[config.MyID()]
+	if !ok {
+		myCab = orders.CabOrders{}
+	}
+
+	chMsg := CallHandlerMessage{
+		mergedHallOrders: hallValue,
+		myCabOrders:      myCab,
+	}
+	odMsg := OrderDistributorMessage{
+		mergedHallOrders: hallValue,
+		allCabOrders:     cabValue,
+		elevatorState:    elevValue,
+	}
+	netMsg := NetworkingDistributorMessage{
+		senderID:         config.MyID(),
+		allCabOrders:     cabValue,
+		mergedHallOrders: hallValue,
+		elevatorState:    elevValue,
+	}
+	//Discard outdated snapshots if the channel is full, ensuring the latest state is always published at the next tick without blocking.
+	select {
+	case <-channelForCallHandler:
+	default:
+	}
+	select {
+	case <-channelForOrderDistributor:
+	default:
+	}
+	select {
+	case <-channelForNetworking:
+	default:
+	}
+
+	channelForCallHandler <- chMsg
+	channelForOrderDistributor <- odMsg
+	channelForNetworking <- netMsg
 }
 
 // RunElevatorServer runs the elevator server.
@@ -410,6 +385,7 @@ func RunElevatorServer(
 	channelToNetworking chan NetworkingDistributorMessage,
 	channelFromNetworking <-chan NetworkingDistributorMessage,
 ) {
+	//For storing the latest snapshot of all orders and elevator states, used for merging and broadcasting to network.
 	allHall := map[string]*orders.HallOrders{}
 	allCab := map[string]*orders.CabOrders{}
 	allElevatorStates := map[string]*elevator.Elevator{}
@@ -421,18 +397,14 @@ func RunElevatorServer(
 	initialElevatorState := <-elevatorStateUpdate
 	allElevatorStates[config.MyID()] = &initialElevatorState
 
-	hallOut := make(chan *orders.HallOrders, 1)
-	cabOut := make(chan map[string]*orders.CabOrders, 1)
-	elevStateOut := make(chan map[string]*elevator.Elevator, 1)
-
 	// Internal snapshot channels: update loop sends latest state, broadcast goroutine reads it.
 	hallSnap := make(chan *orders.HallOrders, 1)
 	cabSnap := make(chan map[string]*orders.CabOrders, 1)
 	elevStateSnap := make(chan map[string]*elevator.Elevator, 1)
 
-	distributeResultsToUsers(hallOut, cabOut, elevStateOut, channelToCallHandler, channelToOrderDistributor, channelToNetworking)
-
-	// Må tenkte litt mer, men mulig vi kan fjerne. Har ikke kontinuerlig oppdatering av variabler.
+	// Throttle: buffer snapshots from the main loop and publish to consumers
+	// only at HeartbeatInterval, avoiding flooding
+	// on rapid state changes.
 	go func() {
 		ticker := time.NewTicker(config.HeartbeatInterval)
 		defer ticker.Stop()
@@ -448,38 +420,17 @@ func RunElevatorServer(
 			case es := <-elevStateSnap:
 				latestElevState = es
 			case <-ticker.C:
-				hallOut <- latestHall
-				cabOut <- latestCab
-				elevStateOut <- latestElevState
+				publishToConsumers(latestHall, latestCab, latestElevState,
+					channelToCallHandler, channelToOrderDistributor, channelToNetworking)
 			}
 		}
 	}()
-
-	go func() {
-		for message := range channelFromNetworking {
-			tempCab, tempHall, tempElevator := message.UnpackForNetworking()
-			newHallOrders := HallOrderUpdatesFromNetwork(message.SenderID(), tempHall)
-			for _, u := range newHallOrders {
-				hallUpdate <- u
-			}
-			newCabOrders := CabOrderUpdatesFromNetwork(tempCab)
-			for _, u := range newCabOrders {
-				cabUpdate <- u
-			}
-			elev, ok := tempElevator[message.SenderID()]
-			if !ok || elev == nil {
-				continue
-			}
-			elevCopy := elev.Copy()
-			elevatorStateUpdate <- elevCopy
-		}
-	}()
+	go processNetworkMessages(channelFromNetworking, hallUpdate, cabUpdate, elevatorStateUpdate)
 
 	for {
 		select {
 		case u := <-hallUpdate:
 			if _, ok := allHall[u.SenderID]; !ok {
-				// Burde kanskje sjekke at u.SenderID faktisk er en elevator. Mulig det skjer i Networking.
 				allHall[u.SenderID] = orders.CreateHallOrders()
 			}
 			allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
@@ -494,7 +445,6 @@ func RunElevatorServer(
 
 		case u := <-cabUpdate:
 			if _, ok := allCab[u.SenderID]; !ok {
-				// Burde kanskje sjekke at u.SenderID faktisk er en elevator. Mulig det skjer i Networking.
 				allCab[u.SenderID] = orders.CreateCabOrders()
 			}
 			allCab[u.SenderID].UpdateOrderState(u.Floor, u.State)
@@ -518,7 +468,7 @@ func RunElevatorServer(
 				}
 			}
 		case es := <-elevatorStateUpdate:
-			// Always overwrite the elevator state for the sender, since it's a direct report of its physical state, not a distributed consensus like the orders.
+			// Always overwrite the elevator state for the sender, since it's a direct report of its physical state.
 			allElevatorStates[es.Id()] = &es
 			select {
 			case <-elevStateSnap:
