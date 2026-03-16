@@ -10,15 +10,6 @@ import (
 	"time"
 )
 
-func setAllLights(e es.Elevator) {
-	for floor := 0; floor < config.NumFloors; floor++ {
-		for button := 0; button < 3; button++ { // HARD CODED 2 BUTTONS, MAY BE BAD
-			// es.Elevator_requestButtonLight(floor, btn, es.Requests()[floor][btn])
-			controller.SetButtonLamp(es.ButtonType(button), floor, e.Requests()[floor][button])
-		}
-	}
-}
-
 func fsmOnInitBetweenFloors(e *es.Elevator) {
 	controller.MoveElevatorDown()
 	e.UpdateCurrentDirection(es.Down)
@@ -71,8 +62,6 @@ func fsmOnRequestButtonPress(
 		}
 	}
 
-	setAllLights(*e)
-
 	fmt.Println("\nNew state!!")
 }
 
@@ -95,7 +84,6 @@ func fsmOnFloorArrival(
 			elevio.SetDoorOpenLamp(true)
 			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
 			startDoorTimer(doorTimer)
-			setAllLights(*e)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
 	default:
@@ -127,7 +115,6 @@ func fsmOnDoorTimeout(
 		case es.DoorOpen:
 			startDoorTimer(doorTimer)
 			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
-			setAllLights(*e)
 		case es.Moving, es.Idle:
 			elevio.SetDoorOpenLamp(false)
 			if !e.StopPressed() {
