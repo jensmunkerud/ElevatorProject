@@ -6,7 +6,7 @@ import (
 	es "elevatorproject/src/elevator"
 )
 
-func RunController(ready chan struct{}, elevatorEvent chan es.ElevatorEvent) {
+func RunController(elevatorEvent chan es.ElevatorEvent) {
 	// Initializes communication with elevatorserver to receive IO from physical elevator
 	elevio.Init("localhost:15657", config.NumFloors)
 
@@ -39,7 +39,6 @@ func RunController(ready chan struct{}, elevatorEvent chan es.ElevatorEvent) {
 			}
 		}
 	}()
-	close(ready)
 }
 
 func MoveElevatorUp() {

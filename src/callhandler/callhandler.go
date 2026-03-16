@@ -16,12 +16,52 @@ import (
 	"time"
 )
 
+func UpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan elevatorserver.CabOrderUpdate) {
+	if cabOrderUpdate == nil || button != es.Cab {
+		return
+	}
+
+	state := orders.UnconfirmedOrderState
+	if completed {
+		state = orders.CompletedOrderState
+	}
+
+	cabOrderUpdate <- elevatorserver.CabOrderUpdate{
+		SenderID: config.MyID(),
+		Floor:    floor,
+		State:    state,
+	}
+}
+
+func UpdateHallOrder(floor int, button es.ButtonType, completed bool, hallOrderUpdate chan elevatorserver.HallOrderUpdate) {
+	if hallOrderUpdate == nil || button == es.Cab {
+		return
+	}
+
+	state := orders.UnconfirmedOrderState
+	if completed {
+		state = orders.CompletedOrderState
+	}
+
+	hallOrderUpdate <- elevatorserver.HallOrderUpdate{
+		SenderID:  config.MyID(),
+		Floor:     floor,
+		Direction: int(button),
+		State:     state,
+	}
+}
+
 func RunCallHandler(
+	ready chan struct{},
+	elevatorEvent chan es.ElevatorEvent,
 	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
 	elevatorStateLocal chan es.Elevator,
 	myCabOrders chan orders.CabOrders,
 	activeLocalOrders chan [][]bool) {
+	// hallOrderUpdateOut = hallOrderUpdate
+	// cabOrderUpdateOut = cabOrderUpdate
+
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
 	doorTimer.Stop()
 
@@ -30,27 +70,29 @@ func RunCallHandler(
 	elevators[localElevator.Id()] = localElevator
 	// updateElevatorState(localElevator)
 	fsmOnInitBetweenFloors(localElevator)
+	close(ready)
+
+	event := <-elevatorEvent
 
 	// orderChan := make(chan [config.NumFloors][config.NumButtons]bool, 10)
 	// var localOrders [config.NumFloors][config.NumButtons]bool
 
 	for {
 		select {
-		case order := <-c.OrderEvent:
+		case order := <-event.OrderEvent:
 			fmt.Printf("%+v\n", order)
-			// ElevatorServer.RequestOrder(order data)
-			// -> Requests elevatorserver to actually create (or not) a new order,
-
-			// callHandler does not have this authority.
-			// localOrders[order.Floor][order.Button] = true
-			// orderChan <- localOrders
+			if order.Button == es.Cab {
+				UpdateCabOrder(order.Floor, order.Button, false, hallOrderUpdate)
+			} else {
+				UpdateHallOrder(order.Floor, order.Button, false)
+			}
 			fsmOnRequestButtonPress(localElevator, order.Floor, order.Button, doorTimer)
 
-		case floor := <-c.FloorEvent:
+		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
 			fsmOnFloorArrival(localElevator, floor, doorTimer)
 
-		case obstruction := <-c.ObstructionEvent:
+		case obstruction := <-event.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
 			localElevator.UpdateObstruction(obstruction)
 			if localElevator.StopPressed() {
@@ -59,7 +101,7 @@ func RunCallHandler(
 				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
 			}
 
-		case stop := <-c.StopEvent:
+		case stop := <-event.StopEvent:
 			fmt.Printf("%+v\n", stop)
 			localElevator.UpdateStopPressed(stop)
 			elevio.SetStopLamp(stop)
