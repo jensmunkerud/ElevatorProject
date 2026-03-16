@@ -24,7 +24,7 @@ func main() {
 	WorldviewToOrderDistributor := make(chan elevatorserver.OrderDistributorMessage, 5)
 	SendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
-	ActiveLocalOrders := make(chan [config.NumFloors][3]bool)
+	ActiveLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool)
 	ElevatorStateLocal := make(chan elevator.Elevator)
 	elevatorEvent := make(chan elevator.ElevatorEvent)
 	CallHandlerMessage := make(chan elevatorserver.CallHandlerMessage)

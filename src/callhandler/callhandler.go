@@ -58,7 +58,7 @@ func RunCallHandler(
 	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
 	elevatorStateLocal chan es.Elevator,
 	callHandlerMessage chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
-	activeLocalOrders chan [config.NumFloors][3]bool) {
+	activeLocalOrders chan [config.NumFloors][config.NumButtons]bool) {
 	// hallOrderUpdateOut = hallOrderUpdate
 	// cabOrderUpdateOut = cabOrderUpdate
 
