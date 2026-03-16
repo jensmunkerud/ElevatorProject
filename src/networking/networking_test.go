@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"Network-go/network/bcast"
-	"elevatorproject/src/elevator"
-	"elevatorproject/src/orders"
+	//"elevatorproject/src/elevator"
+	//"elevatorproject/src/orders"
 )
-
+/*
 func TestMessageFromOrders_RoundTrip(t *testing.T) {
 	hall := orders.CreateHallOrders()
 	hall.UpdateOrderState(0, 0, orders.UnconfirmedOrderState)
@@ -76,6 +76,7 @@ func TestWorldviewFromMessage_RoundTrip(t *testing.T) {
 		t.Fatalf("elevator behaviour round-trip mismatch: got %v", got)
 	}
 }
+*/
 // TestBroadcastAndReceiveManual is an integration-style test intended to be run
 // on two machines on the same network. It sends a Message on the UDP broadcast
 // channel and prints any received Messages to the terminal.

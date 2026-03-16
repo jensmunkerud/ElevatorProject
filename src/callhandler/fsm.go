@@ -90,7 +90,7 @@ func fsmOnFloorArrival(
 		// nothing
 	}
 
-	fmt.Println("\nNew state yea!")
+	//fmt.Println("\nNew state yea!")
 }
 
 func fsmOnDoorTimeout(
@@ -131,7 +131,7 @@ func fsmOnDoorTimeout(
 		// nothing
 	}
 
-	fmt.Println("New state again babbasjan!")
+	//fmt.Println("New state again babbasjan!")
 }
 
 func startDoorTimer(t *time.Timer) {

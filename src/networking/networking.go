@@ -7,6 +7,7 @@ import (
 	"elevatorproject/src/elevator"
 	es "elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
+	"fmt"
 	"time"
 )
 
@@ -36,6 +37,7 @@ func Run(
 	go bcast.Transmitter(config.BroadcastPort, sendMsg)
 	go bcast.Receiver(config.BroadcastPort, recvMsg)
 
+	fmt.Println("Starting broadcast loop")
 	go func() {
 		for worldview := range sendWorldviewIn {
 			allCabOrders, hallOrders, elevatorStates := worldview.UnpackForNetworking()
@@ -50,6 +52,7 @@ func Run(
 	}()
 
 	// Inbound loop: decode received messages into order and peer updates.
+	fmt.Println("Starting inbound loop")
 	for {
 		select {
 		case msg := <-recvMsg:

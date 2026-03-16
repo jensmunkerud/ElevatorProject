@@ -81,6 +81,7 @@ func RunCallHandler(
 	// orderChan := make(chan [config.NumFloors][config.NumButtons]bool, 10)
 	// var localOrders [config.NumFloors][config.NumButtons]bool
 
+	fmt.Println("Starting callhandler loop")
 	for {
 		select {
 		case order := <-event.OrderEvent:

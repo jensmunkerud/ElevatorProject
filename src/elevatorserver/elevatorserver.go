@@ -4,6 +4,7 @@ import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
+	"fmt"
 	"time"
 )
 
@@ -139,29 +140,34 @@ func Run(
 	channelFromNetworking <-chan NetworkingDistributorMessage,
 ) {
 	//For storing the latest snapshot of all orders and elevator states, used for merging and broadcasting to network.
+	fmt.Println("Check 1")
+	myID := config.MyID()
 	allHall := map[string]*orders.HallOrders{}
 	allCab := map[string]*orders.CabOrders{}
 	allElevatorStates := map[string]*elevator.Elevator{}
 	elevatorsOnNetwork := []string{}
-
+	fmt.Println("Check 2")
 	// Create your own orders first
-	allHall[config.MyID()] = orders.CreateHallOrders()
-	allCab[config.MyID()] = orders.CreateCabOrders()
+	allHall[myID] = orders.CreateHallOrders()
+	allCab[myID] = orders.CreateCabOrders()
+	fmt.Println("Check 2.5")
 	initialElevatorState := <-elevatorStateUpdate
-	allElevatorStates[config.MyID()] = &initialElevatorState
-
+	fmt.Println("Check 2.6")
+	allElevatorStates[myID] = &initialElevatorState
+	fmt.Println("Check 3")
 	// Internal snapshot channels: update loop sends latest state, broadcast goroutine reads it.
 	hallSnap := make(chan *orders.HallOrders, 1)
 	cabSnap := make(chan map[string]*orders.CabOrders, 1)
 	elevStateSnap := make(chan map[string]*elevator.Elevator, 1)
-
+	fmt.Println("Check 4")
 	// Throttle: buffer snapshots from the main loop and publish to consumers
 	// only at HeartbeatInterval, avoiding flooding
 	// on rapid state changes.
+	fmt.Println("Starting publish to consumers loop")
 	go func() {
 		ticker := time.NewTicker(config.HeartbeatInterval)
 		defer ticker.Stop()
-		latestHall := allHall[config.MyID()]
+		latestHall := allHall[myID]
 		latestCab := orders.CopyAllCab(allCab)
 		latestElevState := copyAllElevState(allElevatorStates)
 		for {
@@ -178,8 +184,10 @@ func Run(
 			}
 		}
 	}()
+	fmt.Println("Starting process network messages loop")
 	go processNetworkMessages(channelFromNetworking, hallUpdate, cabUpdate, elevatorStateUpdate)
 
+	fmt.Println("Starting hallupdate loop")
 	for {
 		select {
 		case u := <-hallUpdate:
@@ -188,13 +196,13 @@ func Run(
 			}
 			allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
 			nextState := mergeHallOrderState(u, config.MyID(), allHall, elevatorsOnNetwork)
-			allHall[config.MyID()].UpdateOrderState(u.Floor, u.Direction, nextState)
+			allHall[myID].UpdateOrderState(u.Floor, u.Direction, nextState)
 			// Empty the channel to always have the lates snapshot
 			select {
 			case <-hallSnap:
 			default:
 			}
-			hallSnap <- allHall[config.MyID()].Copy()
+			hallSnap <- allHall[myID].Copy()
 
 		case u := <-cabUpdate:
 			if _, ok := allCab[u.SenderID]; !ok {
@@ -222,7 +230,8 @@ func Run(
 			}
 		case es := <-elevatorStateUpdate:
 			// Always overwrite the elevator state for the sender, since it's a direct report of its physical state.
-			allElevatorStates[es.Id()] = &es
+			id := es.Id()
+			allElevatorStates[id] = &es
 			select {
 			case <-elevStateSnap:
 			default:

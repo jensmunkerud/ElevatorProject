@@ -4,11 +4,12 @@ import (
 	"driver-go/elevio"
 	"elevatorproject/src/config"
 	es "elevatorproject/src/elevator"
+	"fmt"
 )
 
 func RunController(elevatorEvent chan es.ElevatorEvent) {
 	// Initializes communication with elevatorserver to receive IO from physical elevator
-	elevio.Init("localhost:15657", config.NumFloors)
+	elevio.Init("localhost:15658", config.NumFloors)
 
 	orderEventElevio := make(chan elevio.ButtonEvent)
 	orderEvent := make(chan es.ButtonEvent)
@@ -31,6 +32,7 @@ func RunController(elevatorEvent chan es.ElevatorEvent) {
 
 	// Necessary to make elevio and callhandler "loosely coupled":
 	// orderEvent simply reflects orderEventElevio, but with internal ButtonEvent type
+	fmt.Println("Starting controller loop")
 	go func() {
 		for order := range orderEventElevio {
 			orderEvent <- es.ButtonEvent{

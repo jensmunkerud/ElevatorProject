@@ -5,6 +5,8 @@ import (
 	"net"
 	"sync"
 	"time"
+	"os"
+	"strconv"
 )
 
 const (
@@ -16,6 +18,7 @@ const (
 	HeartbeatInterval = 50 * time.Millisecond
 	PeersPort = 15647
 	BroadcastPort = 16569
+	testing = true
 )
 
 var (
@@ -32,6 +35,9 @@ func MyID() string {
 // Only the first call has effect. The application should call SetMyID("") at startup to use MAC-based ID.
 func SetMyID() {
 	once.Do(func() {
+		if testing {
+			myID = strconv.Itoa(os.Getpid())
+		} else {
 		mac, err := getMacAddr()
 		attempts := 0
 		for err != nil {
@@ -45,6 +51,7 @@ func SetMyID() {
 			}
 		}
 		myID = mac
+	}
 	})
 }
 

@@ -8,6 +8,7 @@ import (
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/networking"
 	"elevatorproject/src/orderdistributor"
+	"fmt"
 	"time"
 )
 
@@ -15,8 +16,8 @@ func main() {
 	//Set my ID before starting any goroutines.
 	config.SetMyID()
 	// Initialize channels for communication between goroutines:
-	HallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*10) // Buffered to avoid blocking on sends
-	CabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*10)
+	HallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*1000) // Buffered to avoid blocking on sends
+	CabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*1000)
 	ElevatorStateUpdate := make(chan elevator.Elevator, config.NumFloors*4)
 
 	PeerUpdate := make(chan []string, 10) // Buffered to avoid blocking on sends
@@ -26,18 +27,23 @@ func main() {
 	SendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ActiveLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
-	ElevatorStateLocal := make(chan elevator.Elevator, 5)
 	elevatorEvent := make(chan elevator.ElevatorEvent, 5)
 	CallHandlerMessage := make(chan elevatorserver.CallHandlerMessage, 5)
 	ready := make(chan struct{})
 
 	// Start goroutines:
+	fmt.Println("Starting controller")
 	go controller.RunController(elevatorEvent)
 	time.Sleep(1 * time.Second)
-	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CallHandlerMessage, ActiveLocalOrders)
+	fmt.Println("Starting callhandler")
+	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, CallHandlerMessage, ActiveLocalOrders)
 	<-ready
+	fmt.Println("Starting elevatorserver")
 	go elevatorserver.Run(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
+	fmt.Println("Starting networking")
 	go networking.Run(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
+	fmt.Println("Starting orderdistributor")
 	go orderdistributor.Run(WorldviewToOrderDistributor, ActiveLocalOrders)
-	select{} // Block forever
+	fmt.Println("Starting select")
+	select {} // Block forever
 }
