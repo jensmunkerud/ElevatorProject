@@ -3,52 +3,60 @@ package callhandler
 import (
 	"driver-go/elevio"
 	"elevatorproject/src/config"
+	controller "elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
 	"fmt"
 	"time"
 )
 
-func setAllLights(es es.Elevator) {
+func setAllLights(e es.Elevator) {
 	for floor := 0; floor < config.NumFloors; floor++ {
-		for btn := 0; btn < 2; btn++ { // HARD CODED 2 BUTTONS, MAY BE BAD
+		for button := 0; button < 3; button++ { // HARD CODED 2 BUTTONS, MAY BE BAD
 			// es.Elevator_requestButtonLight(floor, btn, es.Requests()[floor][btn])
-			elevio.SetButtonLamp(elevio.ButtonType(btn), floor, es.Requests()[floor][btn])
+			controller.SetButtonLamp(es.ButtonType(button), floor, e.Requests()[floor][button])
 		}
 	}
 }
 
 func fsmOnInitBetweenFloors(e *es.Elevator) {
-	elevio.SetMotorDirection(elevio.MD_Down)
+	controller.MoveElevatorDown()
 	e.UpdateCurrentDirection(es.Down)
 	e.UpdateBehaviour(es.Moving)
 }
 
-func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.ButtonType) {
+func fsmOnRequestButtonPress(e *es.Elevator, buttonFloor int, buttonType es.ButtonType, doorTimer *time.Timer) {
 
 	switch e.Behaviour() {
 	case es.DoorOpen:
-		if requestsShouldClearImmediately(*e, btnFloor, btnType) {
-			time.Sleep(config.DoorOpenDuration)
+		if requestsShouldClearImmediately(*e, buttonFloor, buttonType) {
+			startDoorTimer(doorTimer)
 		} else {
-			e.UpdateRequest(btnFloor, btnType, true)
+			e.UpdateRequest(buttonFloor, buttonType, true)
 		}
 
 	case es.Moving:
-		e.UpdateRequest(btnFloor, btnType, true)
+		e.UpdateRequest(buttonFloor, buttonType, true)
 
 	case es.Idle:
-		e.UpdateRequest(btnFloor, btnType, true)
+		e.UpdateRequest(buttonFloor, buttonType, true)
 		newDirection, newBehaviour := requestsChooseDirection(*e)
 		e.UpdateCurrentDirection(newDirection)
 		e.UpdateBehaviour(newBehaviour)
 		switch newBehaviour {
 		case es.DoorOpen:
 			elevio.SetDoorOpenLamp(true)
-			time.Sleep(config.DoorOpenDuration)
+			startDoorTimer(doorTimer)
 			*e = requestsClearAtCurrentFloor(*e)
 
 		case es.Moving:
-			elevio.SetMotorDirection(elevio.MotorDirection(e.CurrentDirection()))
+			if !e.StopPressed() {
+				switch e.CurrentDirection() {
+				case es.Up:
+					controller.MoveElevatorUp()
+				case es.Down:
+					controller.MoveElevatorDown()
+				}
+			}
 
 		case es.Idle:
 			// nothing
@@ -60,7 +68,7 @@ func fsmOnRequestButtonPress(e *es.Elevator, btnFloor int, btnType elevio.Button
 	fmt.Println("\nNew state!!")
 }
 
-func fsmOnFloorArrival(e *es.Elevator, newFloor int) {
+func fsmOnFloorArrival(e *es.Elevator, newFloor int, doorTimer *time.Timer) {
 	fmt.Printf("\n\nfsmOnFloorArrival(%d)\n", newFloor)
 
 	e.UpdateCurrentFloor(newFloor)
@@ -69,10 +77,10 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int) {
 	switch e.Behaviour() {
 	case es.Moving:
 		if requestsShouldStop(*e) {
-			elevio.SetMotorDirection(elevio.MotorDirection(e.CurrentDirection()))
+			controller.StopElevator()
 			elevio.SetDoorOpenLamp(true)
 			*e = requestsClearAtCurrentFloor(*e)
-			time.Sleep(config.DoorOpenDuration)
+			startDoorTimer(doorTimer)
 			setAllLights(*e)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
@@ -83,9 +91,13 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int) {
 	fmt.Println("\nNew state yea!")
 }
 
-func fsmOnDoorTimeout(e *es.Elevator) {
+func fsmOnDoorTimeout(e *es.Elevator, doorTimer *time.Timer) {
 	fmt.Printf("\n\nfsmOnDoorTimeout()\n")
-
+	if e.Obstruction() {
+		// Keep door open
+		startDoorTimer(doorTimer)
+		return
+	}
 	switch e.Behaviour() {
 	case es.DoorOpen:
 		newDirection, newBehaviour := requestsChooseDirection(*e)
@@ -94,17 +106,33 @@ func fsmOnDoorTimeout(e *es.Elevator) {
 
 		switch e.Behaviour() {
 		case es.DoorOpen:
-			time.Sleep(config.DoorOpenDuration)
+			startDoorTimer(doorTimer)
 			*e = requestsClearAtCurrentFloor(*e)
 			setAllLights(*e)
 		case es.Moving, es.Idle:
 			elevio.SetDoorOpenLamp(false)
-			elevio.SetMotorDirection(elevio.MotorDirection(e.CurrentDirection()))
+			if !e.StopPressed() {
+				switch e.CurrentDirection() {
+				case es.Up:
+					controller.MoveElevatorUp()
+				case es.Down:
+					controller.MoveElevatorDown()
+				}
+			}
 		}
 
 	default:
 		// nothing
 	}
 
-	fmt.Println("\nNew state again babbasjan!")
+	fmt.Println("New state again babbasjan!")
+}
+
+func startDoorTimer(t *time.Timer) {
+	t.Stop()
+	select {
+	case <-t.C:
+	default:
+	}
+	t.Reset(config.DoorOpenDuration)
 }

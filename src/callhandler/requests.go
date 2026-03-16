@@ -1,7 +1,6 @@
 package callhandler
 
 import (
-	"driver-go/elevio"
 	"elevatorproject/src/config"
 	es "elevatorproject/src/elevator"
 )
@@ -19,7 +18,7 @@ func requestsAbove(e es.Elevator) bool {
 
 func requestsBelow(e es.Elevator) bool {
 	for f := 0; f < e.CurrentFloor(); f++ {
-		for btn := 0; btn < config.NumFloors; btn++ {
+		for btn := 0; btn < config.NumButtons; btn++ {
 			if e.Requests()[f][btn] {
 				return true
 			}
@@ -80,45 +79,45 @@ func requestsChooseDirection(e es.Elevator) (es.Direction, es.Behaviour) {
 func requestsShouldStop(e es.Elevator) bool {
 	switch e.CurrentDirection() {
 	case es.Down:
-		return e.Requests()[e.CurrentFloor()][elevio.BT_HallDown] ||
-			e.Requests()[e.CurrentFloor()][elevio.BT_Cab] ||
+		return e.Requests()[e.CurrentFloor()][es.HallDown] ||
+			e.Requests()[e.CurrentFloor()][es.Cab] ||
 			!requestsBelow(e)
 	case es.Up:
-		return e.Requests()[e.CurrentFloor()][elevio.BT_HallUp] ||
-			e.Requests()[e.CurrentFloor()][elevio.BT_Cab] ||
+		return e.Requests()[e.CurrentFloor()][es.HallUp] ||
+			e.Requests()[e.CurrentFloor()][es.Cab] ||
 			!requestsAbove(e)
 	default:
 		return true
 	}
 }
 
-func requestsShouldClearImmediately(e es.Elevator, btnFloor int, btnType elevio.ButtonType) bool {
-	return e.CurrentFloor() == btnFloor &&
-		((e.CurrentDirection() == es.Up && btnType == elevio.BT_HallUp) ||
-			(e.CurrentDirection() == es.Down && btnType == elevio.BT_HallDown) ||
+func requestsShouldClearImmediately(e es.Elevator, buttonFloor int, buttonType es.ButtonType) bool {
+	return e.CurrentFloor() == buttonFloor &&
+		((e.CurrentDirection() == es.Up && buttonType == es.HallUp) ||
+			(e.CurrentDirection() == es.Down && buttonType == es.HallDown) ||
 			e.CurrentDirection() == es.Stop ||
-			btnType == elevio.BT_Cab)
+			buttonType == es.Cab)
 }
 
 func requestsClearAtCurrentFloor(e es.Elevator) es.Elevator {
-	e.UpdateRequest(e.CurrentFloor(), elevio.BT_Cab, false)
+	e.UpdateRequest(e.CurrentFloor(), es.Cab, false)
 
 	switch e.CurrentDirection() {
 	case es.Up:
-		if !requestsAbove(e) && !e.Requests()[e.CurrentFloor()][elevio.BT_HallUp] {
-			e.UpdateRequest(e.CurrentFloor(), elevio.BT_HallDown, false)
+		if !requestsAbove(e) && !e.Requests()[e.CurrentFloor()][es.HallUp] {
+			e.UpdateRequest(e.CurrentFloor(), es.HallDown, false)
 		}
-		e.UpdateRequest(e.CurrentFloor(), elevio.BT_HallUp, false)
+		e.UpdateRequest(e.CurrentFloor(), es.HallUp, false)
 
 	case es.Down:
-		if !requestsBelow(e) && !e.Requests()[e.CurrentFloor()][elevio.BT_HallUp] {
-			e.UpdateRequest(e.CurrentFloor(), elevio.BT_HallUp, false)
+		if !requestsBelow(e) && !e.Requests()[e.CurrentFloor()][es.HallUp] {
+			e.UpdateRequest(e.CurrentFloor(), es.HallUp, false)
 		}
-		e.UpdateRequest(e.CurrentFloor(), elevio.BT_HallDown, false)
+		e.UpdateRequest(e.CurrentFloor(), es.HallDown, false)
 
 	default:
-		e.UpdateRequest(e.CurrentFloor(), elevio.BT_HallUp, false)
-		e.UpdateRequest(e.CurrentFloor(), elevio.BT_HallDown, false)
+		e.UpdateRequest(e.CurrentFloor(), es.HallUp, false)
+		e.UpdateRequest(e.CurrentFloor(), es.HallDown, false)
 	}
 
 	return e

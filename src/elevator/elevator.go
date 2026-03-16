@@ -1,7 +1,6 @@
 package elevator
 
 import (
-	"driver-go/elevio"
 	"elevatorproject/src/config"
 	"fmt"
 )
@@ -14,6 +13,19 @@ const (
 	Down Direction = -1
 )
 
+type ButtonType int
+
+const (
+	HallUp   ButtonType = 0
+	HallDown ButtonType = 1
+	Cab      ButtonType = 2
+)
+
+type ButtonEvent struct {
+	Floor  int
+	Button ButtonType
+}
+
 type Behaviour int
 
 const (
@@ -22,17 +34,22 @@ const (
 	DoorOpen
 )
 
-type ElevatorButtons struct {
-	Buttons [config.NumFloors][2]bool //[up, down]
+type Elevator struct {
+	id           string
+	behaviour    Behaviour
+	floor        int
+	direction    Direction
+	requests     [config.NumFloors][config.NumButtons]bool
+	activeOrders [][]bool // May be overlapping with requests. Double check with team :).
+	obstruction  bool
+	stopPressed  bool
 }
 
-type Elevator struct {
-	id        string
-	behaviour Behaviour
-	floor     int
-	direction Direction
-	requests  [config.NumFloors][config.NumButtons]bool
-	activeOrders [][]bool // May be overlapping with requests. Double check with team :).
+type ElevatorEvent struct {
+	OrderEvent       chan ButtonEvent
+	FloorEvent       chan int
+	ObstructionEvent chan bool
+	StopEvent        chan bool
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -42,11 +59,6 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 		floor:     currentFloor,
 		direction: direction,
 	}
-}
-
-// Sets corresponding light on floor, f -> floor, b -> 0 / 1 for down / up, on 1->on 0->off
-func Elevator_requestButtonLight(f int, b int, on bool) {
-	elevio.SetButtonLamp(2, f, on)
 }
 
 func (e *Elevator) Id() string {
@@ -61,8 +73,11 @@ func (e *Elevator) Requests() [config.NumFloors][config.NumButtons]bool {
 	return e.requests
 }
 
-func (e *Elevator) UpdateRequest(floor int, btn elevio.ButtonType, value bool) {
+func (e *Elevator) UpdateRequest(floor int, btn ButtonType, value bool) {
 	e.requests[floor][btn] = value
+}
+func (e *Elevator) UpdateRequestTotal(value [config.NumFloors][3]bool) {
+	e.requests = value
 }
 
 func (e *Elevator) Behaviour() Behaviour {
@@ -114,10 +129,26 @@ func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 	e.direction = direction
 }
 
+func (e *Elevator) UpdateObstruction(o bool) {
+	e.obstruction = o
+}
+
+func (e Elevator) Obstruction() bool {
+	return e.obstruction
+}
+
+func (e *Elevator) UpdateStopPressed(s bool) {
+	e.stopPressed = s
+}
+
+func (e Elevator) StopPressed() bool {
+	return e.stopPressed
+}
+
 func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
 	e.activeOrders = newActiveOrders
 }
-	
+
 func (e *Elevator) Copy() Elevator {
-    return *e
+	return *e
 }
