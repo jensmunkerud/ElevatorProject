@@ -74,6 +74,7 @@ func RunCallHandler(
 	close(ready)
 
 	event := <-elevatorEvent
+	go refreshElevatorLights(callHandlerMessage)
 
 	// orderChan := make(chan [config.NumFloors][config.NumButtons]bool, 10)
 	// var localOrders [config.NumFloors][config.NumButtons]bool
@@ -120,6 +121,7 @@ func RunCallHandler(
 		case <-doorTimer.C:
 			fsmOnDoorTimeout(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
+
 		case newActiveOrders := <-activeLocalOrders:
 			localElevator.UpdateRequestTotal(newActiveOrders)
 			emitLocalState(localElevator, elevatorStateLocal)
@@ -129,23 +131,26 @@ func RunCallHandler(
 
 // Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
 // serves the intended purpose of this function
-func setElevatorLights(msg elevatorserver.CallHandlerMessage) {
-	hallOrders, cabOrders := msg.UnpackForCallHandler()
-	for floorIndex := range hallOrders.Orders {
-		for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
-			orderState := hallOrders.GetOrderState(floorIndex, b)
-			if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
-				elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
-			} else {
-				elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, false)
+func refreshElevatorLights(callHandlerMessage chan elevatorserver.CallHandlerMessage) {
+	select {
+	case msg := <-callHandlerMessage:
+		hallOrders, cabOrders := msg.UnpackForCallHandler()
+		for floorIndex := range hallOrders.Orders {
+			for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
+				orderState := hallOrders.GetOrderState(floorIndex, b)
+				if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
+					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
+				} else {
+					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, false)
+				}
 			}
-		}
-		// Assuming one cab button per floor (b = 0)
-		orderState := cabOrders.GetOrderState(floorIndex)
-		if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
-			elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, true)
-		} else {
-			elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, false)
+			// Assuming one cab button per floor (b = 0)
+			orderState := cabOrders.GetOrderState(floorIndex)
+			if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
+				elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, true)
+			} else {
+				elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, false)
+			}
 		}
 	}
 }
