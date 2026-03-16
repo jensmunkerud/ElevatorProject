@@ -7,9 +7,10 @@ import (
 	"os/exec"
 )
 
-// Receives OrderDistributorMessage, unpacks the message, converts to JSON, executes cost function, and sends active orders assigned to self
+// Receives OrderDistributorMessage from the elvator server, unpacks the message, converts to JSON, executes cost function, and sends active orders assigned to self
+//
 //	to call handler.
-func RunCostFunc(
+func Run(
 	input <-chan elevatorserver.OrderDistributorMessage,
 	activeOrders chan<- [][]bool,
 ) {

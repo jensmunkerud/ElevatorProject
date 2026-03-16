@@ -323,7 +323,7 @@ func startServer(t *testing.T, myID string) (
 	initElev := elevator.CreateElevator(myID, 0, elevator.Up, elevator.Idle)
 	elevatorStateUpdate <- *initElev
 
-	go RunElevatorServer(
+	go Run(
 		hallUpdate, cabUpdate, elevatorStateUpdate, peersUpdate,
 		channelToCallHandler, channelToOrderDistributor,
 		channelToNetworking, channelFromNetworking,

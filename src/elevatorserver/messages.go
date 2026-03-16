@@ -6,6 +6,9 @@ import (
 	"elevatorproject/src/orders"
 )
 
+// This file defines the message types and conversion functions used for communication between the
+// elevator server and its consumers, including the call handler, order distributor, and networking components. 
+
 // HallOrderUpdate describes an incoming hall order event from another elevator.
 type HallOrderUpdate struct {
 	SenderID  string
