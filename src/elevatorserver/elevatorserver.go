@@ -7,8 +7,10 @@ import (
 	"time"
 )
 
-//This file contains the main logic for the elevator server, which maintains the latest snapshot of all orders and elevator states.
-//It merges incoming updates from both the local elevator and the network using the barrier protocol defined in merge.go, ensuring that orders are preserved across failures.
+//This file contains the main logic for the elevator server,
+// which maintains the latest snapshot of all orders and elevator states.
+//It merges incoming updates from both the local elevator and the network using the barrier protocol defined in merge.go,
+// ensuring that orders are preserved across failures.
 //It periodically publishes the latest merged state to the call handler, order distributor, and networking channels.
 
 // processNetworkMessages receives messages from the network and forwards the
@@ -21,11 +23,11 @@ func processNetworkMessages(
 ) {
 	for message := range channelFromNetworking {
 		tempCab, tempHall, tempElevator := message.UnpackForNetworking()
-		newHallOrders := HallOrderUpdatesFromNetwork(message.SenderID(), tempHall)
+		newHallOrders := UnpackHallOrders(message.SenderID(), tempHall)
 		for _, u := range newHallOrders {
 			hallUpdate <- u
 		}
-		newCabOrders := CabOrderUpdatesFromNetwork(tempCab)
+		newCabOrders := UnpackCabOrders(tempCab)
 		for _, u := range newCabOrders {
 			cabUpdate <- u
 		}

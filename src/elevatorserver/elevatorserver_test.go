@@ -202,7 +202,7 @@ func TestHallOrderUpdatesFromNetwork_UnpacksAllFloorsAndDirections(t *testing.T)
 	h.UpdateOrderState(1, 0, orders.ConfirmedOrderState)
 	h.UpdateOrderState(2, 1, orders.UnconfirmedOrderState)
 
-	updates := HallOrderUpdatesFromNetwork("B", h)
+	updates := UnpackHallOrders("B", h)
 
 	if len(updates) != config.NumFloors*2 {
 		t.Fatalf("expected %d updates, got %d", config.NumFloors*2, len(updates))
@@ -238,7 +238,7 @@ func TestCabOrderUpdatesFromNetwork_UnpacksAllElevatorsAndFloors(t *testing.T) {
 	cabB.UpdateOrderState(3, orders.UnconfirmedOrderState)
 
 	allCab := map[string]*orders.CabOrders{"A": cabA, "B": cabB}
-	updates := CabOrderUpdatesFromNetwork(allCab)
+	updates := UnpackCabOrders(allCab)
 
 	if len(updates) != 2*config.NumFloors {
 		t.Fatalf("expected %d updates, got %d", 2*config.NumFloors, len(updates))
