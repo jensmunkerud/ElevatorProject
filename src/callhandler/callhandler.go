@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func UpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan elevatorserver.CabOrderUpdate) {
+func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan elevatorserver.CabOrderUpdate) {
 	if cabOrderUpdate == nil || button != es.Cab {
 		return
 	}
@@ -33,7 +33,7 @@ func UpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpd
 	}
 }
 
-func UpdateHallOrder(floor int, button es.ButtonType, completed bool, hallOrderUpdate chan elevatorserver.HallOrderUpdate) {
+func RequestUpdateHallOrder(floor int, button es.ButtonType, completed bool, hallOrderUpdate chan elevatorserver.HallOrderUpdate) {
 	if hallOrderUpdate == nil || button == es.Cab {
 		return
 	}
@@ -83,16 +83,16 @@ func RunCallHandler(
 		case order := <-event.OrderEvent:
 			fmt.Printf("%+v\n", order)
 			if order.Button == es.Cab {
-				UpdateCabOrder(order.Floor, order.Button, false, cabOrderUpdate)
+				RequestUpdateCabOrder(order.Floor, order.Button, false, cabOrderUpdate)
 			} else {
-				UpdateHallOrder(order.Floor, order.Button, false, hallOrderUpdate)
+				RequestUpdateHallOrder(order.Floor, order.Button, false, hallOrderUpdate)
 			}
-			fsmOnRequestButtonPress(localElevator, order.Floor, order.Button, doorTimer)
+			fsmOnRequestButtonPress(localElevator, order.Floor, order.Button, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
-			fsmOnFloorArrival(localElevator, floor, doorTimer)
+			fsmOnFloorArrival(localElevator, floor, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case obstruction := <-event.ObstructionEvent:
@@ -118,7 +118,7 @@ func RunCallHandler(
 		// case newOrders := <-orderChan:
 		// break
 		case <-doorTimer.C:
-			fsmOnDoorTimeout(localElevator, doorTimer)
+			fsmOnDoorTimeout(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 		case newActiveOrders := <-activeLocalOrders:
 			localElevator.UpdateRequestTotal(newActiveOrders)

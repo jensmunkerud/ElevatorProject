@@ -5,6 +5,7 @@ import (
 	"elevatorproject/src/config"
 	controller "elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
+	"elevatorproject/src/elevatorserver"
 	"fmt"
 	"time"
 )
@@ -24,7 +25,14 @@ func fsmOnInitBetweenFloors(e *es.Elevator) {
 	e.UpdateBehaviour(es.Moving)
 }
 
-func fsmOnRequestButtonPress(e *es.Elevator, buttonFloor int, buttonType es.ButtonType, doorTimer *time.Timer) {
+func fsmOnRequestButtonPress(
+	e *es.Elevator,
+	buttonFloor int,
+	buttonType es.ButtonType,
+	doorTimer *time.Timer,
+	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+) {
 
 	switch e.Behaviour() {
 	case es.DoorOpen:
@@ -46,7 +54,7 @@ func fsmOnRequestButtonPress(e *es.Elevator, buttonFloor int, buttonType es.Butt
 		case es.DoorOpen:
 			elevio.SetDoorOpenLamp(true)
 			startDoorTimer(doorTimer)
-			*e = requestsClearAtCurrentFloor(*e)
+			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
 
 		case es.Moving:
 			if !e.StopPressed() {
@@ -68,7 +76,13 @@ func fsmOnRequestButtonPress(e *es.Elevator, buttonFloor int, buttonType es.Butt
 	fmt.Println("\nNew state!!")
 }
 
-func fsmOnFloorArrival(e *es.Elevator, newFloor int, doorTimer *time.Timer) {
+func fsmOnFloorArrival(
+	e *es.Elevator,
+	newFloor int,
+	doorTimer *time.Timer,
+	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+) {
 	fmt.Printf("\n\nfsmOnFloorArrival(%d)\n", newFloor)
 
 	e.UpdateCurrentFloor(newFloor)
@@ -79,7 +93,7 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int, doorTimer *time.Timer) {
 		if requestsShouldStop(*e) {
 			controller.StopElevator()
 			elevio.SetDoorOpenLamp(true)
-			*e = requestsClearAtCurrentFloor(*e)
+			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
 			startDoorTimer(doorTimer)
 			setAllLights(*e)
 			e.UpdateBehaviour(es.DoorOpen)
@@ -91,7 +105,12 @@ func fsmOnFloorArrival(e *es.Elevator, newFloor int, doorTimer *time.Timer) {
 	fmt.Println("\nNew state yea!")
 }
 
-func fsmOnDoorTimeout(e *es.Elevator, doorTimer *time.Timer) {
+func fsmOnDoorTimeout(
+	e *es.Elevator,
+	doorTimer *time.Timer,
+	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+) {
 	fmt.Printf("\n\nfsmOnDoorTimeout()\n")
 	if e.Obstruction() {
 		// Keep door open
@@ -107,7 +126,7 @@ func fsmOnDoorTimeout(e *es.Elevator, doorTimer *time.Timer) {
 		switch e.Behaviour() {
 		case es.DoorOpen:
 			startDoorTimer(doorTimer)
-			*e = requestsClearAtCurrentFloor(*e)
+			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
 			setAllLights(*e)
 		case es.Moving, es.Idle:
 			elevio.SetDoorOpenLamp(false)
