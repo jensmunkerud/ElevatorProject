@@ -104,11 +104,11 @@ func TestServerAndCostFuncInteraction(t *testing.T) {
 	elevatorStateUpdate <- *initElev
 
 	// --- Start goroutines ---
-	go elevatorserver.RunElevatorServer(
+	go elevatorserver.Run(
 		hallUpdate, cabUpdate, elevatorStateUpdate, peersUpdate,
 		toCallHandler, toOrderDist, toNetworking, fromNetworking,
 	)
-	go orderdistributor.RunCostFunc(toOrderDist, activeOrdersCh)
+	go orderdistributor.Run(toOrderDist, activeOrdersCh)
 
 	// Register self as the only online elevator.
 	peersUpdate <- []string{myID}

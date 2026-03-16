@@ -27,7 +27,8 @@ func main() {
 	// Start goroutines:
 	// go controller(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal)
 	// go callHandler(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CurrentOrders, ActiveLocalOrders)
-	go elevatorserver.RunElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
-	go networking.RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
-	go orderdistributor.RunCostFunc(WorldviewToOrderDistributor, ActiveLocalOrders)
+	go elevatorserver.Run(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate,
+		CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
+	go networking.Run(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
+	go orderdistributor.Run(WorldviewToOrderDistributor, ActiveLocalOrders)
 }
