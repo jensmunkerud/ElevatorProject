@@ -33,7 +33,7 @@ func main() {
 
 	// Start goroutines:
 	go controller.RunController(elevatorEvent)
-	go callhandler.RunCallHandler(ready, ElevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, myCabOrders, ActiveLocalOrders)
+	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, myCabOrders, ActiveLocalOrders)
 	<-ready
 	go elevatorserver.RunElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
 	go networking.RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)

@@ -65,11 +65,12 @@ func RunCallHandler(
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
 	doorTimer.Stop()
 
-	localElevator := es.CreateElevator("yo", -1, es.Stop, es.Idle)
+	localElevator := es.CreateElevator(config.MyID(), -1, es.Stop, es.Idle)
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
 	// updateElevatorState(localElevator)
 	fsmOnInitBetweenFloors(localElevator)
+	emitLocalState(localElevator, elevatorStateLocal)
 	close(ready)
 
 	event := <-elevatorEvent
@@ -82,15 +83,17 @@ func RunCallHandler(
 		case order := <-event.OrderEvent:
 			fmt.Printf("%+v\n", order)
 			if order.Button == es.Cab {
-				UpdateCabOrder(order.Floor, order.Button, false, hallOrderUpdate)
+				UpdateCabOrder(order.Floor, order.Button, false, cabOrderUpdate)
 			} else {
-				UpdateHallOrder(order.Floor, order.Button, false)
+				UpdateHallOrder(order.Floor, order.Button, false, hallOrderUpdate)
 			}
 			fsmOnRequestButtonPress(localElevator, order.Floor, order.Button, doorTimer)
+			emitLocalState(localElevator, elevatorStateLocal)
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
 			fsmOnFloorArrival(localElevator, floor, doorTimer)
+			emitLocalState(localElevator, elevatorStateLocal)
 
 		case obstruction := <-event.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
@@ -116,6 +119,7 @@ func RunCallHandler(
 		// break
 		case <-doorTimer.C:
 			fsmOnDoorTimeout(localElevator, doorTimer)
+			emitLocalState(localElevator, elevatorStateLocal)
 		}
 	}
 }
@@ -149,4 +153,11 @@ func handleActiveOrdersFromOrderDistributor(e *es.Elevator, orders <-chan [][]bo
 			e.UpdateActiveOrder(newOrder)
 		}
 	}()
+}
+
+func emitLocalState(current *es.Elevator, elevatorStateLocal chan es.Elevator) {
+	if elevatorStateLocal == nil || current == nil {
+		return
+	}
+	elevatorStateLocal <- current.Copy()
 }
