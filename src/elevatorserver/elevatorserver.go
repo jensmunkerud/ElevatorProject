@@ -57,7 +57,7 @@ func CabOrderUpdatesFromNetwork(allCabOrders map[string]*orders.CabOrders) []Cab
 
 // mergeHallOrderState resolves the next OrderState for a hall order at the given floor and direction.
 // It compares the incoming state from update.SenderID against the receiver's local state, using the
-// barrier protocol to coordinate transitions across all online nodes.
+// barrier protocol to coordinate transitions across all online nodes. This preserves orders across elevator failures.
 func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders map[string]*orders.HallOrders, onlineNodes []string) orders.OrderState {
 	local := allOrders[receiverID].GetOrderState(update.Floor, update.Direction)
 	return mergeState(update.State, local, onlineNodes, func(id string) (orders.OrderState, bool) {
@@ -69,11 +69,9 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 	})
 }
 
-// mergeCabOrderState resolves the next OrderState for a cab order at the given floor.
-// It uses ownerID (the elevator whose cab button was pressed) as the sole barrier node,
-// since cab orders are per-elevator and there is no shared physical button to reach
-// cross-node consensus on. The barrier advances once the receiver's local knowledge of
-// the owner's state reaches the threshold.
+
+// Merges an incoming cab order state with the local state, using the same barrier protocol as mergeHallOrderState to coordinate transitions across all online nodes. 
+// This ensures that cab orders are preserved even if an elevator goes offline and later comes back online.
 func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
 	local := allCabOrders[update.SenderID].GetOrderState(update.Floor)
 	return mergeState(update.State, local, onlineNodes, func(id string) (orders.OrderState, bool) {
@@ -86,9 +84,9 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 }
 
 // mergeState contains the shared state-machine logic for merging an incoming order state with
-// the local state. It applies two distributed barriers: Unconfirmed→Confirmed (all nodes must
-// have seen the order) and Completed→Removed (all nodes must have served it). getState is a
-// callback that retrieves a node's current OrderState by ID, returning false if the node is unknown.
+// the local state. It applies two distributed barriers: Unconfirmed→Confirmed and Completed→Removed (all nodes must
+// have seen the order). 
+// getState is a callback that retrieves a node's current OrderState by ID, returning false if the node is unknown.
 func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes []string, getState func(string) (orders.OrderState, bool)) orders.OrderState {
 	// Unknown always loses
 	if local == orders.UnknownOrderState {
@@ -352,7 +350,8 @@ func publishToConsumers(
 		mergedHallOrders: hallValue,
 		elevatorState:    elevValue,
 	}
-	//Discard outdated snapshots if the channel is full, ensuring the latest state is always published at the next tick without blocking.
+	//Discard outdated snapshots if the channel is full, ensuring the latest state is always published
+	// at the next tick without blocking.
 	select {
 	case <-channelForCallHandler:
 	default:
@@ -372,9 +371,11 @@ func publishToConsumers(
 }
 
 // RunElevatorServer runs the elevator server.
-// hallOut carries the receiver's updated hall orders at a fixed broadcast interval.
-// cabOut carries a snapshot of all known elevators' cab orders each interval, so peers
-// can restore orders for an elevator that has gone offline.
+// It listens for local updates to hall orders, cab orders, and elevator state,
+// as well as peer updates and incoming messages from the network. 
+// It maintains the latest snapshot of all orders and elevator states,
+// merging incoming updates using the barrier protocol to preserve orders across failures.
+// It periodically publishes the latest merged state to the callhandler, orderdistributor, and networking channels.
 func RunElevatorServer(
 	hallUpdate chan HallOrderUpdate,
 	cabUpdate chan CabOrderUpdate,
