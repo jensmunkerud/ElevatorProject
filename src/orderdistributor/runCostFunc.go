@@ -45,6 +45,7 @@ func executeCostFunction(jsonInput string) (string, error) {
 	cmd := exec.Command(
 		"./hall_request_assigner",
 		"--input",
+		"--includeCab",
 		jsonInput,
 	)
 	cmd.Dir = "../../libs/project-resources/cost_fns/hall_request_assigner"
