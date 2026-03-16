@@ -43,8 +43,9 @@ func RequestUpdateHallOrder(floor int, button es.ButtonType, completed bool, hal
 		state = orders.CompletedOrderState
 	}
 
+	myID := config.MyID()
 	hallOrderUpdate <- elevatorserver.HallOrderUpdate{
-		SenderID:  config.MyID(),
+		SenderID:  myID,
 		Floor:     floor,
 		Direction: int(button),
 		State:     state,
@@ -75,6 +76,7 @@ func RunCallHandler(
 
 	event := <-elevatorEvent
 	go refreshElevatorLights(callHandlerMessage)
+	go handleActiveLocalOrders(localElevator, activeLocalOrders, elevatorStateLocal)
 
 	// orderChan := make(chan [config.NumFloors][config.NumButtons]bool, 10)
 	// var localOrders [config.NumFloors][config.NumButtons]bool
@@ -121,11 +123,6 @@ func RunCallHandler(
 		case <-doorTimer.C:
 			fsmOnDoorTimeout(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
-
-		case newActiveOrders := <-activeLocalOrders:
-			localElevator.UpdateRequestTotal(newActiveOrders)
-			emitLocalState(localElevator, elevatorStateLocal)
-			fmt.Printf("RECEIVED FROM COSTFUNC")
 		}
 	}
 }
@@ -156,12 +153,16 @@ func refreshElevatorLights(callHandlerMessage chan elevatorserver.CallHandlerMes
 	}
 }
 
-func handleActiveOrdersFromOrderDistributor(e *es.Elevator, orders <-chan [][]bool) {
-	go func() {
-		for newOrder := range orders {
-			e.UpdateActiveOrder(newOrder)
-		}
-	}()
+func handleActiveLocalOrders(
+	localElevator *es.Elevator,
+	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool,
+	elevatorStateLocal chan es.Elevator,
+) {
+	for newActiveOrders := range activeLocalOrders {
+		localElevator.UpdateRequestTotal(newActiveOrders)
+		emitLocalState(localElevator, elevatorStateLocal)
+		fmt.Printf("RECEIVED FROM COSTFUNC")
+	}
 }
 
 func emitLocalState(current *es.Elevator, elevatorStateLocal chan es.Elevator) {

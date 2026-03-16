@@ -40,7 +40,7 @@ type Elevator struct {
 	floor        int
 	direction    Direction
 	requests     [config.NumFloors][config.NumButtons]bool
-	activeOrders [][]bool // May be overlapping with requests. Double check with team :).
+	// activeOrders [][]bool // May be overlapping with requests. Double check with team :).
 	obstruction  bool
 	stopPressed  bool
 }
@@ -145,9 +145,9 @@ func (e Elevator) StopPressed() bool {
 	return e.stopPressed
 }
 
-func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
-	e.activeOrders = newActiveOrders
-}
+// func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
+// 	e.activeOrders = newActiveOrders
+// }
 
 func (e *Elevator) Copy() Elevator {
 	return *e
