@@ -7,7 +7,7 @@ import (
 )
 
 // This file defines the message types and conversion functions used for communication between the
-// elevator server and its consumers, including the call handler, order distributor, and networking components. 
+// elevator server and its consumers, including the call handler, order distributor, and networking components.
 
 // HallOrderUpdate describes an incoming hall order event from another elevator.
 type HallOrderUpdate struct {
@@ -24,9 +24,12 @@ type CabOrderUpdate struct {
 	State    orders.OrderState
 }
 
-// HallOrderUpdatesFromNetwork unpacks a received HallOrders snapshot into individual
+// UnpackHallOrders unpacks a received HallOrders snapshot into individual
 // HallOrderUpdate values, one per floor per direction, ready to send into hallUpdates.
-func HallOrderUpdatesFromNetwork(senderID string, hallOrders *orders.HallOrders) []HallOrderUpdate {
+func UnpackHallOrders(senderID string, hallOrders *orders.HallOrders) []HallOrderUpdate {
+	if hallOrders == nil {
+		return nil
+	}
 	updates := make([]HallOrderUpdate, 0, config.NumFloors*2)
 	for floor := 0; floor < config.NumFloors; floor++ {
 		for dir := 0; dir < 2; dir++ {
@@ -41,9 +44,12 @@ func HallOrderUpdatesFromNetwork(senderID string, hallOrders *orders.HallOrders)
 	return updates
 }
 
-// CabOrderUpdatesFromNetwork unpacks a received allCabOrders map into individual
+// UnpackCabOrders unpacks a received allCabOrders map into individual
 // CabOrderUpdate values, one per elevator per floor, ready to send into cabUpdates.
-func CabOrderUpdatesFromNetwork(allCabOrders map[string]*orders.CabOrders) []CabOrderUpdate {
+func UnpackCabOrders(allCabOrders map[string]*orders.CabOrders) []CabOrderUpdate {
+	if allCabOrders == nil {
+		return nil
+	}
 	updates := make([]CabOrderUpdate, 0, len(allCabOrders)*config.NumFloors)
 	for elevID, cab := range allCabOrders {
 		for floor := 0; floor < config.NumFloors; floor++ {
