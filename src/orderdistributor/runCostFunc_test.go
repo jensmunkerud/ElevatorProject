@@ -48,7 +48,7 @@ func TestCostFunc(t *testing.T) {
 	activeOrders := make(chan [][]bool, 1)
 
 	config.SetMyID()
-	go RunCostFunc(input, activeOrders)
+	go Run(input, activeOrders)
 
 	allCabOrdersValue := make(map[string]orders.CabOrders, len(allCabOrders))
 	for id, cab := range allCabOrders {

@@ -10,12 +10,12 @@ import (
 	"time"
 )
 
-// RunNetworking bridges the elevator server with the UDP broadcast network.
+// Run bridges the elevator server with the UDP broadcast network.
 // Input: worldview snapshots are serialized into wire Messages and broadcast to peers.
 // Output: received worldview snapshots and peer discovery updates are forwarded
 // to the provided output channels.
 // Ports are defined in config.go.
-func RunNetworking(
+func Run(
 	sendWorldviewIn <-chan es.NetworkingDistributorMessage,
 	peerUpdates chan<- []string,
 	receiveWorldviewOut chan<- es.NetworkingDistributorMessage,

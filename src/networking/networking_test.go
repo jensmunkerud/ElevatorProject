@@ -74,6 +74,8 @@ func TestWorldviewFromMessage_RoundTrip(t *testing.T) {
 	}
 	if got := gotElevators["elev-2"].Behaviour(); got != elevator.Idle {
 		t.Fatalf("elevator behaviour round-trip mismatch: got %v", got)
+	}
+}
 // TestBroadcastAndReceiveManual is an integration-style test intended to be run
 // on two machines on the same network. It sends a Message on the UDP broadcast
 // channel and prints any received Messages to the terminal.
