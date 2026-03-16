@@ -8,7 +8,6 @@ import (
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/networking"
 	"elevatorproject/src/orderdistributor"
-	"elevatorproject/src/orders"
 )
 
 func main() {
@@ -25,15 +24,15 @@ func main() {
 	WorldviewToOrderDistributor := make(chan elevatorserver.OrderDistributorMessage, 5)
 	SendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
-	ActiveLocalOrders := make(chan [][]bool)
+	ActiveLocalOrders := make(chan [config.NumFloors][3]bool)
 	ElevatorStateLocal := make(chan elevator.Elevator)
 	elevatorEvent := make(chan elevator.ElevatorEvent)
-	myCabOrders := make(chan orders.CabOrders)
+	CallHandlerMessage := make(chan elevatorserver.CallHandlerMessage)
 	ready := make(chan struct{})
 
 	// Start goroutines:
 	go controller.RunController(elevatorEvent)
-	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, myCabOrders, ActiveLocalOrders)
+	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, CallHandlerMessage, ActiveLocalOrders)
 	<-ready
 	go elevatorserver.RunElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
 	go networking.RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)

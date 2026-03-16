@@ -57,8 +57,8 @@ func RunCallHandler(
 	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
 	elevatorStateLocal chan es.Elevator,
-	myCabOrders chan orders.CabOrders,
-	activeLocalOrders chan [][]bool) {
+	callHandlerMessage chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
+	activeLocalOrders chan [config.NumFloors][3]bool) {
 	// hallOrderUpdateOut = hallOrderUpdate
 	// cabOrderUpdateOut = cabOrderUpdate
 
@@ -119,6 +119,9 @@ func RunCallHandler(
 		// break
 		case <-doorTimer.C:
 			fsmOnDoorTimeout(localElevator, doorTimer)
+			emitLocalState(localElevator, elevatorStateLocal)
+		case newActiveOrders := <-activeLocalOrders:
+			localElevator.UpdateRequestTotal(newActiveOrders)
 			emitLocalState(localElevator, elevatorStateLocal)
 		}
 	}
