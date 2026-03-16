@@ -125,6 +125,7 @@ func RunCallHandler(
 		case newActiveOrders := <-activeLocalOrders:
 			localElevator.UpdateRequestTotal(newActiveOrders)
 			emitLocalState(localElevator, elevatorStateLocal)
+			fmt.Printf("RECEIVED FROM COSTFUNC")
 		}
 	}
 }
