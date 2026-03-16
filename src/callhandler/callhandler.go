@@ -120,6 +120,7 @@ func RunCallHandler(
 		case <-doorTimer.C:
 			fsmOnDoorTimeout(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
+
 		case newActiveOrders := <-activeLocalOrders:
 			localElevator.UpdateRequestTotal(newActiveOrders)
 			emitLocalState(localElevator, elevatorStateLocal)
@@ -129,7 +130,7 @@ func RunCallHandler(
 
 // Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
 // serves the intended purpose of this function
-func setElevatorLights(msg elevatorserver.CallHandlerMessage) {
+func refreshElevatorLights(msg elevatorserver.CallHandlerMessage) {
 	hallOrders, cabOrders := msg.UnpackForCallHandler()
 	for floorIndex := range hallOrders.Orders {
 		for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
