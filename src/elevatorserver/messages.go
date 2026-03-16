@@ -68,28 +68,6 @@ type CallHandlerMessage struct {
 	myCabOrders      orders.CabOrders
 }
 
-// NewCallHandlerMessage constructs a CallHandlerMessage from HallOrders and CabOrders snapshots.
-func NewCallHandlerMessage(hall *orders.HallOrders, cab *orders.CabOrders) CallHandlerMessage {
-	var merged orders.HallOrders
-	var myCab orders.CabOrders
-
-	if hall != nil {
-		if cp := hall.Copy(); cp != nil {
-			merged = *cp
-		}
-	}
-
-	if cab != nil {
-		if cp := cab.Copy(); cp != nil {
-			myCab = *cp
-		}
-	}
-
-	return CallHandlerMessage{
-		mergedHallOrders: merged,
-		myCabOrders:      myCab,
-	}
-}
 
 // UnpackForCallHandler returns pointer-based snapshots for call handler consumers.
 func (m CallHandlerMessage) UnpackForCallHandler() (*orders.HallOrders, *orders.CabOrders) {
