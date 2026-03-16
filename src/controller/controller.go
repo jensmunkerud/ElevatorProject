@@ -9,7 +9,7 @@ import (
 func RunController(elevatorEvent chan es.ElevatorEvent) {
 	// Initializes communication with elevatorserver to receive IO from physical elevator
 	elevio.Init("localhost:15657", config.NumFloors)
-
+	
 	orderEventElevio := make(chan elevio.ButtonEvent)
 	orderEvent := make(chan es.ButtonEvent)
 	floorEvent := make(chan int)
