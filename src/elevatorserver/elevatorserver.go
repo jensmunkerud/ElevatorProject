@@ -6,6 +6,11 @@ import (
 	"elevatorproject/src/orders"
 	"time"
 )
+//This file contains the main logic for the elevator server, which maintains the latest snapshot of all orders and elevator states.
+//It merges incoming updates from both the local elevator and the network using the barrier protocol defined in merge.go, ensuring that orders are preserved across failures.
+//It periodically publishes the latest merged state to the call handler, order distributor, and networking channels.
+
+
 
 // processNetworkMessages receives messages from the network and forwards the
 // unpacked orders and elevator state into the local update channels.

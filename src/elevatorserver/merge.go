@@ -3,6 +3,10 @@ package elevatorserver
 import (
 	"elevatorproject/src/orders"
 )
+//This file contains the logic for merging incoming order updates from the network with the local
+// state of orders, using a distributed barrier protocol to ensure consistency across all online nodes. 
+// This allows the system to preserve orders even in the face of elevator failures and recoveries.
+
 
 // mergeHallOrderState resolves the next OrderState for a hall order at the given floor and direction.
 // It compares the incoming state from update.SenderID against the receiver's local state, using the
