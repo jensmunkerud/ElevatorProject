@@ -30,24 +30,52 @@ func buildOrderDistributorMessage(
 	return msg
 }
 
-func TestCostFunc(t *testing.T) {
-	// Initialize dummy hall requests (all false)
-	elev1 := elevator.CreateElevator("bankID", 2, elevator.Down, elevator.Idle)
+func TestConvertToJsonOutput(t *testing.T) {
+	elevID := "elev-1"
+
+	cabOrders := map[string]*orders.CabOrders{
+		elevID: orders.CreateCabOrders(),
+	}
+	cabOrders[elevID].UpdateOrderState(1, orders.ConfirmedOrderState)
+	cabOrders[elevID].UpdateOrderState(3, orders.ConfirmedOrderState)
+
 	hallOrders := orders.CreateHallOrders()
+	hallOrders.UpdateOrderState(0, 0, orders.ConfirmedOrderState) // Floor 0, Up
+	hallOrders.UpdateOrderState(2, 1, orders.ConfirmedOrderState) // Floor 2, Down
+
+	elevators := map[string]*elevator.Elevator{
+		elevID: elevator.CreateElevator(elevID, 1, elevator.Up, elevator.Moving),
+	}
+
+	jsonStr, err := ConvertToJson(elevID, cabOrders, hallOrders, elevators)
+	if err != nil {
+		t.Fatalf("ConvertToJson failed: %v", err)
+	}
+
+	fmt.Println("=== JSON input to cost function ===")
+	fmt.Println(jsonStr)
+}
+
+func TestCostFunc(t *testing.T) {
+	config.SetMyID()
+	myID := config.MyID()
+
+	elev1 := elevator.CreateElevator(myID, 2, elevator.Down, elevator.Idle)
+
+	hallOrders := orders.CreateHallOrders()
+	hallOrders.UpdateOrderState(0, 0, orders.ConfirmedOrderState)
+
 	cabOrders := orders.CreateCabOrders()
-	// Create a map for elevators
+	cabOrders.UpdateOrderState(3, orders.ConfirmedOrderState)
+
 	elevators := make(map[string]*elevator.Elevator)
-	elevators["bankID"] = elev1
+	elevators[myID] = elev1
 	allCabOrders := make(map[string]*orders.CabOrders)
-	allCabOrders["bankID"] = cabOrders
-	elevatorsOnline := make(map[string]bool)
-	// Create and initialize an elevator with dummy data
-	elevatorsOnline["bankID"] = true
+	allCabOrders[myID] = cabOrders
 
 	input := make(chan es.OrderDistributorMessage, 1)
-	activeOrders := make(chan [][]bool, 1)
+	activeOrders := make(chan [config.NumFloors][config.NumButtons]bool, 1)
 
-	config.SetMyID()
 	go Run(input, activeOrders)
 
 	allCabOrdersValue := make(map[string]orders.CabOrders, len(allCabOrders))
@@ -60,14 +88,24 @@ func TestCostFunc(t *testing.T) {
 		elevatorsValue[id] = *elev
 	}
 
+	jsonInput, err := ConvertToJson(myID, allCabOrders, hallOrders, elevators)
+	if err != nil {
+		t.Fatalf("ConvertToJson failed: %v", err)
+	}
+	fmt.Printf("=== Cost function input ===\n%s\n", jsonInput)
+
 	input <- buildOrderDistributorMessage(*hallOrders.Copy(), allCabOrdersValue, elevatorsValue)
 
 	ordersOut := <-activeOrders
-	fmt.Printf("runCostFunc output: %+v\n", ordersOut)
-	if ordersOut == nil {
-		t.Fatalf("runCostFunc returned nil active orders")
+	fmt.Printf("=== Cost function output ===\n")
+	fmt.Printf("Active orders: %+v\n", ordersOut)
+
+	// Verify floor 0 hall-up order was assigned
+	if !ordersOut[0][0] {
+		t.Errorf("expected hall-up order at floor 0 to be assigned")
 	}
-	if len(ordersOut) != config.NumFloors {
-		t.Fatalf("expected %d floors, got %d", config.NumFloors, len(ordersOut))
+	// Verify cab order at floor 3 was assigned
+	if !ordersOut[3][2] {
+		t.Errorf("expected cab order at floor 3 to be assigned")
 	}
 }
