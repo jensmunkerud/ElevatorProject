@@ -126,7 +126,7 @@ func RunElevatorServer(
 	hallUpdate chan HallOrderUpdate,
 	cabUpdate chan CabOrderUpdate,
 	elevatorStateUpdate chan elevator.Elevator,
-	peersUpdate <-chan []string,
+	peersOnlineUpdate <-chan []string,
 	channelToCallHandler chan CallHandlerMessage,
 	channelToOrderDistributor chan OrderDistributorMessage,
 	channelToNetworking chan NetworkingDistributorMessage,
@@ -204,7 +204,7 @@ func RunElevatorServer(
 			}
 			cabSnap <- orders.CopyAllCab(allCab)
 
-		case nodes := <-peersUpdate:
+		case nodes := <-peersOnlineUpdate:
 			elevatorsOnNetwork = nodes
 			for _, id := range nodes {
 				if _, ok := allHall[id]; !ok {
