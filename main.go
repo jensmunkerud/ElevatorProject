@@ -29,9 +29,11 @@ func main() {
 	ElevatorStateLocal := make(chan elevator.Elevator)
 	elevatorEvent := make(chan elevator.ElevatorEvent)
 	myCabOrders := make(chan orders.CabOrders)
+	ready := make(chan struct{})
 
 	// Start goroutines:
-	go controller.RunController(elevatorEvent)
+	go controller.RunController(ready, elevatorEvent)
+	<-ready
 	go callhandler.RunCallHandler(HallOrderUpdate, CabOrderUpdate, ElevatorStateLocal, myCabOrders, ActiveLocalOrders)
 	go elevatorserver.RunElevatorServer(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
 	go networking.RunNetworking(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
