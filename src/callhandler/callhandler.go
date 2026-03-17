@@ -9,6 +9,7 @@ package callhandler
 import (
 	"driver-go/elevio"
 	"elevatorproject/src/config"
+	"elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
@@ -153,22 +154,13 @@ func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerM
 		msg := <-callHandlerMessage
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
-			for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
-				orderState := hallOrders.GetOrderState(floorIndex, b)
-				if orderState == orders.ConfirmedOrderState {
-					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
-					// controller.SetButtonLamp(b)
-				} else {
-					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, false)
-				}
+			for button := es.HallUp; button <= es.HallDown; button++ {
+				orderState := hallOrders.GetOrderState(floorIndex, int(button))
+				controller.SetButtonLamp(button, floorIndex, orderState == orders.ConfirmedOrderState)
 			}
-			// Assuming one cab button per floor (b = 0)
+
 			orderState := cabOrders.GetOrderState(floorIndex)
-			if orderState == orders.ConfirmedOrderState {
-				elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, true)
-			} else {
-				elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, false)
-			}
+			controller.SetButtonLamp(es.Cab, floorIndex, orderState == orders.ConfirmedOrderState)
 		}
 	}
 }
