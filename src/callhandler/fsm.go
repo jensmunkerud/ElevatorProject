@@ -1,7 +1,6 @@
 package callhandler
 
 import (
-	"elevatorproject/src/config"
 	"elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
@@ -160,13 +159,4 @@ func fsmOnNewOrders(
 			}
 		}
 	}
-}
-
-func startDoorTimer(t *time.Timer) {
-	t.Stop()
-	select {
-	case <-t.C:
-	default:
-	}
-	t.Reset(config.DoorOpenDuration)
 }

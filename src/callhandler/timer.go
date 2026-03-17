@@ -31,3 +31,12 @@ func syncServiceWatchdog(e *es.Elevator, watchdog *time.Timer) {
 	}
 	stopTimer(watchdog)
 }
+
+func startDoorTimer(t *time.Timer) {
+	t.Stop()
+	select {
+	case <-t.C:
+	default:
+	}
+	t.Reset(config.DoorOpenDuration)
+}
