@@ -44,7 +44,7 @@ func fsmOnRequestButtonPress(
 		case es.DoorOpen:
 			controller.SetDoorOpenLamp(true)
 			startDoorTimer(doorTimer)
-			requestsSendCompletedAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 
 		case es.Moving:
 			if !e.StopPressed() {
@@ -81,7 +81,7 @@ func fsmOnFloorArrival(
 		if requestsShouldStop(*e) {
 			controller.StopElevator()
 			controller.SetDoorOpenLamp(true)
-			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
+			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 			startDoorTimer(doorTimer)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
@@ -113,7 +113,7 @@ func fsmOnDoorTimeout(
 		switch e.Behaviour() {
 		case es.DoorOpen:
 			startDoorTimer(doorTimer)
-			requestsSendCompletedAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 		case es.Moving, es.Idle:
 			controller.SetDoorOpenLamp(false)
 			if !e.StopPressed() {
@@ -136,8 +136,8 @@ func fsmOnDoorTimeout(
 func fsmOnNewOrders(
 	e *es.Elevator,
 	doorTimer *time.Timer,
-	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
-	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
 	if e.Behaviour() != es.Idle {
 		return
@@ -147,9 +147,9 @@ func fsmOnNewOrders(
 	e.UpdateBehaviour(newBeh)
 	switch newBeh {
 	case es.DoorOpen:
-		elevio.SetDoorOpenLamp(true)
+		controller.SetDoorOpenLamp(true)
 		startDoorTimer(doorTimer)
-		requestsSendCompletedAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+		requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 	case es.Moving:
 		if !e.StopPressed() {
 			switch e.CurrentDirection() {

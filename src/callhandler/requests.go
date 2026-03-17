@@ -101,10 +101,10 @@ func requestsShouldClearImmediately(e es.Elevator, buttonFloor int, buttonType e
 }
 
 func requestsClearAtCurrentFloor(
-	e es.Elevator,
+	e *es.Elevator,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
-) es.Elevator {
+) {
 	RequestUpdateCabOrder(e.CurrentFloor(), es.Cab, true, cabOrderUpdate)
 
 	switch e.CurrentDirection() {
