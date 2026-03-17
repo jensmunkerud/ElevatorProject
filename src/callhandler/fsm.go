@@ -1,9 +1,8 @@
 package callhandler
 
 import (
-	"driver-go/elevio"
 	"elevatorproject/src/config"
-	controller "elevatorproject/src/controller"
+	"elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 	"fmt"
@@ -21,8 +20,8 @@ func fsmOnRequestButtonPress(
 	buttonFloor int,
 	buttonType es.ButtonType,
 	doorTimer *time.Timer,
-	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
-	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
 
 	switch e.Behaviour() {
@@ -43,7 +42,7 @@ func fsmOnRequestButtonPress(
 		e.UpdateBehaviour(newBehaviour)
 		switch newBehaviour {
 		case es.DoorOpen:
-			elevio.SetDoorOpenLamp(true)
+			controller.SetDoorOpenLamp(true)
 			startDoorTimer(doorTimer)
 			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
 
@@ -69,8 +68,8 @@ func fsmOnFloorArrival(
 	e *es.Elevator,
 	newFloor int,
 	doorTimer *time.Timer,
-	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
-	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
 	fmt.Printf("\n\nfsmOnFloorArrival(%d)\n", newFloor)
 
@@ -81,7 +80,7 @@ func fsmOnFloorArrival(
 	case es.Moving:
 		if requestsShouldStop(*e) {
 			controller.StopElevator()
-			elevio.SetDoorOpenLamp(true)
+			controller.SetDoorOpenLamp(true)
 			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
 			startDoorTimer(doorTimer)
 			e.UpdateBehaviour(es.DoorOpen)
@@ -96,8 +95,8 @@ func fsmOnFloorArrival(
 func fsmOnDoorTimeout(
 	e *es.Elevator,
 	doorTimer *time.Timer,
-	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
-	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
 	fmt.Printf("\n\nfsmOnDoorTimeout()\n")
 	if e.Obstruction() {
@@ -116,7 +115,7 @@ func fsmOnDoorTimeout(
 			startDoorTimer(doorTimer)
 			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
 		case es.Moving, es.Idle:
-			elevio.SetDoorOpenLamp(false)
+			controller.SetDoorOpenLamp(false)
 			if !e.StopPressed() {
 				switch e.CurrentDirection() {
 				case es.Up:
