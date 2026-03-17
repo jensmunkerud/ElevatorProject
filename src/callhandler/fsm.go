@@ -29,15 +29,13 @@ func fsmOnRequestButtonPress(
 		if requestsShouldClearImmediately(*e, buttonFloor, buttonType) {
 			restartTimer(doorTimer, config.DoorOpenDuration)
 			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
-		} else {
-			e.UpdateRequest(buttonFloor, buttonType, true)
 		}
 
-	case es.Moving:
-		e.UpdateRequest(buttonFloor, buttonType, true)
+	// case es.Moving:
+		// e.UpdateRequest(buttonFloor, buttonType, true)
 
 	case es.Idle:
-		e.UpdateRequest(buttonFloor, buttonType, true)
+		// e.UpdateRequest(buttonFloor, buttonType, true)
 		newDirection, newBehaviour := requestsChooseDirection(*e)
 		e.UpdateCurrentDirection(newDirection)
 		e.UpdateBehaviour(newBehaviour)
