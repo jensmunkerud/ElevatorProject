@@ -67,7 +67,6 @@ func hraDir() (string, error) {
 }
 
 func executeCostFunction(jsonInput string) (string, error) {
-	fmt.Printf("Executing cost function with input: %s\n", jsonInput)
 	dir, err := hraDir()
 	if err != nil {
 		return "", err
@@ -82,8 +81,6 @@ func executeCostFunction(jsonInput string) (string, error) {
 		"--includeCab",
 	)
 	cmd.Dir = dir
-	fmt.Printf("Command: %v\n", cmd)
 	output, err := cmd.CombinedOutput()
-	fmt.Printf("Cost function output: %s\n, %v", string(output), len(output))
 	return string(output), err
 }
