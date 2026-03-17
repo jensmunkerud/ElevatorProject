@@ -136,8 +136,8 @@ func RunCallHandler(
 // Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
 // serves the intended purpose of this function
 func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerMessage) {
-	select {
-	case msg := <-callHandlerMessage:
+	for {
+		msg := <-callHandlerMessage
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
 			for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
@@ -157,7 +157,7 @@ func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerM
 			}
 		}
 	}
-}
+}	
 
 func handleActiveLocalOrders(
 	localElevator *es.Elevator,
