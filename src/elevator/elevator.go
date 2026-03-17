@@ -146,6 +146,14 @@ func (e Elevator) StopPressed() bool {
 	return e.stopPressed
 }
 
+func (e *Elevator) UpdateIsWorking(isWorking bool) {
+	e.isWorking = isWorking
+}
+
+func (e Elevator) IsWorking() bool {
+	return e.isWorking
+}
+
 // func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
 // 	e.activeOrders = newActiveOrders
 // }
