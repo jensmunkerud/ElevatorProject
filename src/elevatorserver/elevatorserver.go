@@ -21,6 +21,7 @@ func processNetworkMessages(
 	hallUpdate chan<- HallOrderUpdate,
 	cabUpdate chan<- CabOrderUpdate,
 	elevatorStateUpdate chan<- elevator.Elevator,
+	allCab map[string]*orders.CabOrders,
 ) {
 	for message := range channelFromNetworking {
 		tempCab, tempHall, tempElevator := message.UnpackForNetworking()
@@ -32,7 +33,10 @@ func processNetworkMessages(
 		newCabOrders := UnpackCabOrders(tempCab)
 		for _, u := range newCabOrders {
 			if u.SenderID == myID {
-				continue // don't let remote views overwrite our own cab orders
+				local := allCab[myID].GetOrderState(u.Floor)
+				if local != orders.UnknownOrderState {
+					continue // don't let remote views overwrite our own known cab orders
+				}
 			}
 			cabUpdate <- u
 		}
@@ -189,7 +193,7 @@ func Run(
 		}
 	}()
 	fmt.Println("Starting process network messages loop")
-	go processNetworkMessages(channelFromNetworking, hallUpdate, cabUpdate, elevatorStateUpdate)
+	go processNetworkMessages(channelFromNetworking, hallUpdate, cabUpdate, elevatorStateUpdate, allCab)
 
 	fmt.Println("Starting hallupdate loop")
 	for {
