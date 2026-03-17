@@ -455,7 +455,7 @@ func TestPublishToConsumers_PublishesAllOnStateUpdates(t *testing.T) {
 	elevState := map[string]*elevator.Elevator{config.MyID(): meElev}
 
 	// Single call publishes to all three channels.
-	publishToConsumers(h, allCab, elevState, callCh, orderCh, netCh)
+	publishToConsumers(h, allCab, elevState, callCh, orderCh, netCh, []string{config.MyID(), "other"})
 
 	callMsg := <-callCh
 	orderMsg := <-orderCh

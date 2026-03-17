@@ -27,6 +27,16 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 // elevator's own state (not other elevators' unrelated cab orders).
 func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
 	local := allCabOrders[update.SenderID].GetOrderState(update.Floor)
+
+	// Once a cab order has been cleared (Removed), don't allow stale
+	// Confirmed from peers to resurrect it. Only Unconfirmed (a new button
+	// press) restarts the cycle. Without this, a peer's stale heartbeat
+	// containing Confirmed overwrites Removed via "highest state wins"
+	// because Confirmed(3) > Removed(1).
+	if local == orders.RemovedOrderState && update.State == orders.ConfirmedOrderState {
+		return orders.RemovedOrderState
+	}
+
 	// Only the owning elevator participates in the barrier for cab orders.
 	cabBarrierNodes := []string{update.SenderID}
 	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
