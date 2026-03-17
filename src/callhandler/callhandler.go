@@ -7,15 +7,14 @@ package callhandler
 // restart the controller
 
 import (
-	"driver-go/elevio"
 	"elevatorproject/src/config"
+	"elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
 	"fmt"
 	"time"
 )
-
 
 func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan<- elevatorserver.CabOrderUpdate) {
 	myID := config.MyID()
@@ -103,7 +102,7 @@ func RunCallHandler(
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
 			localElevator.UpdateInService(true)
-			resetTimer(serviceWatchdog)
+			restartTimer(serviceWatchdog, config.ServiceTimeout)
 			fsmOnFloorArrival(localElevator, floor, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			syncServiceWatchdog(localElevator, serviceWatchdog)
 			emitLocalState(localElevator, elevatorStateLocal)
@@ -112,20 +111,30 @@ func RunCallHandler(
 			fmt.Printf("%+v\n", obstruction)
 			localElevator.UpdateObstruction(obstruction)
 			if localElevator.StopPressed() {
-				elevio.SetMotorDirection(elevio.MD_Stop)
+				controller.StopElevator()
 			} else if localElevator.Behaviour() == es.Moving {
-				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
+				switch localElevator.CurrentDirection() {
+				case es.Up:
+					controller.MoveElevatorUp()
+				case es.Down:
+					controller.MoveElevatorDown()
+				}
 			}
 
 		case stop := <-event.StopEvent:
 			fmt.Printf("%+v\n", stop)
 			localElevator.UpdateStopPressed(stop)
-			elevio.SetStopLamp(stop)
+			controller.SetStopLamp(stop)
 
 			if localElevator.StopPressed() {
-				elevio.SetMotorDirection(elevio.MD_Stop)
+				controller.StopElevator()
 			} else if localElevator.Behaviour() == es.Moving {
-				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
+				switch localElevator.CurrentDirection() {
+				case es.Up:
+					controller.MoveElevatorUp()
+				case es.Down:
+					controller.MoveElevatorDown()
+				}
 			}
 
 		case newOrders := <-activeLocalOrders:
@@ -154,21 +163,13 @@ func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerM
 		msg := <-callHandlerMessage
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
-			for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
-				orderState := hallOrders.GetOrderState(floorIndex, b)
-				if orderState == orders.ConfirmedOrderState {
-					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
-				} else {
-					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, false)
-				}
+			for button := es.HallUp; button <= es.HallDown; button++ {
+				orderState := hallOrders.GetOrderState(floorIndex, int(button))
+				controller.SetButtonLamp(button, floorIndex, orderState == orders.ConfirmedOrderState)
 			}
-			// Assuming one cab button per floor (b = 0)
+
 			orderState := cabOrders.GetOrderState(floorIndex)
-			if orderState == orders.ConfirmedOrderState {
-				elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, true)
-			} else {
-				elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, false)
-			}
+			controller.SetButtonLamp(es.Cab, floorIndex, orderState == orders.ConfirmedOrderState)
 		}
 	}
 }

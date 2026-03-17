@@ -9,6 +9,7 @@
 *.dylib
 *.o
 *.DS_Store
+*.VSCodeCounter
 
 # Test binary, built with `go test -c`
 *.test

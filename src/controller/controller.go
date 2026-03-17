@@ -62,3 +62,7 @@ func SetButtonLamp(button es.ButtonType, floor int, value bool) {
 func SetDoorOpenLamp(value bool) {
 	elevio.SetDoorOpenLamp(value)
 }
+
+func SetStopLamp(value bool) {
+	elevio.SetStopLamp(value)
+}

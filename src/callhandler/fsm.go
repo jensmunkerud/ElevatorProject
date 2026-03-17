@@ -1,6 +1,7 @@
 package callhandler
 
 import (
+	"elevatorproject/src/config"
 	"elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
@@ -26,7 +27,7 @@ func fsmOnRequestButtonPress(
 	switch e.Behaviour() {
 	case es.DoorOpen:
 		if requestsShouldClearImmediately(*e, buttonFloor, buttonType) {
-			startDoorTimer(doorTimer)
+			restartTimer(doorTimer, config.DoorOpenDuration)
 		} else {
 			e.UpdateRequest(buttonFloor, buttonType, true)
 		}
@@ -42,7 +43,7 @@ func fsmOnRequestButtonPress(
 		switch newBehaviour {
 		case es.DoorOpen:
 			controller.SetDoorOpenLamp(true)
-			startDoorTimer(doorTimer)
+			restartTimer(doorTimer, config.DoorOpenDuration)
 			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 
 		case es.Moving:
@@ -81,7 +82,7 @@ func fsmOnFloorArrival(
 			controller.StopElevator()
 			controller.SetDoorOpenLamp(true)
 			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
-			startDoorTimer(doorTimer)
+			restartTimer(doorTimer, config.DoorOpenDuration)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
 	default:
@@ -100,7 +101,7 @@ func fsmOnDoorTimeout(
 	fmt.Printf("\n\nfsmOnDoorTimeout()\n")
 	if e.Obstruction() {
 		// Keep door open
-		startDoorTimer(doorTimer)
+		restartTimer(doorTimer, config.DoorOpenDuration)
 		return
 	}
 	switch e.Behaviour() {
@@ -111,7 +112,7 @@ func fsmOnDoorTimeout(
 
 		switch e.Behaviour() {
 		case es.DoorOpen:
-			startDoorTimer(doorTimer)
+			restartTimer(doorTimer, config.DoorOpenDuration)
 			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 		case es.Moving, es.Idle:
 			controller.SetDoorOpenLamp(false)
@@ -147,7 +148,7 @@ func fsmOnNewOrders(
 	switch newBeh {
 	case es.DoorOpen:
 		controller.SetDoorOpenLamp(true)
-		startDoorTimer(doorTimer)
+		restartTimer(doorTimer, config.DoorOpenDuration)
 		requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 	case es.Moving:
 		if !e.StopPressed() {
