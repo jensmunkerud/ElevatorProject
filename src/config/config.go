@@ -34,24 +34,35 @@ func MyID() string {
 // SetMyID sets the local ID once. If id is empty, myID is set from the machine's MAC address.
 // Only the first call has effect. The application should call SetMyID("") at startup to use MAC-based ID.
 func SetMyID() {
+	SetMyIDFromPort(0)
+}
+
+// SetMyIDFromPort sets the local elevator ID once. If port > 0, myID is set to the port string
+// so that the same elevator (same simulator port) keeps a stable ID across restarts. That allows
+// other nodes to retain and re-send this elevator's cab orders when it rejoins the network.
+// If port is 0, behaviour is the same as SetMyID() (PID when testing, MAC otherwise).
+func SetMyIDFromPort(port int) {
 	once.Do(func() {
+		if port > 0 {
+			myID = strconv.Itoa(port)
+			return
+		}
 		if testing {
 			myID = strconv.Itoa(os.Getpid())
 		} else {
-		mac, err := getMacAddr()
-		attempts := 0
-		for err != nil {
-			fmt.Printf("Error: %v, retrying MAC address...\n", err)
-			mac, err = getMacAddr() // keep "placeholder" on error
-			time.Sleep(1 * time.Second)
-			attempts++
-			
-			if attempts > 10 {
-				panic("Failed to find MAC address after 10 attempts")
+			mac, err := getMacAddr()
+			attempts := 0
+			for err != nil {
+				fmt.Printf("Error: %v, retrying MAC address...\n", err)
+				mac, err = getMacAddr() // keep "placeholder" on error
+				time.Sleep(1 * time.Second)
+				attempts++
+				if attempts > 10 {
+					panic("Failed to find MAC address after 10 attempts")
+				}
 			}
+			myID = mac
 		}
-		myID = mac
-	}
 	})
 }
 

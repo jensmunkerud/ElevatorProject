@@ -43,7 +43,7 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 // have seen the order).
 // getState is a callback that retrieves a node's current OrderState by ID, returning false if the node is unknown.
 func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes []string, getState func(string) (orders.OrderState, bool)) orders.OrderState {
-	// Unknown always loses
+	// Unknown always loses'
 	if local == orders.UnknownOrderState {
 		return newOrder
 	}
@@ -65,7 +65,7 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 	// elevator that actually services the order may transition to Completed.
 	// The remote Completed is recorded in the sender's slot for the barrier.
 	if local == orders.ConfirmedOrderState && newOrder == orders.CompletedOrderState {
-		return orders.ConfirmedOrderState
+		return orders.CompletedOrderState
 	}
 
 	// Barrier 1: Unconfirmed → Confirmed

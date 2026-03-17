@@ -17,8 +17,9 @@ func main() {
 	port := flag.Int("port", 15657, "Port for the elevator simulator")
 	flag.Parse()
 
-	//Set my ID before starting any goroutines.
-	config.SetMyID()
+	// Set a stable ID from port so this elevator keeps the same ID across restarts (e.g. after simulator crash).
+	// Other nodes then retain our cab orders under this ID and we recover them when we rejoin.
+	config.SetMyIDFromPort(*port)
 	// Initialize channels for communication between goroutines:
 	HallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*1000) // Buffered to avoid blocking on sends
 	CabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*1000)
