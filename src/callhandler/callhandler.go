@@ -127,7 +127,7 @@ func RunCallHandler(
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
-			localElevator.UpdateIsWorking(true)
+			localElevator.UpdateInService(true)
 			resetTimer(serviceWatchdog)
 			fsmOnFloorArrival(localElevator, floor, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			syncWorkingWatchdog(localElevator, serviceWatchdog)
@@ -165,7 +165,7 @@ func RunCallHandler(
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case <-serviceWatchdog.C:
-			localElevator.UpdateIsWorking(false)
+			localElevator.UpdateInService(false)
 			syncWorkingWatchdog(localElevator, serviceWatchdog)
 			emitLocalState(localElevator, elevatorStateLocal)
 		}

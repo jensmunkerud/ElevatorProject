@@ -35,14 +35,14 @@ const (
 )
 
 type Elevator struct {
-	id           string
-	behaviour    Behaviour
-	floor        int
-	direction    Direction
-	requests     [config.NumFloors][config.NumButtons]bool
-	obstruction  bool
-	stopPressed  bool
-	isWorking    bool
+	id          string
+	behaviour   Behaviour
+	floor       int
+	direction   Direction
+	requests    [config.NumFloors][config.NumButtons]bool
+	obstruction bool
+	stopPressed bool
+	inService   bool
 }
 
 type ElevatorEvent struct {
@@ -58,7 +58,7 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 		behaviour: behaviour,
 		floor:     currentFloor,
 		direction: direction,
-		isWorking: false,
+		inService: false,
 	}
 }
 
@@ -146,12 +146,12 @@ func (e Elevator) StopPressed() bool {
 	return e.stopPressed
 }
 
-func (e *Elevator) UpdateIsWorking(isWorking bool) {
-	e.isWorking = isWorking
+func (e *Elevator) UpdateInService(inService bool) {
+	e.inService = inService
 }
 
-func (e Elevator) IsWorking() bool {
-	return e.isWorking
+func (e Elevator) InService() bool {
+	return e.inService
 }
 
 // func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
