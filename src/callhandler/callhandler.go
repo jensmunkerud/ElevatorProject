@@ -34,7 +34,7 @@ func stopTimer(t *time.Timer) {
 	}
 }
 
-func syncWorkingWatchdog(e *es.Elevator, watchdog *time.Timer) {
+func syncServiceWatchdog(e *es.Elevator, watchdog *time.Timer) {
 	if e.Behaviour() == es.Moving {
 		resetTimer(watchdog)
 		return
@@ -101,7 +101,7 @@ func RunCallHandler(
 	elevators[localElevator.Id()] = localElevator
 	// updateElevatorState(localElevator)
 	fsmOnInitBetweenFloors(localElevator)
-	syncWorkingWatchdog(localElevator, serviceWatchdog)
+	syncServiceWatchdog(localElevator, serviceWatchdog)
 	emitLocalState(localElevator, elevatorStateLocal)
 	close(ready)
 
@@ -130,7 +130,7 @@ func RunCallHandler(
 			localElevator.UpdateInService(true)
 			resetTimer(serviceWatchdog)
 			fsmOnFloorArrival(localElevator, floor, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncWorkingWatchdog(localElevator, serviceWatchdog)
+			syncServiceWatchdog(localElevator, serviceWatchdog)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case obstruction := <-event.ObstructionEvent:
@@ -156,17 +156,17 @@ func RunCallHandler(
 		case newOrders := <-activeLocalOrders:
 			localElevator.UpdateRequestTotal(newOrders)
 			fsmOnNewOrders(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncWorkingWatchdog(localElevator, serviceWatchdog)
+			syncServiceWatchdog(localElevator, serviceWatchdog)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case <-doorTimer.C:
 			fsmOnDoorTimeout(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncWorkingWatchdog(localElevator, serviceWatchdog)
+			syncServiceWatchdog(localElevator, serviceWatchdog)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case <-serviceWatchdog.C:
 			localElevator.UpdateInService(false)
-			syncWorkingWatchdog(localElevator, serviceWatchdog)
+			syncServiceWatchdog(localElevator, serviceWatchdog)
 			emitLocalState(localElevator, elevatorStateLocal)
 		}
 	}
