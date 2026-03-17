@@ -15,54 +15,6 @@ func fsmOnInitBetweenFloors(e *es.Elevator) {
 	e.UpdateBehaviour(es.Moving)
 }
 
-// func fsmOnRequestButtonPress(
-// 	e *es.Elevator,
-// 	buttonFloor int,
-// 	buttonType es.ButtonType,
-// 	doorTimer *time.Timer,
-// 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
-// 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
-// ) {
-
-// 	switch e.Behaviour() {
-// 	case es.DoorOpen:
-// 		if requestsShouldClearImmediately(*e, buttonFloor, buttonType) {
-// 			restartTimer(doorTimer, config.DoorOpenDuration)
-// 			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
-// 		}
-
-// 	// case es.Moving:
-// 		// e.UpdateRequest(buttonFloor, buttonType, true)
-
-// 	case es.Idle:
-// 		// e.UpdateRequest(buttonFloor, buttonType, true)
-// 		newDirection, newBehaviour := requestsChooseDirection(*e)
-// 		e.UpdateCurrentDirection(newDirection)
-// 		e.UpdateBehaviour(newBehaviour)
-// 		switch newBehaviour {
-// 		case es.DoorOpen:
-// 			controller.SetDoorOpenLamp(true)
-// 			restartTimer(doorTimer, config.DoorOpenDuration)
-// 			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
-
-// 		case es.Moving:
-// 			if !e.StopPressed() {
-// 				switch e.CurrentDirection() {
-// 				case es.Up:
-// 					controller.MoveElevatorUp()
-// 				case es.Down:
-// 					controller.MoveElevatorDown()
-// 				}
-// 			}
-
-// 		case es.Idle:
-// 			// nothing
-// 		}
-// 	}
-
-// 	fmt.Println("\nNew state!!")
-// }
-
 func fsmOnFloorArrival(
 	e *es.Elevator,
 	newFloor int,
