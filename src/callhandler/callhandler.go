@@ -156,11 +156,35 @@ func RunCallHandler(
 	}
 }
 
+// callHandlerMessageChanged returns true if a and b differ in any hall or cab order state.
+func callHandlerMessageChanged(a, b elevatorserver.CallHandlerMessage) bool {
+	hallA, cabA := a.UnpackForCallHandler()
+	hallB, cabB := b.UnpackForCallHandler()
+	for f := 0; f < config.NumFloors; f++ {
+		for d := 0; d < 2; d++ {
+			if hallA.GetOrderState(f, d) != hallB.GetOrderState(f, d) {
+				return true
+			}
+		}
+		if cabA.GetOrderState(f) != cabB.GetOrderState(f) {
+			return true
+		}
+	}
+	return false
+}
+
+
 // Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
 // serves the intended purpose of this function
 func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerMessage) {
-	for {
-		msg := <-callHandlerMessage
+	var last elevatorserver.CallHandlerMessage
+	first := true
+	for msg := range callHandlerMessage {
+		if !first && !callHandlerMessageChanged(last, msg) {
+			continue
+		}
+		first = false
+		last = msg
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
 			for button := es.HallUp; button <= es.HallDown; button++ {
