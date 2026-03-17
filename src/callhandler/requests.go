@@ -100,12 +100,11 @@ func requestsShouldClearImmediately(e es.Elevator, buttonFloor int, buttonType e
 			buttonType == es.Cab)
 }
 
-func requestsSendCompletedAtCurrentFloor(
-	e *es.Elevator,
-	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
-	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
-) {
-	e.UpdateRequest(e.CurrentFloor(), es.Cab, false)
+func requestsClearAtCurrentFloor(
+	e es.Elevator,
+	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
+) es.Elevator {
 	RequestUpdateCabOrder(e.CurrentFloor(), es.Cab, true, cabOrderUpdate)
 
 	switch e.CurrentDirection() {

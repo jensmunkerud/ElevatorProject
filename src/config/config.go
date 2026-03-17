@@ -22,8 +22,10 @@ const (
 )
 
 var (
-	myID = "placeholder"
-	once sync.Once
+	// ElevatorIOPort is the address for elevator I/O. In testing mode it is set from user input in SetMyID.
+	ElevatorIOPort = "localhost:15658"
+	myID           = "placeholder"
+	once           sync.Once
 )
 
 // MyID returns the local elevator ID (set once from MAC address or via SetMyID).
@@ -49,6 +51,12 @@ func SetMyIDFromPort(port int) {
 		}
 		if testing {
 			myID = strconv.Itoa(os.Getpid())
+			fmt.Print("Elevator IO port (e.g. 15658): ")
+			var port string
+			fmt.Scanln(&port)
+			if port != "" {
+				ElevatorIOPort = "localhost:" + port
+			}
 		} else {
 			mac, err := getMacAddr()
 			attempts := 0

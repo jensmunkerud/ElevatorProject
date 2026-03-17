@@ -16,9 +16,10 @@ import (
 	"time"
 )
 
-func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan elevatorserver.CabOrderUpdate) {
+func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan<- elevatorserver.CabOrderUpdate) {
 	myID := config.MyID()
-	if cabOrderUpdate == nil || button != es.Cab {
+  
+  if cabOrderUpdate == nil || button != es.Cab {
 		return
 	}
 
@@ -34,7 +35,7 @@ func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabO
 	}
 }
 
-func RequestUpdateHallOrder(floor int, button es.ButtonType, completed bool, hallOrderUpdate chan elevatorserver.HallOrderUpdate) {
+func RequestUpdateHallOrder(floor int, button es.ButtonType, completed bool, hallOrderUpdate chan<- elevatorserver.HallOrderUpdate) {
 	if hallOrderUpdate == nil || button == es.Cab {
 		return
 	}
@@ -54,13 +55,13 @@ func RequestUpdateHallOrder(floor int, button es.ButtonType, completed bool, hal
 }
 
 func RunCallHandler(
-	ready chan struct{},
-	elevatorEvent chan es.ElevatorEvent,
-	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
-	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
-	elevatorStateLocal chan es.Elevator,
-	callHandlerMessage chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
-	activeLocalOrders chan [config.NumFloors][config.NumButtons]bool) {
+	ready chan<- struct{},
+	elevatorEvent <-chan es.ElevatorEvent,
+	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
+	elevatorStateLocal chan<- es.Elevator,
+	callHandlerMessage <-chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
+	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool) {
 	// hallOrderUpdateOut = hallOrderUpdate
 	// cabOrderUpdateOut = cabOrderUpdate
 
@@ -134,8 +135,9 @@ func RunCallHandler(
 
 // Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
 // serves the intended purpose of this function
-func refreshElevatorLights(callHandlerMessage chan elevatorserver.CallHandlerMessage) {
-	for msg := range callHandlerMessage {
+func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerMessage) {
+	select {
+	case msg := <-callHandlerMessage:
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
 			for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
@@ -157,7 +159,19 @@ func refreshElevatorLights(callHandlerMessage chan elevatorserver.CallHandlerMes
 	}
 }
 
-func emitLocalState(current *es.Elevator, elevatorStateLocal chan es.Elevator) {
+func handleActiveLocalOrders(
+	localElevator *es.Elevator,
+	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool,
+	elevatorStateLocal chan<- es.Elevator,
+) {
+	for newActiveOrders := range activeLocalOrders {
+		localElevator.UpdateRequestTotal(newActiveOrders)
+		emitLocalState(localElevator, elevatorStateLocal)
+		fmt.Printf("RECEIVED FROM COSTFUNC")
+	}
+}
+
+func emitLocalState(current *es.Elevator, elevatorStateLocal chan<- es.Elevator) {
 	if elevatorStateLocal == nil || current == nil {
 		return
 	}
