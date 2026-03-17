@@ -28,8 +28,7 @@ func (o *CabOrders) CabOrderState(floor int) OrderState {
 func (c *CabOrders) Simplify() []bool {
 	simplified := make([]bool, config.NumFloors)
 	for floor := 0; floor < config.NumFloors; floor++ {
-		simplified[floor] = c.CabOrderState(floor) == ConfirmedOrderState ||
-			c.CabOrderState(floor) == CompletedOrderState
+		simplified[floor] = c.CabOrderState(floor) == ConfirmedOrderState 
 	}
 	return simplified
 }

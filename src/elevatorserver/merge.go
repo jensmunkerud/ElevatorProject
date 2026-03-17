@@ -3,10 +3,10 @@ package elevatorserver
 import (
 	"elevatorproject/src/orders"
 )
-//This file contains the logic for merging incoming order updates from the network with the local
-// state of orders, using a distributed barrier protocol to ensure consistency across all online nodes. 
-// This allows the system to preserve orders even in the face of elevator failures and recoveries.
 
+//This file contains the logic for merging incoming order updates from the network with the local
+// state of orders, using a distributed barrier protocol to ensure consistency across all online nodes.
+// This allows the system to preserve orders even in the face of elevator failures and recoveries.
 
 // mergeHallOrderState resolves the next OrderState for a hall order at the given floor and direction.
 // It compares the incoming state from update.SenderID against the receiver's local state, using the
@@ -23,10 +23,13 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 }
 
 // Merges an incoming cab order state with the local state, using the same barrier protocol as mergeHallOrderState to coordinate transitions across all online nodes.
-// This ensures that cab orders are preserved even if an elevator goes offline and later comes back online.
+// Cab orders are per-elevator, so the barrier only checks the owning
+// elevator's own state (not other elevators' unrelated cab orders).
 func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
 	local := allCabOrders[update.SenderID].GetOrderState(update.Floor)
-	return mergeState(update.State, local, onlineNodes, func(id string) (orders.OrderState, bool) {
+	// Only the owning elevator participates in the barrier for cab orders.
+	cabBarrierNodes := []string{update.SenderID}
+	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allCabOrders[id]
 		if !ok {
 			return orders.UnknownOrderState, false
@@ -40,7 +43,7 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 // have seen the order).
 // getState is a callback that retrieves a node's current OrderState by ID, returning false if the node is unknown.
 func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes []string, getState func(string) (orders.OrderState, bool)) orders.OrderState {
-	// Unknown always loses
+	// Unknown always loses'
 	if local == orders.UnknownOrderState {
 		return newOrder
 	}
@@ -56,6 +59,13 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 	// Unconfirmed + Completed resets (missed everything)
 	if local == orders.UnconfirmedOrderState && newOrder == orders.CompletedOrderState {
 		return orders.RemovedOrderState
+	}
+
+	// Confirmed must not be overwritten by a remote Completed — only the local
+	// elevator that actually services the order may transition to Completed.
+	// The remote Completed is recorded in the sender's slot for the barrier.
+	if local == orders.ConfirmedOrderState && newOrder == orders.CompletedOrderState {
+		return orders.CompletedOrderState
 	}
 
 	// Barrier 1: Unconfirmed → Confirmed
@@ -81,15 +91,21 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 	return local
 }
 
-// barrierReached returns true if every online node has an OrderState at or above threshold.
-// Returns false immediately if any node is missing from the order map or has not yet reached the threshold.
+// barrierReached returns true if every online node has reached the given threshold.
+// For the Completed threshold, a node at Removed is treated as having passed through
+// Completed (the lifecycle is Unconfirmed→Confirmed→Completed→Removed, but Removed
+// has a lower numeric value than Completed).
 func barrierReached(onlineNodes []string, threshold orders.OrderState, getState func(string) (orders.OrderState, bool)) bool {
 	for _, id := range onlineNodes {
 		state, ok := getState(id)
 		if !ok {
 			return false
 		}
-		if state < threshold {
+		if threshold == orders.CompletedOrderState {
+			if state != orders.CompletedOrderState && state != orders.RemovedOrderState {
+				return false
+			}
+		} else if state < threshold {
 			return false
 		}
 	}

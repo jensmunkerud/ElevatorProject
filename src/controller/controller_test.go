@@ -5,5 +5,5 @@ import (
 )
 
 func TestController(t *testing.T) {
-	return
+	t.Skip("InitController not implemented; requires elevator hardware")
 }

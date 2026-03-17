@@ -31,8 +31,7 @@ func (h *HallOrders) Simplify() [][]bool {
 	for floor := 0; floor < config.NumFloors; floor++ {
 		simplified[floor] = make([]bool, 2)
 		for direction := 0; direction < 2; direction++ {
-			simplified[floor][direction] = h.HallOrderState(floor, direction) == ConfirmedOrderState ||
-				h.HallOrderState(floor, direction) == CompletedOrderState
+			simplified[floor][direction] = h.HallOrderState(floor, direction) == ConfirmedOrderState 
 		}
 	}
 	return simplified

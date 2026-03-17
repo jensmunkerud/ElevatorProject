@@ -60,9 +60,9 @@ func formatCabOrders(c *orders.CabOrders) string {
 	return s + "]"
 }
 
-func formatActiveOrders(o [][]bool) string {
-	if o == nil {
-		return "nil"
+func formatActiveOrders(o [config.NumFloors][config.NumButtons]bool, received bool) string {
+	if !received {
+		return "(none)"
 	}
 	s := "["
 	for f, row := range o {
@@ -97,7 +97,7 @@ func TestServerAndCostFuncInteraction(t *testing.T) {
 	toOrderDist := make(chan elevatorserver.OrderDistributorMessage, 10)
 	toNetworking := make(chan elevatorserver.NetworkingDistributorMessage, 10)
 	fromNetworking := make(chan elevatorserver.NetworkingDistributorMessage, 10)
-	activeOrdersCh := make(chan [][]bool, 500)
+	activeOrdersCh := make(chan [config.NumFloors][config.NumButtons]bool, 500)
 
 	// RunElevatorServer blocks waiting for an initial elevator state.
 	initElev := elevator.CreateElevator(myID, 0, elevator.Up, elevator.Idle)
@@ -128,9 +128,9 @@ func TestServerAndCostFuncInteraction(t *testing.T) {
 	var mu sync.Mutex
 	localHall := orders.CreateHallOrders()
 	localCab := orders.CreateCabOrders()
-	var latestActive [][]bool
+	var latestActive [config.NumFloors][config.NumButtons]bool
+	var receivedActive bool
 	var costFuncOK int64
-	var costFuncNil int64
 	var hallSent int64
 	var cabSent int64
 
@@ -139,11 +139,8 @@ func TestServerAndCostFuncInteraction(t *testing.T) {
 		for o := range activeOrdersCh {
 			mu.Lock()
 			latestActive = o
-			if o == nil {
-				costFuncNil++
-			} else {
-				costFuncOK++
-			}
+			receivedActive = true
+			costFuncOK++
 			mu.Unlock()
 		}
 	}()
@@ -160,9 +157,9 @@ func TestServerAndCostFuncInteraction(t *testing.T) {
 				t.Logf("──────────── Status ────────────")
 				t.Logf("  Hall orders (local):  %s", formatHallOrders(localHall))
 				t.Logf("  Cab  orders (local):  %s", formatCabOrders(localCab))
-				t.Logf("  Active orders (cost): %s", formatActiveOrders(latestActive))
+				t.Logf("  Active orders (cost): %s", formatActiveOrders(latestActive, receivedActive))
 				t.Logf("  Msgs sent:  hall=%d  cab=%d", hallSent, cabSent)
-				t.Logf("  Cost func:  ok=%d  nil=%d", costFuncOK, costFuncNil)
+				t.Logf("  Cost func:  ok=%d", costFuncOK)
 				mu.Unlock()
 			case <-printDone:
 				return
@@ -255,9 +252,9 @@ func TestServerAndCostFuncInteraction(t *testing.T) {
 	t.Logf("════════════ Final Report ════════════")
 	t.Logf("  Hall orders (local):  %s", formatHallOrders(localHall))
 	t.Logf("  Cab  orders (local):  %s", formatCabOrders(localCab))
-	t.Logf("  Active orders (cost): %s", formatActiveOrders(latestActive))
+	t.Logf("  Active orders (cost): %s", formatActiveOrders(latestActive, receivedActive))
 	t.Logf("  Msgs sent:  hall=%d  cab=%d", hallSent, cabSent)
-	t.Logf("  Cost func:  ok=%d  nil=%d", costFuncOK, costFuncNil)
+	t.Logf("  Cost func:  ok=%d", costFuncOK)
 	mu.Unlock()
 
 	close(printDone)

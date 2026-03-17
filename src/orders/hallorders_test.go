@@ -36,7 +36,7 @@ func TestSimplifyHallOrders(t *testing.T) {
 	hallOrders := CreateHallOrders()
 
 	// Set some orders to different states
-	hallOrders.UpdateOrderState(0, 0, ConfirmedOrderState) // Floor 0, Up - should be true (active)
+	hallOrders.UpdateOrderState(0, 0, ConfirmedOrderState)   // Floor 0, Up - should be true (active)
 	hallOrders.UpdateOrderState(0, 1, CompletedOrderState)   // Floor 0, Down - should be true (transition state)
 	hallOrders.UpdateOrderState(2, 0, RemovedOrderState)     // Floor 2, Up - should be false
 	hallOrders.UpdateOrderState(3, 1, UnconfirmedOrderState) // Floor 3, Down - should be false
@@ -73,7 +73,7 @@ func TestSimplifyHallOrders(t *testing.T) {
 		state     string
 	}{
 		{0, 0, true, "OrderStateConfirmed"},
-		{0, 1, true, "OrderStateCompleted"},
+		{0, 1, false, "OrderStateCompleted"},
 		{2, 0, false, "OrderStateNoOrder"},
 		{3, 1, false, "OrderStateUnconfirmed"},
 	}

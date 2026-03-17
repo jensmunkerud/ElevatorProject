@@ -191,13 +191,7 @@ func Run(
 	for {
 		select {
 		case u := <-hallUpdate:
-			if _, ok := allHall[u.SenderID]; !ok {
-				allHall[u.SenderID] = orders.CreateHallOrders()
-			}
-			allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
-			nextState := mergeHallOrderState(u, config.MyID(), allHall, elevatorsOnNetwork)
-			allHall[myID].UpdateOrderState(u.Floor, u.Direction, nextState)
-			// Empty the channel to always have the lates snapshot
+			applyHallUpdate(u, myID, allHall, elevatorsOnNetwork)
 			select {
 			case <-hallSnap:
 			default:
@@ -205,13 +199,7 @@ func Run(
 			hallSnap <- allHall[myID].Copy()
 
 		case u := <-cabUpdate:
-			if _, ok := allCab[u.SenderID]; !ok {
-				allCab[u.SenderID] = orders.CreateCabOrders()
-			}
-			allCab[u.SenderID].UpdateOrderState(u.Floor, u.State)
-			nextState := mergeCabOrderState(u, allCab, elevatorsOnNetwork)
-			allCab[u.SenderID].UpdateOrderState(u.Floor, nextState)
-			// Empty the channel to always have the latest snapshot
+			applyCabUpdate(u, allCab, elevatorsOnNetwork)
 			select {
 			case <-cabSnap:
 			default:
@@ -229,7 +217,6 @@ func Run(
 				}
 			}
 		case es := <-elevatorStateUpdate:
-			// Always overwrite the elevator state for the sender, since it's a direct report of its physical state.
 			id := es.Id()
 			allElevatorStates[id] = &es
 			select {
@@ -239,4 +226,29 @@ func Run(
 			elevStateSnap <- copyAllElevState(allElevatorStates)
 		}
 	}
+}
+
+func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.HallOrders, onlineNodes []string) {
+	if _, ok := allHall[u.SenderID]; !ok {
+		allHall[u.SenderID] = orders.CreateHallOrders()
+	}
+	allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
+	nextState := mergeHallOrderState(u, myID, allHall, onlineNodes)
+	allHall[myID].UpdateOrderState(u.Floor, u.Direction, nextState)
+}
+
+func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlineNodes []string) {
+	if _, ok := allCab[u.SenderID]; !ok {
+		allCab[u.SenderID] = orders.CreateCabOrders()
+	}
+	// For self cab orders: don't overwrite local state with the remote view
+	// before merging — the merge reads allCab[SenderID] as "local", so
+	// corrupting it first would lose our actual state. Skipping the write
+	// lets the merge recover Unknown→Confirmed on startup while preserving
+	// known states during normal operation.
+	if u.SenderID != config.MyID() {
+		allCab[u.SenderID].UpdateOrderState(u.Floor, u.State)
+	}
+	nextState := mergeCabOrderState(u, allCab, onlineNodes)
+	allCab[u.SenderID].UpdateOrderState(u.Floor, nextState)
 }

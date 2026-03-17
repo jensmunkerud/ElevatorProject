@@ -68,7 +68,6 @@ type CallHandlerMessage struct {
 	myCabOrders      orders.CabOrders
 }
 
-
 // UnpackForCallHandler returns pointer-based snapshots for call handler consumers.
 func (m CallHandlerMessage) UnpackForCallHandler() (*orders.HallOrders, *orders.CabOrders) {
 	hallOrders := m.mergedHallOrders.Copy()

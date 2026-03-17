@@ -8,13 +8,18 @@ import (
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/networking"
 	"elevatorproject/src/orderdistributor"
+	"flag"
 	"fmt"
 	"time"
 )
 
 func main() {
-	//Set my ID before starting any goroutines.
-	config.SetMyID()
+	port := flag.Int("port", 15657, "Port for the elevator simulator")
+	flag.Parse()
+
+	// Set a stable ID from port so this elevator keeps the same ID across restarts (e.g. after simulator crash).
+	// Other nodes then retain our cab orders under this ID and we recover them when we rejoin.
+	config.SetMyIDFromPort(*port)
 	// Initialize channels for communication between goroutines:
 	HallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*1000) // Buffered to avoid blocking on sends
 	CabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*1000)
@@ -28,15 +33,14 @@ func main() {
 	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	ActiveLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
 	elevatorEvent := make(chan elevator.ElevatorEvent, 5)
-	CallHandlerMessage := make(chan elevatorserver.CallHandlerMessage, 5)
 	ready := make(chan struct{})
 
 	// Start goroutines:
 	fmt.Println("Starting controller")
-	go controller.RunController(elevatorEvent)
+	go controller.RunController(elevatorEvent, *port)
 	time.Sleep(1 * time.Second)
 	fmt.Println("Starting callhandler")
-	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, CallHandlerMessage, ActiveLocalOrders)
+	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, CurrentOrdersToCallhandler, ActiveLocalOrders)
 	<-ready
 	fmt.Println("Starting elevatorserver")
 	go elevatorserver.Run(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)

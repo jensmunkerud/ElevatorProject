@@ -109,21 +109,25 @@ func requestsClearAtCurrentFloor(
 
 	switch e.CurrentDirection() {
 	case es.Up:
-		if !requestsAbove(e) && !e.Requests()[e.CurrentFloor()][es.HallUp] {
+		e.UpdateRequest(e.CurrentFloor(), es.HallUp, false)
+		RequestUpdateHallOrder(e.CurrentFloor(), es.HallUp, true, hallOrderUpdate)
+		if !requestsAbove(*e) {
+			e.UpdateRequest(e.CurrentFloor(), es.HallDown, false)
 			RequestUpdateHallOrder(e.CurrentFloor(), es.HallDown, true, hallOrderUpdate)
 		}
-		RequestUpdateHallOrder(e.CurrentFloor(), es.HallUp, true, hallOrderUpdate)
 
 	case es.Down:
-		if !requestsBelow(e) && !e.Requests()[e.CurrentFloor()][es.HallUp] {
+		e.UpdateRequest(e.CurrentFloor(), es.HallDown, false)
+		RequestUpdateHallOrder(e.CurrentFloor(), es.HallDown, true, hallOrderUpdate)
+		if !requestsBelow(*e) {
+			e.UpdateRequest(e.CurrentFloor(), es.HallUp, false)
 			RequestUpdateHallOrder(e.CurrentFloor(), es.HallUp, true, hallOrderUpdate)
 		}
-		RequestUpdateHallOrder(e.CurrentFloor(), es.HallDown, true, hallOrderUpdate)
 
 	default:
+		e.UpdateRequest(e.CurrentFloor(), es.HallUp, false)
+		e.UpdateRequest(e.CurrentFloor(), es.HallDown, false)
 		RequestUpdateHallOrder(e.CurrentFloor(), es.HallUp, true, hallOrderUpdate)
 		RequestUpdateHallOrder(e.CurrentFloor(), es.HallDown, true, hallOrderUpdate)
 	}
-
-	return e
 }
