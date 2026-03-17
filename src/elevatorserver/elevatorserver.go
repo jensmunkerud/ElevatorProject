@@ -21,7 +21,6 @@ func processNetworkMessages(
 	hallUpdate chan<- HallOrderUpdate,
 	cabUpdate chan<- CabOrderUpdate,
 	elevatorStateUpdate chan<- elevator.Elevator,
-	allCab map[string]*orders.CabOrders,
 ) {
 	for message := range channelFromNetworking {
 		tempCab, tempHall, tempElevator := message.UnpackForNetworking()
@@ -29,15 +28,8 @@ func processNetworkMessages(
 		for _, u := range newHallOrders {
 			hallUpdate <- u
 		}
-		myID := config.MyID()
 		newCabOrders := UnpackCabOrders(tempCab)
 		for _, u := range newCabOrders {
-			if u.SenderID == myID {
-				local := allCab[myID].GetOrderState(u.Floor)
-				if local != orders.UnknownOrderState {
-					continue // don't let remote views overwrite our own known cab orders
-				}
-			}
 			cabUpdate <- u
 		}
 		elev, ok := tempElevator[message.SenderID()]
@@ -193,7 +185,7 @@ func Run(
 		}
 	}()
 	fmt.Println("Starting process network messages loop")
-	go processNetworkMessages(channelFromNetworking, hallUpdate, cabUpdate, elevatorStateUpdate, allCab)
+	go processNetworkMessages(channelFromNetworking, hallUpdate, cabUpdate, elevatorStateUpdate)
 
 	fmt.Println("Starting hallupdate loop")
 	for {
@@ -249,7 +241,14 @@ func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlin
 	if _, ok := allCab[u.SenderID]; !ok {
 		allCab[u.SenderID] = orders.CreateCabOrders()
 	}
-	allCab[u.SenderID].UpdateOrderState(u.Floor, u.State)
+	// For self cab orders: don't overwrite local state with the remote view
+	// before merging — the merge reads allCab[SenderID] as "local", so
+	// corrupting it first would lose our actual state. Skipping the write
+	// lets the merge recover Unknown→Confirmed on startup while preserving
+	// known states during normal operation.
+	if u.SenderID != config.MyID() {
+		allCab[u.SenderID].UpdateOrderState(u.Floor, u.State)
+	}
 	nextState := mergeCabOrderState(u, allCab, onlineNodes)
 	allCab[u.SenderID].UpdateOrderState(u.Floor, nextState)
 }
