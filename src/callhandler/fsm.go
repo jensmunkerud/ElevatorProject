@@ -33,7 +33,6 @@ func fsmOnFloorArrival(
 
 	e.UpdateCurrentFloor(newFloor)
 	e.UpdateInService(true)
-	// elevatorFloorIndicator(e.floor) // whatafak
 
 	switch e.Behaviour() {
 	case es.Moving:
