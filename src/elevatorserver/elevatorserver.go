@@ -61,6 +61,7 @@ func publishToConsumers(
 	channelForCallHandler chan CallHandlerMessage,
 	channelForOrderDistributor chan OrderDistributorMessage,
 	channelForNetworking chan NetworkingDistributorMessage,
+	nodes []string,
 ) {
 	var hallValue orders.HallOrders
 	if latestHall != nil {
@@ -92,10 +93,34 @@ func publishToConsumers(
 		mergedHallOrders: hallValue,
 		myCabOrders:      myCab,
 	}
+
+	// Filter cab orders and elevator state to only online nodes for cost function
+	myID := config.MyID()
+	onlineCab := make(map[string]orders.CabOrders)
+	onlineElev := make(map[string]elevator.Elevator)
+	if len(nodes) == 0 {
+		// No peers known yet — include self only
+		if c, ok := cabValue[myID]; ok {
+			onlineCab[myID] = c
+		}
+		if e, ok := elevValue[myID]; ok {
+			onlineElev[myID] = e
+		}
+	} else {
+		for _, id := range nodes {
+			if c, ok := cabValue[id]; ok {
+				onlineCab[id] = c
+			}
+			if e, ok := elevValue[id]; ok {
+				onlineElev[id] = e
+			}
+		}
+	}
+
 	odMsg := OrderDistributorMessage{
 		mergedHallOrders: hallValue,
-		allCabOrders:     cabValue,
-		elevatorState:    elevValue,
+		allCabOrders:     onlineCab,
+		elevatorState:    onlineElev,
 	}
 	netMsg := NetworkingDistributorMessage{
 		senderID:         config.MyID(),
@@ -159,6 +184,7 @@ func Run(
 	hallSnap := make(chan *orders.HallOrders, 1)
 	cabSnap := make(chan map[string]*orders.CabOrders, 1)
 	elevStateSnap := make(chan map[string]*elevator.Elevator, 1)
+	nodesSnap := make(chan []string, 1)
 	fmt.Println("Check 4")
 	// Throttle: buffer snapshots from the main loop and publish to consumers
 	// only at HeartbeatInterval, avoiding flooding
@@ -170,6 +196,7 @@ func Run(
 		latestHall := allHall[myID]
 		latestCab := orders.CopyAllCab(allCab)
 		latestElevState := copyAllElevState(allElevatorStates)
+		latestNodes := []string{}
 		for {
 			select {
 			case h := <-hallSnap:
@@ -178,9 +205,11 @@ func Run(
 				latestCab = c
 			case es := <-elevStateSnap:
 				latestElevState = es
+			case n := <-nodesSnap:
+				latestNodes = n
 			case <-ticker.C:
 				publishToConsumers(latestHall, latestCab, latestElevState,
-					channelToCallHandler, channelToOrderDistributor, channelToNetworking)
+					channelToCallHandler, channelToOrderDistributor, channelToNetworking, latestNodes)
 			}
 		}
 	}()
@@ -208,14 +237,13 @@ func Run(
 
 		case nodes := <-peersOnlineUpdate:
 			elevatorsOnNetwork = nodes
-			for _, id := range nodes {
-				if _, ok := allHall[id]; !ok {
-					allHall[id] = orders.CreateHallOrders()
-				}
-				if _, ok := allCab[id]; !ok {
-					allCab[id] = orders.CreateCabOrders()
-				}
+			select {
+			case <-nodesSnap:
+			default:
 			}
+			nodesCopy := make([]string, len(nodes))
+			copy(nodesCopy, nodes)
+			nodesSnap <- nodesCopy
 		case es := <-elevatorStateUpdate:
 			id := es.Id()
 			allElevatorStates[id] = &es

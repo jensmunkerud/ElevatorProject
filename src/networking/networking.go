@@ -8,7 +8,6 @@ import (
 	es "elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
 	"fmt"
-	"time"
 )
 
 // Run bridges the elevator server with the UDP broadcast network.
@@ -21,17 +20,13 @@ func Run(
 	peerUpdates chan<- []string,
 	receiveWorldviewOut chan<- es.NetworkingDistributorMessage,
 ) {
+	myID := config.MyID()
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	enablePeer := make(chan bool)
 	sendMsg := make(chan Message, 1)
 	recvMsg := make(chan Message, 10)
 
-	go peers.Transmitter(config.PeersPort, config.MyID(), enablePeer)
-
-	go func() {
-		enablePeer <- true
-		time.Sleep(200 * time.Millisecond)
-	}()
+	go peers.Transmitter(config.PeersPort, myID, enablePeer)
 
 	go peers.Receiver(config.PeersPort, peerUpdateCh)
 	go bcast.Transmitter(config.BroadcastPort, sendMsg)
@@ -41,7 +36,13 @@ func Run(
 	go func() {
 		for worldview := range sendWorldviewIn {
 			allCabOrders, hallOrders, elevatorStates := worldview.UnpackForNetworking()
-			msg := messageFromWorldview(config.MyID(), hallOrders, allCabOrders, elevatorStates)
+
+			// Update peer visibility based on local elevator's inService status
+			if myElev, ok := elevatorStates[myID]; ok {
+				enablePeer <- myElev.InService()
+			}
+
+			msg := messageFromWorldview(myID, hallOrders, allCabOrders, elevatorStates)
 			select {
 			case sendMsg <- msg:
 			default:
@@ -56,7 +57,7 @@ func Run(
 	for {
 		select {
 		case msg := <-recvMsg:
-			if msg.SenderID == config.MyID() {
+			if msg.SenderID == myID {
 				continue
 			}
 			receiveWorldviewOut <- worldviewFromMessage(msg)
