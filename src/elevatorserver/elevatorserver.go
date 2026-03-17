@@ -279,4 +279,14 @@ func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlin
 	}
 	nextState := mergeCabOrderState(u, allCab, onlineNodes)
 	allCab[u.SenderID].UpdateOrderState(u.Floor, nextState)
+
+	// The Completed→Removed barrier may already be satisfied after the first
+	// merge pass (e.g. the owning elevator is the only barrier node and just
+	// wrote Completed above). Re-evaluate immediately so the order doesn't
+	// stay stuck at Completed until an unrelated update happens to trigger
+	// another merge for this floor.
+	if nextState == orders.CompletedOrderState {
+		recheck := mergeCabOrderState(u, allCab, onlineNodes)
+		allCab[u.SenderID].UpdateOrderState(u.Floor, recheck)
+	}
 }
