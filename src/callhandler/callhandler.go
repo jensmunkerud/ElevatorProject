@@ -62,20 +62,17 @@ func RunCallHandler(
 	elevatorStateLocal chan<- es.Elevator,
 	callHandlerMessage <-chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
 	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool) {
-	// hallOrderUpdateOut = hallOrderUpdate
-	// cabOrderUpdateOut = cabOrderUpdate
 
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
 	doorTimer.Stop()
-	serviceWatchdog := time.NewTimer(config.ServiceTimeout)
-	stopTimer(serviceWatchdog)
+	serviceTimer := time.NewTimer(config.ServiceTimeout)
+	stopTimer(serviceTimer)
 	myID := config.MyID()
 	localElevator := es.CreateElevator(myID, -1, es.Stop, es.Idle)
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
 	// updateElevatorState(localElevator)
-	fsmOnInitBetweenFloors(localElevator)
-	syncServiceWatchdog(localElevator, serviceWatchdog)
+	fsmInit(localElevator)
 	emitLocalState(localElevator, elevatorStateLocal)
 	close(ready)
 
@@ -101,10 +98,7 @@ func RunCallHandler(
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
-			localElevator.UpdateInService(true)
-			restartTimer(serviceWatchdog, config.ServiceTimeout)
-			fsmOnFloorArrival(localElevator, floor, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncServiceWatchdog(localElevator, serviceWatchdog)
+			fsmOnFloorArrival(localElevator, floor, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case obstruction := <-event.ObstructionEvent:
@@ -139,18 +133,15 @@ func RunCallHandler(
 
 		case newOrders := <-activeLocalOrders:
 			localElevator.UpdateRequestTotal(newOrders)
-			fsmOnNewOrders(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncServiceWatchdog(localElevator, serviceWatchdog)
+			fsmOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case <-doorTimer.C:
-			fsmOnDoorTimeout(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncServiceWatchdog(localElevator, serviceWatchdog)
+			fsmOnDoorTimeout(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
-		case <-serviceWatchdog.C:
+		case <-serviceTimer.C:
 			localElevator.UpdateInService(false)
-			syncServiceWatchdog(localElevator, serviceWatchdog)
 			emitLocalState(localElevator, elevatorStateLocal)
 		}
 	}
@@ -172,7 +163,6 @@ func callHandlerMessageChanged(a, b elevatorserver.CallHandlerMessage) bool {
 	}
 	return false
 }
-
 
 // Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
 // serves the intended purpose of this function

@@ -44,11 +44,15 @@ func RunController(elevatorEvent chan es.ElevatorEvent, port int) {
 }
 
 func MoveElevatorUp() {
-	elevio.SetMotorDirection(elevio.MD_Up)
+	if !(elevio.GetFloor() >= config.NumFloors-1) {
+		elevio.SetMotorDirection(elevio.MD_Up)
+	}
 }
 
 func MoveElevatorDown() {
-	elevio.SetMotorDirection(elevio.MD_Down)
+	if !(elevio.GetFloor() == 0) {
+		elevio.SetMotorDirection(elevio.MD_Down)
+	}
 }
 
 func StopElevator() {
@@ -65,4 +69,8 @@ func SetDoorOpenLamp(value bool) {
 
 func SetStopLamp(value bool) {
 	elevio.SetStopLamp(value)
+}
+
+func IsAtFloor() bool {
+	return elevio.GetFloor() != -1
 }
