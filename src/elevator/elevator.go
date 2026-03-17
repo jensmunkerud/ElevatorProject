@@ -42,6 +42,7 @@ type Elevator struct {
 	requests     [config.NumFloors][config.NumButtons]bool
 	obstruction  bool
 	stopPressed  bool
+	isWorking    bool
 }
 
 type ElevatorEvent struct {
@@ -57,6 +58,7 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 		behaviour: behaviour,
 		floor:     currentFloor,
 		direction: direction,
+		isWorking: false,
 	}
 }
 
