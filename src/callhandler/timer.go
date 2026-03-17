@@ -6,15 +6,17 @@ import (
 	"time"
 )
 
-func resetTimer(t *time.Timer) {
+// Drains a given timer t, then reset (start) it with the duration d
+func restartTimer(t *time.Timer, d time.Duration) {
 	t.Stop()
 	select {
 	case <-t.C:
 	default:
 	}
-	t.Reset(config.ServiceTimeout)
+	t.Reset(d)
 }
 
+// Stops and drains a given timer t
 func stopTimer(t *time.Timer) {
 	if !t.Stop() {
 		select {
@@ -24,19 +26,11 @@ func stopTimer(t *time.Timer) {
 	}
 }
 
+// Restarts timer t elevator is moving, else stop timer
 func syncServiceWatchdog(e *es.Elevator, watchdog *time.Timer) {
 	if e.Behaviour() == es.Moving {
-		resetTimer(watchdog)
+		restartTimer(watchdog, config.ServiceTimeout)
 		return
 	}
 	stopTimer(watchdog)
-}
-
-func startDoorTimer(t *time.Timer) {
-	t.Stop()
-	select {
-	case <-t.C:
-	default:
-	}
-	t.Reset(config.DoorOpenDuration)
 }

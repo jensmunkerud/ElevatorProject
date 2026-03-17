@@ -16,7 +16,6 @@ import (
 	"time"
 )
 
-
 func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan<- elevatorserver.CabOrderUpdate) {
 	myID := config.MyID()
 
@@ -103,7 +102,7 @@ func RunCallHandler(
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
 			localElevator.UpdateInService(true)
-			resetTimer(serviceWatchdog)
+			restartTimer(serviceWatchdog, config.ServiceTimeout)
 			fsmOnFloorArrival(localElevator, floor, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			syncServiceWatchdog(localElevator, serviceWatchdog)
 			emitLocalState(localElevator, elevatorStateLocal)
@@ -158,6 +157,7 @@ func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerM
 				orderState := hallOrders.GetOrderState(floorIndex, b)
 				if orderState == orders.ConfirmedOrderState {
 					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
+					// controller.SetButtonLamp(b)
 				} else {
 					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, false)
 				}
