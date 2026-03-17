@@ -74,9 +74,6 @@ func (e *Elevator) Requests() [config.NumFloors][config.NumButtons]bool {
 	return e.requests
 }
 
-// func (e *Elevator) UpdateRequest(floor int, btn ButtonType, value bool) {
-// 	e.requests[floor][btn] = value
-// }
 func (e *Elevator) UpdateRequestTotal(value [config.NumFloors][3]bool) {
 	e.requests = value
 }
