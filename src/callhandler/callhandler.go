@@ -7,7 +7,6 @@ package callhandler
 // restart the controller
 
 import (
-	"driver-go/elevio"
 	"elevatorproject/src/config"
 	"elevatorproject/src/controller"
 	es "elevatorproject/src/elevator"
@@ -112,20 +111,30 @@ func RunCallHandler(
 			fmt.Printf("%+v\n", obstruction)
 			localElevator.UpdateObstruction(obstruction)
 			if localElevator.StopPressed() {
-				elevio.SetMotorDirection(elevio.MD_Stop)
+				controller.StopElevator()
 			} else if localElevator.Behaviour() == es.Moving {
-				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
+				switch localElevator.CurrentDirection() {
+				case es.Up:
+					controller.MoveElevatorUp()
+				case es.Down:
+					controller.MoveElevatorDown()
+				}
 			}
 
 		case stop := <-event.StopEvent:
 			fmt.Printf("%+v\n", stop)
 			localElevator.UpdateStopPressed(stop)
-			elevio.SetStopLamp(stop)
+			controller.SetStopLamp(stop)
 
 			if localElevator.StopPressed() {
-				elevio.SetMotorDirection(elevio.MD_Stop)
+				controller.StopElevator()
 			} else if localElevator.Behaviour() == es.Moving {
-				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
+				switch localElevator.CurrentDirection() {
+				case es.Up:
+					controller.MoveElevatorUp()
+				case es.Down:
+					controller.MoveElevatorDown()
+				}
 			}
 
 		case newOrders := <-activeLocalOrders:
