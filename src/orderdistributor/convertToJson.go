@@ -1,6 +1,7 @@
 package orderdistributor
 
 import (
+	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
 	"encoding/json"
@@ -10,10 +11,10 @@ import (
 // StateData represents individual elevator state in JSON format
 type StateData struct {
 	//Id          string                 `json:"id"`
-	Behaviour   string   `json:"behaviour"`
-	Floor       int                      `json:"floor"`
+	Behaviour   string `json:"behaviour"`
+	Floor       int    `json:"floor"`
 	Direction   string `json:"direction"`
-	CabRequests []bool                   `json:"cabRequests"`
+	CabRequests []bool `json:"cabRequests"`
 }
 
 // ElevatorMessage is the complete JSON message structure for hall request assigner input
@@ -33,12 +34,17 @@ func ConvertToJson(myId string,
 	// Convert elevator states and cab orders into the expected JSON format
 	states := make(map[string]StateData)
 	for elevID, elev := range elevators {
+		var cabReqs []bool
+		if cab, ok := cabOrders[elevID]; ok && cab != nil {
+			cabReqs = cab.Simplify()
+		} else {
+			cabReqs = make([]bool, config.NumFloors)
+		}
 		states[elevID] = StateData{
-			//Id:          elevID,
 			Behaviour:   elev.BehaviourString(),
 			Floor:       elev.CurrentFloor(),
 			Direction:   elev.DirectionString(),
-			CabRequests: cabOrders[elevID].Simplify(),
+			CabRequests: cabReqs,
 		}
 	}
 

@@ -7,9 +7,9 @@ import (
 	"fmt"
 )
 
-func RunController(elevatorEvent chan es.ElevatorEvent) {
+func RunController(elevatorEvent chan es.ElevatorEvent, port int) {
 	// Initializes communication with elevatorserver to receive IO from physical elevator
-	elevio.Init("localhost:15658", config.NumFloors)
+	elevio.Init(fmt.Sprintf("localhost:%d", port), config.NumFloors)
 
 	orderEventElevio := make(chan elevio.ButtonEvent)
 	orderEvent := make(chan es.ButtonEvent)

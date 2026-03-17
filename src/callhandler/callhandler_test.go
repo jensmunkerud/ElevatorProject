@@ -1,15 +1,5 @@
 package callhandler
 
-import (
-	"driver-go/elevio"
-	"elevatorproject/src/config"
-	"elevatorproject/src/elevatorserver"
-	"elevatorproject/src/orders"
-	"fmt"
-	"testing"
-	"time"
-)
-
 // func TestCallHandler(t *testing.T) {
 // 	go InitCallHandler()
 // 	select {}

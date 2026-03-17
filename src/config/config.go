@@ -15,7 +15,7 @@ const (
 	NumElevators      = 3
 	DoorOpenDuration  = 3000 * time.Millisecond
 	Timeout           = 1000 * time.Millisecond
-	HeartbeatInterval = 50 * time.Millisecond
+	HeartbeatInterval = 100 * time.Millisecond
 	PeersPort = 15647
 	BroadcastPort = 16569
 	testing = true

@@ -45,7 +45,7 @@ func fsmOnRequestButtonPress(
 		case es.DoorOpen:
 			elevio.SetDoorOpenLamp(true)
 			startDoorTimer(doorTimer)
-			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
+			requestsSendCompletedAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 
 		case es.Moving:
 			if !e.StopPressed() {
@@ -82,7 +82,7 @@ func fsmOnFloorArrival(
 		if requestsShouldStop(*e) {
 			controller.StopElevator()
 			elevio.SetDoorOpenLamp(true)
-			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
+			requestsSendCompletedAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 			startDoorTimer(doorTimer)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
@@ -114,7 +114,7 @@ func fsmOnDoorTimeout(
 		switch e.Behaviour() {
 		case es.DoorOpen:
 			startDoorTimer(doorTimer)
-			*e = requestsClearAtCurrentFloor(*e, hallOrderUpdate, cabOrderUpdate)
+			requestsSendCompletedAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 		case es.Moving, es.Idle:
 			elevio.SetDoorOpenLamp(false)
 			if !e.StopPressed() {
@@ -132,6 +132,35 @@ func fsmOnDoorTimeout(
 	}
 
 	//fmt.Println("New state again babbasjan!")
+}
+
+func fsmOnNewOrders(
+	e *es.Elevator,
+	doorTimer *time.Timer,
+	hallOrderUpdate chan elevatorserver.HallOrderUpdate,
+	cabOrderUpdate chan elevatorserver.CabOrderUpdate,
+) {
+	if e.Behaviour() != es.Idle {
+		return
+	}
+	newDir, newBeh := requestsChooseDirection(*e)
+	e.UpdateCurrentDirection(newDir)
+	e.UpdateBehaviour(newBeh)
+	switch newBeh {
+	case es.DoorOpen:
+		elevio.SetDoorOpenLamp(true)
+		startDoorTimer(doorTimer)
+		requestsSendCompletedAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+	case es.Moving:
+		if !e.StopPressed() {
+			switch e.CurrentDirection() {
+			case es.Up:
+				controller.MoveElevatorUp()
+			case es.Down:
+				controller.MoveElevatorDown()
+			}
+		}
+	}
 }
 
 func startDoorTimer(t *time.Timer) {

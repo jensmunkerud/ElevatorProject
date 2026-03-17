@@ -8,42 +8,63 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 )
 
-// Receives OrderDistributorMessage from the elvator server, unpacks the message, converts to JSON, executes cost function, and sends active orders assigned to self
-//
-//	to call handler.
+const costFuncInterval = 200 * time.Millisecond
+
+// Run receives OrderDistributorMessages from the elevator server and runs the
+// cost function at a throttled rate (costFuncInterval) to avoid spawning a
+// subprocess on every network heartbeat.
 func Run(
 	input <-chan elevatorserver.OrderDistributorMessage,
 	activeOrders chan<- [config.NumFloors][config.NumButtons]bool,
 ) {
 	myID := config.MyID()
 	fmt.Println("Starting orderdistributor loop")
-	for parts := range input {
 
-		allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
-		//Prevent running cost function if we have no elevators.
-		if len(elevators) == 0 {
-			fmt.Println("No elevators, skipping cost function")
-			continue
-		}
-		jsonInput, err := ConvertToJson(config.MyID(), allCabOrders, mergedHallOrders, elevators)
-		if err != nil {
-			fmt.Printf("Error converting to JSON: %v\n", err)
-			continue
-		}
+	ticker := time.NewTicker(costFuncInterval)
+	defer ticker.Stop()
 
-		// Executes hall_request_assigner command
-		jsonOutput, err := executeCostFunction(jsonInput)
-		if err != nil {
-			continue
-		}
+	var latest *elevatorserver.OrderDistributorMessage
 
-		assignments, err := ConvertFromJson(jsonOutput)
-		if err != nil {
-			continue
+	for {
+		select {
+		case parts, ok := <-input:
+			if !ok {
+				return
+			}
+			latest = &parts
+
+		case <-ticker.C:
+			if latest == nil {
+				continue
+			}
+			parts := *latest
+			latest = nil
+
+			allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
+			if len(elevators) == 0 {
+				fmt.Println("No elevators, skipping cost function")
+				continue
+			}
+			jsonInput, err := ConvertToJson(config.MyID(), allCabOrders, mergedHallOrders, elevators)
+			if err != nil {
+				fmt.Printf("Error converting to JSON: %v\n", err)
+				continue
+			}
+
+			jsonOutput, err := executeCostFunction(jsonInput)
+			if err != nil {
+				continue
+			}
+
+			assignments, err := ConvertFromJson(jsonOutput)
+			if err != nil {
+				continue
+			}
+			activeOrders <- assignments[myID]
 		}
-		activeOrders <- assignments[myID]
 	}
 }
 
@@ -55,8 +76,8 @@ func hraDir() (string, error) {
 		return "", err
 	}
 	for _, rel := range []string{
-		"libs/project-resources/cost_fns/hall_request_assigner",     // from project root (main.go)
-		"../../libs/project-resources/cost_fns/hall_request_assigner", // from src/orderdistributor
+		"libs/Project-resources/cost_fns/hall_request_assigner",       // from project root (main.go)
+		"../../libs/Project-resources/cost_fns/hall_request_assigner", // from src/orderdistributor
 	} {
 		dir := filepath.Join(cwd, filepath.FromSlash(rel))
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {

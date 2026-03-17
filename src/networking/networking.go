@@ -94,7 +94,7 @@ func worldviewFromMessage(msg Message) es.NetworkingDistributorMessage {
 		)
 	}
 
-	return es.NewNetworkingDistributorMessage(allCabOrders, hallOrders, elevatorStates)
+	return es.NewNetworkingDistributorMessage(msg.SenderID, allCabOrders, hallOrders, elevatorStates)
 }
 
 func directionFromString(direction string) elevator.Direction {

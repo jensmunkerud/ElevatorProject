@@ -17,6 +17,7 @@ import (
 )
 
 func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan elevatorserver.CabOrderUpdate) {
+	myID := config.MyID()
 	if cabOrderUpdate == nil || button != es.Cab {
 		return
 	}
@@ -27,7 +28,7 @@ func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabO
 	}
 
 	cabOrderUpdate <- elevatorserver.CabOrderUpdate{
-		SenderID: config.MyID(),
+		SenderID: myID,
 		Floor:    floor,
 		State:    state,
 	}
@@ -37,13 +38,13 @@ func RequestUpdateHallOrder(floor int, button es.ButtonType, completed bool, hal
 	if hallOrderUpdate == nil || button == es.Cab {
 		return
 	}
+	myID := config.MyID()
 
 	state := orders.UnconfirmedOrderState
 	if completed {
 		state = orders.CompletedOrderState
 	}
 
-	myID := config.MyID()
 	hallOrderUpdate <- elevatorserver.HallOrderUpdate{
 		SenderID:  myID,
 		Floor:     floor,
@@ -65,8 +66,8 @@ func RunCallHandler(
 
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
 	doorTimer.Stop()
-
-	localElevator := es.CreateElevator(config.MyID(), -1, es.Stop, es.Idle)
+	myID := config.MyID()
+	localElevator := es.CreateElevator(myID, -1, es.Stop, es.Idle)
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
 	// updateElevatorState(localElevator)
@@ -76,7 +77,6 @@ func RunCallHandler(
 
 	event := <-elevatorEvent
 	go refreshElevatorLights(callHandlerMessage)
-	go handleActiveLocalOrders(localElevator, activeLocalOrders, elevatorStateLocal)
 
 	// orderChan := make(chan [config.NumFloors][config.NumButtons]bool, 10)
 	// var localOrders [config.NumFloors][config.NumButtons]bool
@@ -91,8 +91,9 @@ func RunCallHandler(
 			} else {
 				RequestUpdateHallOrder(order.Floor, order.Button, false, hallOrderUpdate)
 			}
-			fsmOnRequestButtonPress(localElevator, order.Floor, order.Button, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			emitLocalState(localElevator, elevatorStateLocal)
+			// Don't call fsmOnRequestButtonPress: the cost function (via activeLocalOrders)
+			// is the sole authority for setting requests. Setting them directly here races
+			// with UpdateRequestTotal and causes stops without lights.
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
@@ -119,8 +120,11 @@ func RunCallHandler(
 				elevio.SetMotorDirection(elevio.MotorDirection(localElevator.CurrentDirection()))
 			}
 
-		// case newOrders := <-orderChan:
-		// break
+		case newOrders := <-activeLocalOrders:
+			localElevator.UpdateRequestTotal(newOrders)
+			fsmOnNewOrders(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
+			emitLocalState(localElevator, elevatorStateLocal)
+
 		case <-doorTimer.C:
 			fsmOnDoorTimeout(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
@@ -131,13 +135,12 @@ func RunCallHandler(
 // Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
 // serves the intended purpose of this function
 func refreshElevatorLights(callHandlerMessage chan elevatorserver.CallHandlerMessage) {
-	select {
-	case msg := <-callHandlerMessage:
+	for msg := range callHandlerMessage {
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
 			for b := range []elevio.ButtonType{elevio.BT_HallUp, elevio.BT_HallDown} { // b = 0 (hall up), b = 1 (hall down)
 				orderState := hallOrders.GetOrderState(floorIndex, b)
-				if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
+				if orderState == orders.ConfirmedOrderState {
 					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, true)
 				} else {
 					elevio.SetButtonLamp(elevio.ButtonType(b), floorIndex, false)
@@ -145,24 +148,12 @@ func refreshElevatorLights(callHandlerMessage chan elevatorserver.CallHandlerMes
 			}
 			// Assuming one cab button per floor (b = 0)
 			orderState := cabOrders.GetOrderState(floorIndex)
-			if orderState == orders.ConfirmedOrderState || orderState == orders.CompletedOrderState {
+			if orderState == orders.ConfirmedOrderState {
 				elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, true)
 			} else {
 				elevio.SetButtonLamp(elevio.BT_Cab, floorIndex, false)
 			}
 		}
-	}
-}
-
-func handleActiveLocalOrders(
-	localElevator *es.Elevator,
-	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool,
-	elevatorStateLocal chan es.Elevator,
-) {
-	for newActiveOrders := range activeLocalOrders {
-		localElevator.UpdateRequestTotal(newActiveOrders)
-		emitLocalState(localElevator, elevatorStateLocal)
-		fmt.Printf("RECEIVED FROM COSTFUNC")
 	}
 }
 
