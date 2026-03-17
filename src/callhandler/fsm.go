@@ -28,6 +28,7 @@ func fsmOnRequestButtonPress(
 	case es.DoorOpen:
 		if requestsShouldClearImmediately(*e, buttonFloor, buttonType) {
 			restartTimer(doorTimer, config.DoorOpenDuration)
+			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 		} else {
 			e.UpdateRequest(buttonFloor, buttonType, true)
 		}
@@ -88,8 +89,6 @@ func fsmOnFloorArrival(
 	default:
 		// nothing
 	}
-
-	//fmt.Println("\nNew state yea!")
 }
 
 func fsmOnDoorTimeout(
@@ -129,8 +128,6 @@ func fsmOnDoorTimeout(
 	default:
 		// nothing
 	}
-
-	//fmt.Println("New state again babbasjan!")
 }
 
 func fsmOnNewOrders(
