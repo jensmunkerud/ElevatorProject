@@ -8,54 +8,59 @@ import (
 	"time"
 )
 
-// Run acts as a backup watchdog for the elevator process.
-// It continuously spawns the elevator with the given port and
-// restarts it after a brief delay if it exits or crashes.
-//This does not handle data backup. This is handled by the peer to peer protocol in the elevatorserver.
-func Run(port int) {
-	executable, err := os.Executable()
-	if err != nil {
-		fmt.Printf("[Backup] Could not resolve executable path: %v\n", err)
-		return
-	}
-
-	portStr := fmt.Sprintf("%d", port)
-
+// Run is called in backup mode (-processpair flag).
+// It polls the master PID and returns when the master dies, so the caller can promote to master.
+func Run(port int, masterPID int) {
+	fmt.Printf("[Backup] Monitoring master (PID %d) for port %d...\n", masterPID, port)
 	for {
-		fmt.Printf("[Backup] Starting elevator on port %s\n", portStr)
-
-		cmd := newElevatorCmd(executable, portStr)
-		//cmd.Run() blocks untill the elevator process exits.
-		err := cmd.Run()
-		if err != nil {
-			fmt.Printf("[Backup] Elevator on port %s exited with error: %v\n", portStr, err)
-		} else {
-			fmt.Printf("[Backup] Elevator on port %s exited\n", portStr)
+		if !isProcessAlive(masterPID) {
+			fmt.Printf("[Backup] Master (PID %d) for port %d died, promoting to master...\n", masterPID, port)
+			time.Sleep(5 * time.Second)
+			return
 		}
-
-		time.Sleep(10 * time.Second)
-		fmt.Printf("[Backup] Restarting elevator on port %s...\n", portStr)
+		time.Sleep(1 * time.Second)
 	}
 }
 
-func newElevatorCmd(executable, portStr string) *exec.Cmd {
+// SpawnAndMonitorBackup spawns a backup process in a new terminal and monitors it.
+// If the backup dies, a new one is spawned. Run as a goroutine from the master.
+func SpawnAndMonitorBackup(port int) {
+	executable, err := os.Executable()
+	if err != nil {
+		fmt.Printf("[Master] Could not resolve executable path: %v\n", err)
+		return
+	}
+	fmt.Printf("[Master] Executable path: %s\n", executable)
+	portStr := fmt.Sprintf("%d", port)
+	myPID := fmt.Sprintf("%d", os.Getpid())
+
+	for {
+		fmt.Printf("[Master] Spawning backup for port %s\n", portStr)
+		cmd := newBackupCmd(executable, portStr, myPID)
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("[Master] Backup for port %s exited with error: %v\n", portStr, err)
+		} else {
+			fmt.Printf("[Master] Backup for port %s exited\n", portStr)
+		}
+		fmt.Printf("[Master] Respawning backup for port %s...\n", portStr)
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func newBackupCmd(executable, portStr, masterPID string) *exec.Cmd {
 	switch runtime.GOOS {
 	case "windows":
-		// "start /wait" opens a new console window and blocks until it closes
 		return exec.Command("cmd", "/c", "start", "/wait",
-			fmt.Sprintf("Elevator %s", portStr),
-			executable, "-port", portStr)
+			fmt.Sprintf("Backup %s", portStr),
+			executable, "-port", portStr, "-processpair", "-masterpid", masterPID)
 	case "linux":
-		// gnome-terminal --wait opens a new terminal and blocks until it closes
 		return exec.Command("gnome-terminal", "--wait", "--title",
-			fmt.Sprintf("Elevator %s", portStr), "--",
-			executable, "-port", portStr)
-	default: 
-		// macOS and others: run as direct child process
-		cmd := exec.Command(executable, "-port", portStr)
+			fmt.Sprintf("Backup %s", portStr), "--",
+			executable, "-port", portStr, "-processpair", "-masterpid", masterPID)
+	default:
+		cmd := exec.Command(executable, "-port", portStr, "-processpair", "-masterpid", masterPID)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
 		return cmd
 	}
 }
