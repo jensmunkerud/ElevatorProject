@@ -74,3 +74,7 @@ func SetStopLamp(value bool) {
 func GetFloor() int {
 	return elevio.GetFloor()
 }
+
+func SetFloorIndicator(floor int) {
+	elevio.SetFloorIndicator(floor)
+}
