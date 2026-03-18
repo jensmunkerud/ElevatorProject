@@ -76,8 +76,8 @@ func hraDir() (string, error) {
 		return "", err
 	}
 	for _, rel := range []string{
-		"libs/Project-resources/cost_fns/hall_request_assigner",       // from project root (main.go)
-		"../../libs/Project-resources/cost_fns/hall_request_assigner", // from src/orderdistributor
+		"libs/project-resources/cost_fns/hall_request_assigner",       // from project root (main.go)
+		"../../libs/project-resources/cost_fns/hall_request_assigner", // from src/orderdistributor
 	} {
 		dir := filepath.Join(cwd, filepath.FromSlash(rel))
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {
