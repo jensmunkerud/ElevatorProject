@@ -15,17 +15,17 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 15657, "Port for the elevator simulator")
+	port := flag.Int("port", config.ElevatorPort, "Port for the elevator simulator")
 	backup := flag.Bool("processpair", false, "Run as backup process that monitors and restarts the elevator")
 	masterPID := flag.Int("masterpid", 0, "PID of the master process (used by backup)")
 	flag.Parse()
+
+	config.InitConfig(*port)
 
 	if *backup {
 		processpair.Run(*port, *masterPID)
 		// Master died — we promote to master, fall through to run elevator
 	}
-
-	config.InitConfig(*port)
 
 	// Spawn and monitor a backup process in the background
 	go processpair.SpawnAndMonitorBackup(*port)

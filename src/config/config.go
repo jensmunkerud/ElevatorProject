@@ -19,6 +19,7 @@ const (
 	HeartbeatInterval = 100 * time.Millisecond
 	ProcessPairRestartDelay = 10 * time.Second
 
+	ElevatorPort = 15657
 	PeersPort = 15647
 	BroadcastPort = 16569
 
