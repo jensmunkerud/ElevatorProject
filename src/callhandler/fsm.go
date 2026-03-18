@@ -10,7 +10,7 @@ import (
 )
 
 func fsmInit(e *es.Elevator) {
-	if controller.IsAtFloor() {
+	if controller.GetFloor() != -1 {
 		if e.Behaviour() != es.Moving {
 			e.UpdateInService(true)
 			return
@@ -85,9 +85,7 @@ func fsmOnDoorTimeout(
 			restartTimer(serviceTimer, config.ServiceTimeout)
 			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 		case es.Moving, es.Idle:
-			if e.Behaviour() == es.Moving {
-				restartTimer(serviceTimer, config.ServiceTimeout)
-			}
+			restartTimer(serviceTimer, config.ServiceTimeout)
 			e.UpdateInService(true)
 			controller.SetDoorOpenLamp(false)
 			if !e.StopPressed() {
@@ -112,7 +110,8 @@ func fsmOnNewOrders(
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
-	if e.Behaviour() != es.Idle {
+	if e.Behaviour() != es.Idle ||
+		e.CurrentFloor() != controller.GetFloor() {
 		return
 	}
 	newDirection, newBehaviour := requestsChooseDirection(*e)

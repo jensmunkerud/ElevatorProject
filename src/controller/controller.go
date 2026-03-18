@@ -71,6 +71,6 @@ func SetStopLamp(value bool) {
 	elevio.SetStopLamp(value)
 }
 
-func IsAtFloor() bool {
-	return elevio.GetFloor() != -1
+func GetFloor() int {
+	return elevio.GetFloor()
 }
