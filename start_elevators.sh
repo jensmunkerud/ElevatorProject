@@ -11,6 +11,6 @@ gnome-terminal --title="Simulator 15659" -- bash -ic "SimElevatorServer --port 1
 sleep 2
 
 # Start elevators
-gnome-terminal --title="Elevator 15657" -- bash -ic "go run main.go -port 15657"
-gnome-terminal --title="Elevator 15658" -- bash -ic "go run main.go -port 15658"
-gnome-terminal --title="Elevator 15659" -- bash -ic "go run main.go -port 15659"
+gnome-terminal --title="Elevator 15657" -- bash -ic "go run main.go -port 15657 -processpair"
+gnome-terminal --title="Elevator 15658" -- bash -ic "go run main.go -port 15658 -processpair"
+gnome-terminal --title="Elevator 15659" -- bash -ic "go run main.go -port 15659 -processpair"

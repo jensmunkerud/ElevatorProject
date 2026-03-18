@@ -8,6 +8,7 @@ import (
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/networking"
 	"elevatorproject/src/orderdistributor"
+	"elevatorproject/src/processpair"
 	"flag"
 	"fmt"
 	"time"
@@ -15,7 +16,13 @@ import (
 
 func main() {
 	port := flag.Int("port", 15657, "Port for the elevator simulator")
+	backup := flag.Bool("processpair", false, "Run as backup process that monitors and restarts the elevator")
 	flag.Parse()
+
+	if *backup {
+		processpair.Run(*port)
+		return
+	}
 
 	// Set a stable ID from port so this elevator keeps the same ID across restarts (e.g. after simulator crash).
 	// Other nodes then retain our cab orders under this ID and we recover them when we rejoin.
