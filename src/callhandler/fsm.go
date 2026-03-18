@@ -40,7 +40,7 @@ func fsmOnFloorArrival(
 
 	e.UpdateCurrentFloor(newFloor)
 	e.UpdateInService(true)
-	// stopTimer(serviceTimer)
+	controller.SetFloorIndicator(newFloor)
 
 	switch e.Behaviour() {
 	case es.Moving:
