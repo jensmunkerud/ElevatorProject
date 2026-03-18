@@ -62,28 +62,21 @@ func RunCallHandler(
 	elevatorStateLocal chan<- es.Elevator,
 	callHandlerMessage <-chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
 	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool) {
-	// hallOrderUpdateOut = hallOrderUpdate
-	// cabOrderUpdateOut = cabOrderUpdate
 
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
-	doorTimer.Stop()
-	serviceWatchdog := time.NewTimer(config.ServiceTimeout)
-	stopTimer(serviceWatchdog)
+	stopTimer(doorTimer)
+	serviceTimer := time.NewTimer(config.ServiceTimeout)
+	stopTimer(serviceTimer)
 	myID := config.MyID()
 	localElevator := es.CreateElevator(myID, -1, es.Stop, es.Idle)
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
-	// updateElevatorState(localElevator)
-	fsmOnInitBetweenFloors(localElevator)
-	syncServiceWatchdog(localElevator, serviceWatchdog)
+	fsmInit(localElevator)
 	emitLocalState(localElevator, elevatorStateLocal)
 	close(ready)
 
 	event := <-elevatorEvent
 	go refreshElevatorLights(callHandlerMessage)
-
-	// orderChan := make(chan [config.NumFloors][config.NumButtons]bool, 10)
-	// var localOrders [config.NumFloors][config.NumButtons]bool
 
 	fmt.Println("Starting callhandler loop")
 	for {
@@ -95,16 +88,10 @@ func RunCallHandler(
 			} else {
 				RequestUpdateHallOrder(order.Floor, order.Button, false, hallOrderUpdate)
 			}
-			// Don't call fsmOnRequestButtonPress: the cost function (via activeLocalOrders)
-			// is the sole authority for setting requests. Setting them directly here races
-			// with UpdateRequestTotal and causes stops without lights.
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
-			localElevator.UpdateInService(true)
-			restartTimer(serviceWatchdog, config.ServiceTimeout)
-			fsmOnFloorArrival(localElevator, floor, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncServiceWatchdog(localElevator, serviceWatchdog)
+			fsmOnFloorArrival(localElevator, floor, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case obstruction := <-event.ObstructionEvent:
@@ -139,18 +126,19 @@ func RunCallHandler(
 
 		case newOrders := <-activeLocalOrders:
 			localElevator.UpdateRequestTotal(newOrders)
-			fsmOnNewOrders(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncServiceWatchdog(localElevator, serviceWatchdog)
+			fsmOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
 		case <-doorTimer.C:
-			fsmOnDoorTimeout(localElevator, doorTimer, hallOrderUpdate, cabOrderUpdate)
-			syncServiceWatchdog(localElevator, serviceWatchdog)
+			fsmOnDoorTimeout(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
-		case <-serviceWatchdog.C:
+		case <-serviceTimer.C:
 			localElevator.UpdateInService(false)
-			syncServiceWatchdog(localElevator, serviceWatchdog)
+			fsmInit(localElevator)
+			if !localElevator.InService() {
+				restartTimer(serviceTimer, config.ServiceTimeout)
+			}
 			emitLocalState(localElevator, elevatorStateLocal)
 		}
 	}
@@ -173,9 +161,7 @@ func callHandlerMessageChanged(a, b elevatorserver.CallHandlerMessage) bool {
 	return false
 }
 
-
-// Repurpose this function to instead edit the localElevator.requests, then call setAllLights in fsm.go that
-// serves the intended purpose of this function
+// Overwrites all buttonlamps of elevator if callHandlerMessage has new, different data.
 func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerMessage) {
 	var last elevatorserver.CallHandlerMessage
 	first := true

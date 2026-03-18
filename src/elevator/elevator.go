@@ -127,16 +127,16 @@ func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 	e.direction = direction
 }
 
-func (e *Elevator) UpdateObstruction(o bool) {
-	e.obstruction = o
+func (e *Elevator) UpdateObstruction(obstructed bool) {
+	e.obstruction = obstructed
 }
 
 func (e Elevator) Obstruction() bool {
 	return e.obstruction
 }
 
-func (e *Elevator) UpdateStopPressed(s bool) {
-	e.stopPressed = s
+func (e *Elevator) UpdateStopPressed(stop bool) {
+	e.stopPressed = stop
 }
 
 func (e Elevator) StopPressed() bool {
@@ -145,15 +145,17 @@ func (e Elevator) StopPressed() bool {
 
 func (e *Elevator) UpdateInService(inService bool) {
 	e.inService = inService
+	if inService {
+		fmt.Printf("Elevator is IN SERVICE!!\n")
+	} else {
+		fmt.Printf("Elevator is OUT OF SERVICE\n")
+	}
+
 }
 
 func (e Elevator) InService() bool {
 	return e.inService
 }
-
-// func (e *Elevator) UpdateActiveOrder(newActiveOrders [][]bool) {
-// 	e.activeOrders = newActiveOrders
-// }
 
 func (e *Elevator) Copy() Elevator {
 	return *e

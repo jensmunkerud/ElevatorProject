@@ -1,5 +1,5 @@
 @echo off
-cd /d C:\Users\tom_i\Documents\Var2026\Sanntid\Prosjekt\ElevatorProject
+cd /d C:\Users\jensv\Desktop\ElevatorProject
 
 start "Simulator 15657" cmd /k "SimElevatorServer --port 15657"
 start "Simulator 15658" cmd /k "SimElevatorServer --port 15658"
