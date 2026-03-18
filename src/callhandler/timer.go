@@ -1,8 +1,6 @@
 package callhandler
 
 import (
-	"elevatorproject/src/config"
-	es "elevatorproject/src/elevator"
 	"time"
 )
 
@@ -24,13 +22,4 @@ func stopTimer(t *time.Timer) {
 		default:
 		}
 	}
-}
-
-// Restarts timer t elevator is moving, else stop timer
-func syncServiceWatchdog(e *es.Elevator, watchdog *time.Timer) {
-	if e.Behaviour() == es.Moving {
-		restartTimer(watchdog, config.ServiceTimeout)
-		return
-	}
-	stopTimer(watchdog)
 }

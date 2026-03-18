@@ -125,7 +125,7 @@ func RunCallHandler(
 			}
 
 		case newOrders := <-activeLocalOrders:
-			localElevator.UpdateRequestTotal(newOrders)
+			localElevator.UpdateRequest(newOrders)
 			fsmOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			emitLocalState(localElevator, elevatorStateLocal)
 
@@ -136,9 +136,7 @@ func RunCallHandler(
 		case <-serviceTimer.C:
 			localElevator.UpdateInService(false)
 			fsmInit(localElevator)
-			if !localElevator.InService() {
-				restartTimer(serviceTimer, config.ServiceTimeout)
-			}
+			restartTimer(serviceTimer, config.ServiceTimeout)
 			emitLocalState(localElevator, elevatorStateLocal)
 		}
 	}
@@ -190,7 +188,7 @@ func handleActiveLocalOrders(
 	elevatorStateLocal chan<- es.Elevator,
 ) {
 	for newActiveOrders := range activeLocalOrders {
-		localElevator.UpdateRequestTotal(newActiveOrders)
+		localElevator.UpdateRequest(newActiveOrders)
 		emitLocalState(localElevator, elevatorStateLocal)
 		fmt.Printf("RECEIVED FROM COSTFUNC")
 	}
