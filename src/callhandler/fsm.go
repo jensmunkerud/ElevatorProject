@@ -69,6 +69,7 @@ func fsmOnDoorTimeout(
 	if e.Obstruction() {
 		// Keep door open
 		restartTimer(doorTimer, config.DoorOpenDuration)
+		restartTimer(serviceTimer, config.ServiceTimeout)
 		e.UpdateInService(false)
 		return
 	}
