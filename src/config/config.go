@@ -3,27 +3,27 @@ package config
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
 )
 
 const (
-	NumFloors         = 4
-	NumButtons        = 3
-	NumElevators      = 3
+	NumFloors    = 4
+	NumButtons   = 3
+	NumElevators = 3
 
-	DoorOpenDuration  = 3000 * time.Millisecond
-	ServiceTimeout    = 4000 * time.Millisecond
-	Timeout           = 1000 * time.Millisecond
-	HeartbeatInterval = 100 * time.Millisecond
+	DoorOpenDuration        = 3000 * time.Millisecond
+	ServiceTimeout          = 4000 * time.Millisecond
+	Timeout                 = 1000 * time.Millisecond
+	HeartbeatInterval       = 100 * time.Millisecond
 	ProcessPairRestartDelay = 10 * time.Second
 
-	ElevatorPort = 15657
-	PeersPort = 15647
+	ElevatorPort  = 15657
+	PeersPort     = 15647
 	BroadcastPort = 16569
 
-	testing = true
+	testing = false
 )
 
 var (
@@ -81,5 +81,3 @@ func getMacAddr() (string, error) {
 	}
 	return "", fmt.Errorf("no MAC address found")
 }
-
-
