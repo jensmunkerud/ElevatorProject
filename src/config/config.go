@@ -5,7 +5,6 @@ import (
 	"net"
 	"sync"
 	"time"
-	"os"
 	"strconv"
 )
 
@@ -13,12 +12,17 @@ const (
 	NumFloors         = 4
 	NumButtons        = 3
 	NumElevators      = 3
+
 	DoorOpenDuration  = 3000 * time.Millisecond
 	ServiceTimeout    = 4000 * time.Millisecond
 	Timeout           = 1000 * time.Millisecond
 	HeartbeatInterval = 100 * time.Millisecond
+	ProcessPairRestartDelay = 10 * time.Second
+
+	ElevatorPort = 15657
 	PeersPort = 15647
 	BroadcastPort = 16569
+
 	testing = true
 )
 
@@ -34,36 +38,25 @@ func MyID() string {
 	return myID
 }
 
-// SetMyID sets the local ID once. If id is empty, myID is set from the machine's MAC address.
-// Only the first call has effect. The application should call SetMyID("") at startup to use MAC-based ID.
+// SetMyID initializes config with the default port. Used by tests.
 func SetMyID() {
-	SetMyIDFromPort(0)
+	InitConfig(15658)
 }
 
-// SetMyIDFromPort sets the local elevator ID once. If port > 0, myID is set to the port string
-// so that the same elevator (same simulator port) keeps a stable ID across restarts. That allows
-// other nodes to retain and re-send this elevator's cab orders when it rejoins the network.
-// If port is 0, behaviour is the same as SetMyID() (PID when testing, MAC otherwise).
-func SetMyIDFromPort(port int) {
+// InitConfig sets the local elevator ID and ElevatorIOPort once.
+// In testing mode: ID = port, ElevatorIOPort = localhost:port.
+// In production mode: ID = MAC address, ElevatorIOPort = default.
+func InitConfig(port int) {
 	once.Do(func() {
-		if port > 0 {
-			myID = strconv.Itoa(port)
-			return
-		}
 		if testing {
-			myID = strconv.Itoa(os.Getpid())
-			fmt.Print("Elevator IO port (e.g. 15658): ")
-			var port string
-			fmt.Scanln(&port)
-			if port != "" {
-				ElevatorIOPort = "localhost:" + port
-			}
+			myID = strconv.Itoa(port)
+			ElevatorIOPort = "localhost:" + strconv.Itoa(port)
 		} else {
 			mac, err := getMacAddr()
 			attempts := 0
 			for err != nil {
 				fmt.Printf("Error: %v, retrying MAC address...\n", err)
-				mac, err = getMacAddr() // keep "placeholder" on error
+				mac, err = getMacAddr()
 				time.Sleep(1 * time.Second)
 				attempts++
 				if attempts > 10 {

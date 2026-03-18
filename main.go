@@ -8,18 +8,28 @@ import (
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/networking"
 	"elevatorproject/src/orderdistributor"
+	"elevatorproject/src/processpair"
 	"flag"
 	"fmt"
 	"time"
 )
 
 func main() {
-	port := flag.Int("port", 15657, "Port for the elevator simulator")
+	port := flag.Int("port", config.ElevatorPort, "Port for the elevator simulator")
+	backup := flag.Bool("processpair", false, "Run as backup process that monitors and restarts the elevator")
+	masterPID := flag.Int("masterpid", 0, "PID of the master process (used by backup)")
 	flag.Parse()
 
-	// Set a stable ID from port so this elevator keeps the same ID across restarts (e.g. after simulator crash).
-	// Other nodes then retain our cab orders under this ID and we recover them when we rejoin.
-	config.SetMyIDFromPort(*port)
+	config.InitConfig(*port)
+
+	if *backup {
+		processpair.Run(*port, *masterPID)
+		// Master died — we promote to master, fall through to run elevator
+	}
+
+	// Spawn and monitor a backup process in the background
+	go processpair.SpawnAndMonitorBackup(*port)
+
 	// Initialize channels for communication between goroutines:
 	HallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*1000) // Buffered to avoid blocking on sends
 	CabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*1000)
