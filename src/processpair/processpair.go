@@ -11,6 +11,7 @@ import (
 // Run acts as a backup watchdog for the elevator process.
 // It continuously spawns the elevator with the given port and
 // restarts it after a brief delay if it exits or crashes.
+//This does not handle data backup. This is handled by the peer to peer protocol in the elevatorserver.
 func Run(port int) {
 	executable, err := os.Executable()
 	if err != nil {
