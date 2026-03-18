@@ -20,8 +20,8 @@ const (
 	ProcessPairRestartDelay = 10 * time.Second
 
 	ElevatorPort  = 15657
-	PeersPort     = 15647
-	BroadcastPort = 16569
+	PeersPort     = 52317
+	BroadcastPort = 53491
 
 	testing = false
 )
