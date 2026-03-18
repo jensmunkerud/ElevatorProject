@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd ~/Desktop/ElevatorProject || exit
+cd ~/ElevatorProject || exit
 
 # Start simulators
 gnome-terminal --title="Simulator 15657" -- bash -ic "SimElevatorServer --port 15657"
