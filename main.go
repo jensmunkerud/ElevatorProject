@@ -25,9 +25,7 @@ func main() {
 		// Master died — we promote to master, fall through to run elevator
 	}
 
-	// Set a stable ID from port so this elevator keeps the same ID across restarts (e.g. after simulator crash).
-	// Other nodes then retain our cab orders under this ID and we recover them when we rejoin.
-	config.SetMyIDFromPort(*port)
+	config.InitConfig(*port)
 
 	// Spawn and monitor a backup process in the background
 	go processpair.SpawnAndMonitorBackup(*port)
