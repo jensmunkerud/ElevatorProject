@@ -40,7 +40,7 @@ func fsmOnFloorArrival(
 
 	e.UpdateCurrentFloor(newFloor)
 	e.UpdateInService(true)
-	stopTimer(serviceTimer)
+	// stopTimer(serviceTimer)
 
 	switch e.Behaviour() {
 	case es.Moving:
@@ -88,7 +88,7 @@ func fsmOnDoorTimeout(
 			restartTimer(serviceTimer, config.ServiceTimeout)
 			e.UpdateInService(true)
 			controller.SetDoorOpenLamp(false)
-			if !e.StopPressed() {
+			if !e.StopPressed() && e.Behaviour() == es.Moving {
 				switch e.CurrentDirection() {
 				case es.Up:
 					controller.MoveElevatorUp()
