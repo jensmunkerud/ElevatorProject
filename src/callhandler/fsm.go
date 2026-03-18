@@ -11,8 +11,10 @@ import (
 
 func fsmInit(e *es.Elevator) {
 	if controller.IsAtFloor() {
-		e.UpdateInService(true)
-		return
+		if e.Behaviour() != es.Moving {
+			e.UpdateInService(true)
+			return
+		}
 	}
 	mid := config.NumFloors / 2
 
