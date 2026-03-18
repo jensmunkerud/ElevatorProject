@@ -14,8 +14,23 @@ func fsmInit(e *es.Elevator) {
 		if e.Behaviour() != es.Moving {
 			e.UpdateInService(true)
 		}
+
+		currentFloor := e.CurrentFloor()
+		mid := config.NumFloors / 2
+
+		if currentFloor < mid {
+			controller.MoveElevatorUp()
+			e.UpdateCurrentDirection(es.Up)
+		} else {
+			controller.MoveElevatorDown()
+			e.UpdateCurrentDirection(es.Down)
+		}
+
+		e.UpdateBehaviour(es.Moving)
 		return
 	}
+
+	// If between floors, default to down (or choose a fallback)
 	controller.MoveElevatorDown()
 	e.UpdateCurrentDirection(es.Down)
 	e.UpdateBehaviour(es.Moving)
