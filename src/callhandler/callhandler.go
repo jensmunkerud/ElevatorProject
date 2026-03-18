@@ -135,6 +135,7 @@ func RunCallHandler(
 
 		case <-serviceTimer.C:
 			localElevator.UpdateInService(false)
+			fsmInit(localElevator)
 			emitLocalState(localElevator, elevatorStateLocal)
 		}
 	}
