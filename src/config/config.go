@@ -23,7 +23,7 @@ const (
 	PeersPort     = 52317
 	BroadcastPort = 53491
 
-	testing = false
+	testing = true
 )
 
 var (

@@ -44,6 +44,15 @@ func Run(
 			latest = nil
 
 			allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
+
+			// Remove non-servicable elevators from the cost function input
+			for _, elevator := range elevators {
+				id := elevator.Id()
+				if !elevator.InService() {
+					delete(elevators, id)
+					delete(allCabOrders, id)
+				}
+			}
 			if len(elevators) == 0 {
 				fmt.Println("No elevators, skipping cost function")
 				continue

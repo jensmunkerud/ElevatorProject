@@ -36,11 +36,8 @@ func Run(
 	go func() {
 		for worldview := range sendWorldviewIn {
 			allCabOrders, hallOrders, elevatorStates := worldview.UnpackForNetworking()
-
-			// Update peer visibility based on local elevator's inService status
-			if myElev, ok := elevatorStates[myID]; ok {
-				enablePeer <- myElev.InService()
-			}
+			// We always want to send our worldview to peers
+			enablePeer <- true
 
 			msg := messageFromWorldview(myID, hallOrders, allCabOrders, elevatorStates)
 			select {

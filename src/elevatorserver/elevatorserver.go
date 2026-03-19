@@ -165,31 +165,24 @@ func Run(
 	channelFromNetworking <-chan NetworkingDistributorMessage,
 ) {
 	//For storing the latest snapshot of all orders and elevator states, used for merging and broadcasting to network.
-	fmt.Println("Check 1")
 	myID := config.MyID()
 	allHall := map[string]*orders.HallOrders{}
 	allCab := map[string]*orders.CabOrders{}
 	allElevatorStates := map[string]*elevator.Elevator{}
 	elevatorsOnNetwork := []string{}
-	fmt.Println("Check 2")
 	// Create your own orders first
 	allHall[myID] = orders.CreateHallOrders()
 	allCab[myID] = orders.CreateCabOrders()
-	fmt.Println("Check 2.5")
 	initialElevatorState := <-elevatorStateUpdate
-	fmt.Println("Check 2.6")
 	allElevatorStates[myID] = &initialElevatorState
-	fmt.Println("Check 3")
 	// Internal snapshot channels: update loop sends latest state, broadcast goroutine reads it.
 	hallSnap := make(chan *orders.HallOrders, 1)
 	cabSnap := make(chan map[string]*orders.CabOrders, 1)
 	elevStateSnap := make(chan map[string]*elevator.Elevator, 1)
 	nodesSnap := make(chan []string, 1)
-	fmt.Println("Check 4")
 	// Throttle: buffer snapshots from the main loop and publish to consumers
 	// only at HeartbeatInterval, avoiding flooding
 	// on rapid state changes.
-	fmt.Println("Starting publish to consumers loop")
 	go func() {
 		ticker := time.NewTicker(config.HeartbeatInterval)
 		defer ticker.Stop()
@@ -280,12 +273,12 @@ func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlin
 	nextState := mergeCabOrderState(u, allCab, onlineNodes)
 	allCab[u.SenderID].UpdateOrderState(u.Floor, nextState)
 
-	// The Completed→Removed barrier may already be satisfied after the first
-	// merge pass (e.g. the owning elevator is the only barrier node and just
-	// wrote Completed above). Re-evaluate immediately so the order doesn't
-	// stay stuck at Completed until an unrelated update happens to trigger
-	// another merge for this floor.
-	if nextState == orders.CompletedOrderState {
+	// The barrier may already be satisfied after the first merge pass
+	// (e.g. the owning elevator is the only barrier node and just wrote
+	// the state above). Re-evaluate immediately so the order doesn't
+	// stay stuck until an unrelated update happens to trigger another
+	// merge for this floor.
+	if nextState == orders.UnconfirmedOrderState || nextState == orders.CompletedOrderState {
 		recheck := mergeCabOrderState(u, allCab, onlineNodes)
 		allCab[u.SenderID].UpdateOrderState(u.Floor, recheck)
 	}
