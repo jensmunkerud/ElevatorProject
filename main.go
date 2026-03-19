@@ -50,7 +50,7 @@ func main() {
 	go controller.RunController(elevatorEvent, *port)
 	time.Sleep(1 * time.Second)
 	fmt.Println("Starting callhandler")
-	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, CurrentOrdersToCallhandler, ActiveLocalOrders)
+	go callhandler.Run(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, CurrentOrdersToCallhandler, ActiveLocalOrders)
 	<-ready
 	fmt.Println("Starting elevatorserver")
 	go elevatorserver.Run(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)

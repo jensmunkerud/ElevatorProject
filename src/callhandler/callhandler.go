@@ -16,15 +16,16 @@ import (
 	"time"
 )
 
-func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan<- elevatorserver.CabOrderUpdate) {
+// Adds a new cab order update locally. orderCompleted is true for removing orders, false for adding new orders.
+func RequestUpdateCabOrder(floor int, orderType es.ButtonType, orderCompleted bool, cabOrderUpdate chan<- elevatorserver.CabOrderUpdate) {
 	myID := config.MyID()
 
-	if cabOrderUpdate == nil || button != es.Cab {
+	if cabOrderUpdate == nil || orderType != es.Cab {
 		return
 	}
 
 	state := orders.UnconfirmedOrderState
-	if completed {
+	if orderCompleted {
 		state = orders.CompletedOrderState
 	}
 
@@ -35,26 +36,30 @@ func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabO
 	}
 }
 
-func RequestUpdateHallOrder(floor int, button es.ButtonType, completed bool, hallOrderUpdate chan<- elevatorserver.HallOrderUpdate) {
-	if hallOrderUpdate == nil || button == es.Cab {
+// Adds a new hall order update locally. orderCompleted is true for removing orders, false for adding new orders.
+func RequestUpdateHallOrder(floor int, orderType es.ButtonType, orderCompleted bool, hallOrderUpdate chan<- elevatorserver.HallOrderUpdate) {
+	if hallOrderUpdate == nil || orderType == es.Cab {
 		return
 	}
 	myID := config.MyID()
 
 	state := orders.UnconfirmedOrderState
-	if completed {
+	if orderCompleted {
 		state = orders.CompletedOrderState
 	}
 
 	hallOrderUpdate <- elevatorserver.HallOrderUpdate{
 		SenderID:  myID,
 		Floor:     floor,
-		Direction: int(button),
+		Direction: int(orderType),
 		State:     state,
 	}
 }
 
-func RunCallHandler(
+// This launches the callhandler, which listens for events from the elevator
+// and sends order updates to the elevatorserver.
+// It also listens for new orders from the cost function and overwrites the old ones.
+func Run(
 	ready chan<- struct{},
 	elevatorEvent <-chan es.ElevatorEvent,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
@@ -142,17 +147,17 @@ func RunCallHandler(
 	}
 }
 
-// callHandlerMessageChanged returns true if a and b differ in any hall or cab order state.
-func callHandlerMessageChanged(a, b elevatorserver.CallHandlerMessage) bool {
-	hallA, cabA := a.UnpackForCallHandler()
-	hallB, cabB := b.UnpackForCallHandler()
-	for f := 0; f < config.NumFloors; f++ {
-		for d := 0; d < 2; d++ {
-			if hallA.GetOrderState(f, d) != hallB.GetOrderState(f, d) {
+// callHandlerMessageChanged returns true if previous and current differ in any hall or cab order state.
+func callHandlerMessageChanged(previous, current elevatorserver.CallHandlerMessage) bool {
+	hallPrevious, cabPrevious := previous.UnpackForCallHandler()
+	hallCurrent, cabCurrent := current.UnpackForCallHandler()
+	for atFloor := range config.NumFloors {
+		for direction := 0; direction < 2; direction++ {
+			if hallPrevious.GetOrderState(atFloor, direction) != hallCurrent.GetOrderState(atFloor, direction) {
 				return true
 			}
 		}
-		if cabA.GetOrderState(f) != cabB.GetOrderState(f) {
+		if cabPrevious.GetOrderState(atFloor) != cabCurrent.GetOrderState(atFloor) {
 			return true
 		}
 	}
@@ -161,14 +166,14 @@ func callHandlerMessageChanged(a, b elevatorserver.CallHandlerMessage) bool {
 
 // Overwrites all buttonlamps of elevator if callHandlerMessage has new, different data.
 func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerMessage) {
-	var last elevatorserver.CallHandlerMessage
+	var lastMessage elevatorserver.CallHandlerMessage
 	first := true
 	for msg := range callHandlerMessage {
-		if !first && !callHandlerMessageChanged(last, msg) {
+		if !first && !callHandlerMessageChanged(lastMessage, msg) {
 			continue
 		}
 		first = false
-		last = msg
+		lastMessage = msg
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
 			for button := es.HallUp; button <= es.HallDown; button++ {
@@ -190,7 +195,7 @@ func handleActiveLocalOrders(
 	for newActiveOrders := range activeLocalOrders {
 		localElevator.UpdateRequest(newActiveOrders)
 		emitLocalState(localElevator, elevatorStateLocal)
-		fmt.Printf("RECEIVED FROM COSTFUNC")
+		fmt.Printf("RECEIVED FROM COSTFUNC\n")
 	}
 }
 
