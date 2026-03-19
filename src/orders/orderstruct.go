@@ -28,3 +28,23 @@ func (o *Order) UpdateState(state OrderState) {
 func (o *Order) GetState() OrderState {
 	return o.State
 }
+
+func (o OrderState) Unknown() bool {
+	return o == UnknownOrderState
+}
+
+func (o OrderState) Completed() bool {
+	return o == CompletedOrderState
+}
+
+func (o OrderState) Removed() bool {
+	return o == RemovedOrderState
+}
+
+func (o OrderState) Unconfirmed() bool {
+	return o == UnconfirmedOrderState
+}
+
+func (o OrderState) Confirmed() bool {	
+	return o == ConfirmedOrderState
+}

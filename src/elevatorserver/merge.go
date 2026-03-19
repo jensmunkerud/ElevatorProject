@@ -53,52 +53,46 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 // have seen the order).
 // getState is a callback that retrieves a node's current OrderState by ID, returning false if the node is unknown.
 func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes []string, getState func(string) (orders.OrderState, bool)) orders.OrderState {
-	// Unknown always loses'
-	if local == orders.UnknownOrderState {
+	switch local {
+	case orders.UnknownOrderState:
 		return newOrder
-	}
-	if newOrder == orders.UnknownOrderState {
-		return local
-	}
-
-	// Completed is transient — Removed + Completed resets
-	if local == orders.RemovedOrderState && newOrder == orders.CompletedOrderState {
-		return orders.RemovedOrderState
-	}
-
-	// Unconfirmed + Completed resets (missed everything)
-	if local == orders.UnconfirmedOrderState && newOrder == orders.CompletedOrderState {
-		return orders.RemovedOrderState
-	}
-
-	// Confirmed must not be overwritten by a remote Completed — only the local
-	// elevator that actually services the order may transition to Completed.
-	// The remote Completed is recorded in the sender's slot for the barrier.
-	if local == orders.ConfirmedOrderState && newOrder == orders.CompletedOrderState {
-		return orders.CompletedOrderState
-	}
-
-	// Barrier 1: Unconfirmed → Confirmed
-	if local == orders.UnconfirmedOrderState && newOrder == orders.UnconfirmedOrderState {
+	case orders.RemovedOrderState:
+		if newOrder.Unconfirmed() {
+			// Need to check barrier for single elevator case
+			if barrierReached(onlineNodes, orders.UnconfirmedOrderState, getState) {
+				return orders.ConfirmedOrderState
+			} else {
+			return orders.UnconfirmedOrderState
+			}
+		} else {
+			return local
+		}
+	case orders.UnconfirmedOrderState:
 		if barrierReached(onlineNodes, orders.UnconfirmedOrderState, getState) {
 			return orders.ConfirmedOrderState
+		} else {
+			return local
 		}
-		return orders.UnconfirmedOrderState
-	}
-
-	// Barrier 2: Completed → Removed
-	if local == orders.CompletedOrderState {
+	case orders.ConfirmedOrderState:
+		if newOrder.Completed() {
+			// Need to check barrier for single elevator case
+			if barrierReached(onlineNodes, orders.CompletedOrderState, getState) {
+				return orders.RemovedOrderState
+			} else {
+				return orders.CompletedOrderState
+			}
+		} else {
+			return local
+		}
+	case orders.CompletedOrderState:
 		if barrierReached(onlineNodes, orders.CompletedOrderState, getState) {
 			return orders.RemovedOrderState
+		} else {
+			return local
 		}
-		return orders.CompletedOrderState
+	default:
+		return local
 	}
-
-	// Default: highest state wins
-	if newOrder > local {
-		return newOrder
-	}
-	return local
 }
 
 // barrierReached returns true if every online node has reached the given threshold.
