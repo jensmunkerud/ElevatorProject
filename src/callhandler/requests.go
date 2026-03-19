@@ -92,7 +92,7 @@ func requestsShouldStop(e es.Elevator) bool {
 	}
 }
 
-func requestsShouldClearImmediately(e es.Elevator, buttonFloor int, buttonType es.ButtonType) bool {
+func requestsShouldClearImmediately(e es.Elevator, buttonFloor int, buttonType es.OrderType) bool {
 	return e.CurrentFloor() == buttonFloor &&
 		((e.CurrentDirection() == es.Up && buttonType == es.HallUp) ||
 			(e.CurrentDirection() == es.Down && buttonType == es.HallDown) ||
