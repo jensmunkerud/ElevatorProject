@@ -2,14 +2,14 @@
 UNAME_S := $(shell uname -s)
 
 # Default target
-all: submodules build_script build
+all: submodules hall_request_assigner main
 
 # Step 1: Update submodules
 submodules:
-	go submodule update --init --recursive
+	git submodule update --init --recursive
 
 # Step 2: Run correct platform-specific script
-build_script:
+hall_request_assigner:
 ifeq ($(UNAME_S),Linux)
 	chmod +x build_hall_request_assigner_linux.sh
 	./build_hall_request_assigner_linux.sh
@@ -23,8 +23,8 @@ ifeq ($(OS),Windows_NT)
 endif
 
 # Step 3: Build Go project
-build:
-	go build main.go
+main:
+	go build -o elevator main.go
 
 # Optional: clean
 clean:
