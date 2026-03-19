@@ -18,6 +18,8 @@ const (
 	Timeout                 = 1000 * time.Millisecond
 	HeartbeatInterval       = 100 * time.Millisecond
 	ProcessPairRestartDelay = 10 * time.Second
+	// Decouple the cost-function from heartbeat to avoid spamming
+	CostFuncInterval        = 200 * time.Millisecond
 
 	ElevatorPort  = 15657
 	PeersPort     = 52317

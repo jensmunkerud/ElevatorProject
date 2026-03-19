@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"Network-go/network/bcast"
-	//"elevatorproject/src/elevator"
-	//"elevatorproject/src/orders"
+	"elevatorproject/src/elevator"
+	"elevatorproject/src/orders"
 )
 /*
 func TestMessageFromOrders_RoundTrip(t *testing.T) {
@@ -77,6 +77,32 @@ func TestWorldviewFromMessage_RoundTrip(t *testing.T) {
 	}
 }
 */
+func TestWorldviewRoundTrip_PreservesInService(t *testing.T) {
+	hall := orders.CreateHallOrders()
+	allCab := map[string]*orders.CabOrders{}
+
+	elev1 := elevator.CreateElevator("elev-1", 3, elevator.Down, elevator.Moving)
+	elev1.UpdateInService(true)
+	elev2 := elevator.CreateElevator("elev-2", 0, elevator.Stop, elevator.Idle)
+	elev2.UpdateInService(false)
+
+	elevatorStates := map[string]*elevator.Elevator{
+		"elev-1": elev1,
+		"elev-2": elev2,
+	}
+
+	msg := messageFromWorldview("elev-1", hall, allCab, elevatorStates)
+	worldview := worldviewFromMessage(msg)
+	_, _, gotElevators := worldview.UnpackForNetworking()
+
+	if got := gotElevators["elev-1"].InService(); !got {
+		t.Fatalf("inService round-trip mismatch for elev-1: got %v, want %v", got, true)
+	}
+	if got := gotElevators["elev-2"].InService(); got {
+		t.Fatalf("inService round-trip mismatch for elev-2: got %v, want %v", got, false)
+	}
+}
+
 // TestBroadcastAndReceiveManual is an integration-style test intended to be run
 // on two machines on the same network. It sends a Message on the UDP broadcast
 // channel and prints any received Messages to the terminal.

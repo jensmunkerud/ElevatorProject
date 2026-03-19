@@ -11,6 +11,7 @@ type ElevatorState struct {
 	Behaviour string
 	Floor     int
 	Direction string
+	InService bool
 }
 
 // ElevatorStateUpdate pairs a sender ID with the received elevator state,
@@ -67,6 +68,7 @@ func messageFromWorldview(
 			Behaviour: elev.BehaviourString(),
 			Floor:     elev.CurrentFloor(),
 			Direction: elev.DirectionString(),
+			InService: elev.InService(),
 		}
 	}
 	return msg

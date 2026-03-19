@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const costFuncInterval = 200 * time.Millisecond
+
 
 // Run receives OrderDistributorMessages from the elevator server and runs the
 // cost function at a throttled rate (costFuncInterval) to avoid spawning a
@@ -23,7 +23,7 @@ func Run(
 	myID := config.MyID()
 	fmt.Println("Starting orderdistributor loop")
 
-	ticker := time.NewTicker(costFuncInterval)
+	ticker := time.NewTicker(config.CostFuncInterval)
 	defer ticker.Stop()
 
 	var latest *elevatorserver.OrderDistributorMessage
@@ -48,7 +48,9 @@ func Run(
 			// Remove non-servicable elevators from the cost function input
 			for _, elevator := range elevators {
 				id := elevator.Id()
-				if !elevator.InService() {
+				isInService := elevator.InService()
+				//fmt.Printf("State of elevator %v, %v\n", id, elevator)
+				if !isInService{
 					delete(elevators, id)
 					delete(allCabOrders, id)
 				}

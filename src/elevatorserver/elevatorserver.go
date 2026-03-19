@@ -47,6 +47,7 @@ func copyAllElevState(m map[string]*elevator.Elevator) map[string]*elevator.Elev
 		if e != nil {
 			elevCopy := e.Copy()
 			cp[id] = &elevCopy
+			fmt.Printf("Current elevator state %v, ID %v\n", cp[id].InService(), id)
 		}
 	}
 	return cp
@@ -81,6 +82,7 @@ func publishToConsumers(
 	for id, e := range latestElevState {
 		if e != nil {
 			elevValue[id] = *e
+			//fmt.Printf("Current elev state %v\n", elevValue[id].InService())
 		}
 	}
 
