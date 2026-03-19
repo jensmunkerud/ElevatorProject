@@ -24,7 +24,15 @@ endif
 
 # Step 3: Build Go project
 main:
-	go build -o elevator main.go
+ifeq ($(UNAME_S),Linux)
+	GOOS=linux GOARCH=amd64 go build -o elevator main.go
+endif
+ifeq ($(UNAME_S),Darwin)
+	GOOS=darwin GOARCH=amd64 go build -o elevator main.go
+endif
+ifeq ($(OS),Windows_NT)
+	set GOOS=windows&& set GOARCH=amd64&& go build -o elevator.exe main.go
+endif
 
 # Optional: clean
 clean:
