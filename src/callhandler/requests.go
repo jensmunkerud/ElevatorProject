@@ -37,6 +37,7 @@ func requestsHere(e es.Elevator) bool {
 	return false
 }
 
+// Find most suitable direction to move in, given current requests and direction.
 func requestsChooseDirection(e es.Elevator) (es.Direction, es.Behaviour) {
 	switch e.CurrentDirection() {
 	case es.Up:
@@ -77,7 +78,8 @@ func requestsChooseDirection(e es.Elevator) (es.Direction, es.Behaviour) {
 	}
 }
 
-func requestsShouldStop(e es.Elevator) bool {
+// shouldStop returns true if the elevator should stop at the current floor to serve any orders.
+func shouldStop(e es.Elevator) bool {
 	switch e.CurrentDirection() {
 	case es.Down:
 		return e.Requests()[e.CurrentFloor()][es.HallDown] ||
@@ -92,6 +94,7 @@ func requestsShouldStop(e es.Elevator) bool {
 	}
 }
 
+// requestsShouldClearImmediately checks if the incoming local order can immediately be cleared.
 func requestsShouldClearImmediately(e es.Elevator, buttonFloor int, buttonType es.OrderType) bool {
 	return e.CurrentFloor() == buttonFloor &&
 		((e.CurrentDirection() == es.Up && buttonType == es.HallUp) ||
@@ -100,7 +103,7 @@ func requestsShouldClearImmediately(e es.Elevator, buttonFloor int, buttonType e
 			buttonType == es.Cab)
 }
 
-func requestsClearAtCurrentFloor(
+func requestClearAtCurrentFloor(
 	e *es.Elevator,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,

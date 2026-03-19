@@ -76,7 +76,7 @@ func Run(
 	localElevator := es.CreateElevator(myID, -1, es.Stop, es.Idle)
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
-	fsmInit(localElevator)
+	initializeElevatorToValidFloor(localElevator)
 	sendLocalState(localElevator, elevatorStateLocal)
 	close(ready)
 
@@ -96,7 +96,7 @@ func Run(
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
-			fsmOnFloorArrival(localElevator, floor, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
+			elevatorArrivedAtFloor(localElevator, floor, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			sendLocalState(localElevator, elevatorStateLocal)
 
 		case obstruction := <-event.ObstructionEvent:
@@ -131,16 +131,16 @@ func Run(
 
 		case newOrders := <-activeLocalOrders:
 			localElevator.UpdateRequest(newOrders)
-			fsmOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
+			elevatorOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			sendLocalState(localElevator, elevatorStateLocal)
 
 		case <-doorTimer.C:
-			fsmOnDoorTimeout(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
+			elevatorOnDoorTimeout(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
 			sendLocalState(localElevator, elevatorStateLocal)
 
 		case <-serviceTimer.C:
 			localElevator.UpdateInService(false)
-			fsmInit(localElevator)
+			initializeElevatorToValidFloor(localElevator)
 			restartTimer(serviceTimer, config.ServiceTimeout)
 			sendLocalState(localElevator, elevatorStateLocal)
 		}

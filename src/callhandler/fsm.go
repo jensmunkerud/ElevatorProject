@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func fsmInit(e *es.Elevator) {
+func initializeElevatorToValidFloor(e *es.Elevator) {
 	if controller.GetFloor() != -1 {
 		if e.Behaviour() != es.Moving {
 			e.UpdateInService(true)
@@ -28,7 +28,7 @@ func fsmInit(e *es.Elevator) {
 	e.UpdateBehaviour(es.Moving)
 }
 
-func fsmOnFloorArrival(
+func elevatorArrivedAtFloor(
 	e *es.Elevator,
 	newFloor int,
 	doorTimer *time.Timer,
@@ -46,10 +46,10 @@ func fsmOnFloorArrival(
 	case es.Moving:
 		// Necessary to restart the serviceTimer here, to also mark as out of service if door is obstructed.
 		restartTimer(serviceTimer, config.ServiceTimeout)
-		if requestsShouldStop(*e) {
+		if shouldStop(*e) {
 			controller.StopElevator()
 			controller.SetDoorOpenLamp(true)
-			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+			requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 			restartTimer(doorTimer, config.DoorOpenDuration)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
@@ -58,14 +58,13 @@ func fsmOnFloorArrival(
 	}
 }
 
-func fsmOnDoorTimeout(
+func elevatorOnDoorTimeout(
 	e *es.Elevator,
 	doorTimer *time.Timer,
 	serviceTimer *time.Timer,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
-	fmt.Printf("\n\nfsmOnDoorTimeout()\n")
 	if e.Obstruction() {
 		// Keep door open
 		restartTimer(doorTimer, config.DoorOpenDuration)
@@ -84,7 +83,7 @@ func fsmOnDoorTimeout(
 			e.UpdateInService(true)
 			restartTimer(doorTimer, config.DoorOpenDuration)
 			restartTimer(serviceTimer, config.ServiceTimeout)
-			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+			requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 		case es.Moving, es.Idle:
 			restartTimer(serviceTimer, config.ServiceTimeout)
 			e.UpdateInService(true)
@@ -104,7 +103,7 @@ func fsmOnDoorTimeout(
 	}
 }
 
-func fsmOnNewOrders(
+func elevatorOnNewOrders(
 	e *es.Elevator,
 	doorTimer *time.Timer,
 	serviceTimer *time.Timer,
@@ -123,7 +122,7 @@ func fsmOnNewOrders(
 	case es.DoorOpen:
 		controller.SetDoorOpenLamp(true)
 		restartTimer(doorTimer, config.DoorOpenDuration)
-		requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+		requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 	case es.Moving:
 		restartTimer(serviceTimer, config.ServiceTimeout)
 		if !e.StopPressed() {
