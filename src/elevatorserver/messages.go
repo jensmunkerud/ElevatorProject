@@ -17,18 +17,15 @@ type HallOrderUpdate struct {
 	State     orders.OrderState
 }
 
-// CabOrderUpdate describes an incoming cab order event from another elevator.
+// CabOrderUpdate describes an incoming cab order event from another elevator. Needs both sender- and ownerID to merge properly.
 type CabOrderUpdate struct {
-	// SenderID is the node that reported this worldview.
 	SenderID string
-	// OwnerID is the elevator that owns the cab order.
-	OwnerID string
-	Floor   int
-	State   orders.OrderState
+	OwnerID  string
+	Floor    int
+	State    orders.OrderState
 }
 
-// NewHallOrderUpdate constructs a HallOrderUpdate value.
-func NewHallOrderUpdate(senderID string, floor int, Type elevator.OrderType, state orders.OrderState) HallOrderUpdate {
+func CreateHallOrderUpdate(senderID string, floor int, Type elevator.OrderType, state orders.OrderState) HallOrderUpdate {
 	return HallOrderUpdate{
 		SenderID:  senderID,
 		Floor:     floor,
@@ -37,8 +34,7 @@ func NewHallOrderUpdate(senderID string, floor int, Type elevator.OrderType, sta
 	}
 }
 
-// NewCabOrderUpdate constructs a CabOrderUpdate value.
-func NewCabOrderUpdate(senderID string, floor int, state orders.OrderState) CabOrderUpdate {
+func CreateCabOrderUpdate(senderID string, floor int, state orders.OrderState) CabOrderUpdate {
 	return CabOrderUpdate{
 		SenderID: senderID,
 		OwnerID:  senderID,
@@ -48,7 +44,7 @@ func NewCabOrderUpdate(senderID string, floor int, state orders.OrderState) CabO
 }
 
 // UnpackHallOrders unpacks a received HallOrders snapshot into individual
-// HallOrderUpdate values, one per floor per direction, ready to send into hallUpdates.
+// HallOrderUpdate values, one per floor per direction.
 func UnpackHallOrders(senderID string, hallOrders *orders.HallOrders) []HallOrderUpdate {
 	if hallOrders == nil {
 		return nil
@@ -56,12 +52,12 @@ func UnpackHallOrders(senderID string, hallOrders *orders.HallOrders) []HallOrde
 	updates := make([]HallOrderUpdate, 0, config.NumFloors*2)
 	for floor := 0; floor < config.NumFloors; floor++ {
 		for _, orderType := range elevator.HallOrderTypes {
-			updates = append(updates, HallOrderUpdate{
-				SenderID:  senderID,
-				Floor:     floor,
-				OrderType: orderType,
-				State:     hallOrders.GetOrderState(floor, orderType),
-			})
+			updates = append(updates, CreateHallOrderUpdate(
+				senderID,
+				floor,
+				orderType,
+				hallOrders.GetOrderState(floor, orderType),
+			))
 		}
 	}
 	return updates
@@ -92,7 +88,6 @@ type CallHandlerMessage struct {
 	myCabOrders      orders.CabOrders
 }
 
-// UnpackForCallHandler returns pointer-based snapshots for call handler consumers.
 func (m CallHandlerMessage) UnpackForCallHandler() (*orders.HallOrders, *orders.CabOrders) {
 	hallOrders := m.mergedHallOrders.Copy()
 	cabOrders := m.myCabOrders.Copy()
@@ -105,7 +100,7 @@ type OrderDistributorMessage struct {
 	elevatorState    map[string]elevator.Elevator
 }
 
-// UnpackForOrderDistributor returns pointer-based snapshots for order distributor consumers.
+
 func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
 	for id, cab := range m.allCabOrders {
@@ -124,8 +119,6 @@ func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders
 }
 
 type NetworkingDistributorMessage struct {
-	// Consider changing order to keep consistency. Note any
-	// errors that may arise.
 	senderID         string
 	allCabOrders     map[string]orders.CabOrders
 	mergedHallOrders orders.HallOrders
@@ -165,7 +158,7 @@ func NewNetworkingDistributorMessage(
 	return msg
 }
 
-// UnpackForNetworking returns pointer-based snapshots for networking consumers.
+
 func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
 	for id, cab := range m.allCabOrders {
