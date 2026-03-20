@@ -9,14 +9,13 @@ import (
 )
 
 const (
-	NumFloors    = 4
-	NumButtons   = 3
-	NumElevators = 3
+	NumFloors  = 4
+	NumButtons = 3
 
-	DoorOpenDuration        = 3000 * time.Millisecond
-	TravelDuration          = 2500 * time.Millisecond
-	ServiceTimeout          = 4000 * time.Millisecond
-	Timeout                 = 1000 * time.Millisecond
+	DoorOpenDuration = 3000 * time.Millisecond
+	TravelDuration   = 2500 * time.Millisecond
+	ServiceTimeout   = 4000 * time.Millisecond
+
 	HeartbeatInterval       = 100 * time.Millisecond
 	ProcessPairRestartDelay = 10 * time.Second
 	// Decouple the cost-function from heartbeat to avoid spamming
@@ -28,41 +27,33 @@ const (
 )
 
 var (
-	// ElevatorIOPort is the address for elevator I/O. In testing mode it is set from user input in SetMyID.
-	ElevatorIOPort = "localhost:15658"
-	myID           = "placeholder"
-	once           sync.Once
+	myID = ""
+	once sync.Once
 )
 
-// MyID returns the local elevator ID (set once from MAC address or via SetMyID).
 func MyID() string {
+	if myID == "" {
+		panic("Config not initialized: call InitConfig before using MyID")
+	}
 	return myID
 }
 
-// SetMyID initializes config with the default port. Only used for unit testing.
-func SetMyID() {
-	InitConfig(15658, true)
-}
-
-// InitConfig sets the local elevator ID and ElevatorIOPort once.
-// In simulator mode: ID = port, ElevatorIOPort = localhost:port.
-// In production mode: ID = MAC address, ElevatorIOPort = default.
+// InitConfig sets the local elevator ID once.
+// In simulator mode: ID = port.
+// In production mode: ID = MAC address.
 func InitConfig(port int, simulatorMode bool) {
 	once.Do(func() {
 		if simulatorMode {
 			myID = strconv.Itoa(port)
-			ElevatorIOPort = "localhost:" + strconv.Itoa(port)
 		} else {
 			mac, err := getMacAddr()
-			attempts := 0
-			for err != nil {
-				fmt.Printf("Error: %v, retrying MAC address...\n", err)
-				mac, err = getMacAddr()
-				time.Sleep(1 * time.Second)
-				attempts++
-				if attempts > 10 {
+			for attempt := 1; err != nil; attempt++ {
+				if attempt > 10 {
 					panic("Failed to find MAC address after 10 attempts")
 				}
+				fmt.Printf("Error: %v, retrying MAC address...\n", err)
+				time.Sleep(1 * time.Second)
+				mac, err = getMacAddr()
 			}
 			myID = mac
 		}

@@ -189,6 +189,6 @@ func ConvertOrderType(value int) OrderType {
 func CreateOrderEvent(floor int, orderType OrderType) OrderEvent {
 	return OrderEvent{
 		Floor:     floor,
-		OrderType: orderType,
+		OrderEvent: orderType,
 	}
 }

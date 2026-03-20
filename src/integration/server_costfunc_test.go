@@ -84,7 +84,7 @@ func TestServerAndCostFuncInteraction(t *testing.T) {
 		printInterval = 5 * time.Second
 	)
 
-	config.SetMyID()
+	config.InitConfigTesting()
 	myID := config.MyID()
 	t.Logf("My elevator ID: %s", myID)
 
