@@ -2,7 +2,6 @@ package elevatorserver
 
 import (
 	"elevatorproject/src/orders"
-	"fmt"
 )
 
 //This file contains the logic for merging incoming order updates from the network with the local
@@ -14,10 +13,6 @@ import (
 // barrier protocol to coordinate transitions across all online nodes. This preserves orders across elevator failures.
 func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders map[string]*orders.HallOrders, onlineNodes []string) orders.OrderState {
 	local := allOrders[receiverID].GetOrderState(update.Floor, update.Direction)
-	fmt.Printf("local: %v\n", local)
-	// onlineNodes may or may not include receiverID depending on peer source.
-	// Treat "alone" as: no online node exists other than receiverID.
-	fmt.Printf("onlineNodes: %v\n", onlineNodes)
 	noOtherOnlineNodes := true
 	for _, id := range onlineNodes {
 		if id != receiverID {
@@ -26,9 +21,7 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 	}
 	removed := local.Removed()
 	unknown := local.Unknown()
-	fmt.Printf("removed: %v, unknown: %v\n", removed, unknown)
 	if (removed || unknown) && noOtherOnlineNodes {
-		fmt.Println("Returning UnknownOrderState")
 		return orders.UnknownOrderState
 	}
 	return mergeState(update.State, local, onlineNodes, func(id string) (orders.OrderState, bool) {
@@ -56,7 +49,18 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 	}
 
 	// Only the owning elevator participates in the barrier for cab orders.
-	cabBarrierNodes := []string{update.SenderID}
+	noOtherOnlineNodes := true
+	cabBarrierNodes := []string{}
+	for _, id := range onlineNodes {
+		if id != update.SenderID {
+			noOtherOnlineNodes = false
+		}
+	}
+	if noOtherOnlineNodes {
+		cabBarrierNodes = []string{update.SenderID}
+	} else {
+		cabBarrierNodes = onlineNodes
+	}
 	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allCabOrders[id]
 		if !ok {

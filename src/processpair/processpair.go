@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"time"
 )
@@ -36,7 +37,7 @@ func SpawnAndMonitorBackup(port int) {
 
 	for {
 		fmt.Printf("[Master] Spawning backup for port %s\n", portStr)
-		cmd := newBackupCmd(executable, portStr, myPID)
+		cmd := newBackupTerminal(executable, portStr, myPID)
 		if err := cmd.Run(); err != nil {
 			fmt.Printf("[Master] Backup for port %s exited with error: %v\n", portStr, err)
 		} else {
@@ -47,7 +48,7 @@ func SpawnAndMonitorBackup(port int) {
 	}
 }
 
-func newBackupCmd(executable, portStr, masterPID string) *exec.Cmd {
+func newBackupTerminal(executable, portStr, masterPID string) *exec.Cmd {
 	switch runtime.GOOS {
 	case "windows":
 		return exec.Command("cmd", "/c", "start", "/wait",
@@ -64,3 +65,4 @@ func newBackupCmd(executable, portStr, masterPID string) *exec.Cmd {
 		return cmd
 	}
 }
+	
