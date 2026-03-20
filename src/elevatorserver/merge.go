@@ -2,6 +2,7 @@ package elevatorserver
 
 import (
 	"elevatorproject/src/orders"
+	"fmt"
 )
 
 //This file contains the logic for merging incoming order updates from the network with the local
@@ -64,8 +65,10 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allCabOrders[id]
 		if !ok {
+			fmt.Printf("Unknown node %v\n", id)
 			return orders.UnknownOrderState, false
 		}
+		fmt.Printf("Node %v\n", id)
 		return elev.GetOrderState(update.Floor), true
 	})
 }
