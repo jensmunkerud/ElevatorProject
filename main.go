@@ -44,7 +44,7 @@ func main() {
 	ActiveLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
 	elevatorEvent := make(chan elevator.ElevatorEvent, 5)
 	ready := make(chan struct{})
-
+	
 	// Start goroutines:
 	fmt.Println("Starting controller")
 	go controller.RunController(elevatorEvent, *port)

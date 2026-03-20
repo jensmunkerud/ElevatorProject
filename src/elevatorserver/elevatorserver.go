@@ -1,5 +1,14 @@
 package elevatorserver
 
+// In:	HallOrderUpdate		[CallHandler]
+// In:	CabOrderUpdate		[CallHandler]
+// In:	LocalElevatorState	[CallHandler]
+// In:	ReceiveWorldView	[Networking]
+// =====================================
+// Out:	SendWorldView		[Networking]
+// Out:	AllCabOrders		[OrderDistributor]
+// Out:	MergedHallOrders	[OrderDistributor]
+
 import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
