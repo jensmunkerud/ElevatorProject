@@ -28,7 +28,7 @@ func TestConvertToJson_NewSignature_ProducesExpectedStructure(t *testing.T) {
 		myID: es.CreateElevator(myID, 2, es.Down, es.Moving),
 	}
 
-	jsonStr, err := ConvertToJson(myID, cabOrders, hallOrders, elevators)
+	jsonStr, err := ConvertToJson(cabOrders, hallOrders, elevators)
 	if err != nil {
 		t.Fatalf("ConvertToJson failed: %v", err)
 	}
