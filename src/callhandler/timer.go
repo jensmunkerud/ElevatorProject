@@ -24,4 +24,3 @@ func stopTimer(timer *time.Timer) {
 	}
 }
 
-//a comment to test if this file is included in the commit
