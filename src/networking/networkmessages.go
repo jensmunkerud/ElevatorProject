@@ -14,17 +14,8 @@ type ElevatorState struct {
 	InService bool
 }
 
-// ElevatorStateUpdate pairs a sender ID with the received elevator state,
-// for use in the elevatorStatesOut channel.
-type ElevatorStateUpdate struct {
-	SenderID string
-	State    ElevatorState
-}
 
-// Message is the wire format for inter-elevator broadcasts.
-// HallOrders[floor][dir] and AllCabOrders[elevID][floor] store OrderState values as ints
-// so that JSON encoding works without requiring exported fields on the domain types.
-// ElevatorStates carries the physical state of every known elevator, keyed by ID.
+// Message is the wire format for broadcasting worldview updates to the network.
 type Message struct {
 	SenderID       string
 	HallOrders     [config.NumFloors][2]orders.OrderState
@@ -32,11 +23,8 @@ type Message struct {
 	ElevatorStates map[string]ElevatorState
 }
 
-// messageFromOrders builds a wire Message from the current hall, cab, and elevator state snapshots.
-func messageFromOrders(senderID string, hall *orders.HallOrders, allCab map[string]*orders.CabOrders, elev elevator.Elevator) Message {
-	return messageFromWorldview(senderID, hall, allCab, map[string]*elevator.Elevator{senderID: &elev})
-}
 
+// messageFromWorldview builds a wire Message from the current worldview snapshots.
 func messageFromWorldview(
 	senderID string,
 	hall *orders.HallOrders,
