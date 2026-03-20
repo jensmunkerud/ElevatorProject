@@ -10,9 +10,7 @@ import (
 // state of orders, using a distributed barrier protocol to ensure consistency across all online nodes.
 // This allows the system to preserve orders even in the face of elevator failures and recoveries.
 
-// mergeHallOrderState resolves the next OrderState for a hall order at the given floor and direction.
-// It compares the incoming state from update.SenderID against the receiver's local state, using the
-// barrier protocol to coordinate transitions across all online nodes. This preserves orders across elevator failures.
+// Checks if all elevators have seen an order before confirming or removing it.
 func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders map[string]*orders.HallOrders, onlineNodes []string) orders.OrderState {
 	local := allOrders[receiverID].GetOrderState(update.Floor, update.OrderType)
 	noOtherOnlineNodes := true
@@ -23,7 +21,6 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 	}
 	removed := local.IsRemoved()
 	unknown := local.IsUnknown()
-	fmt.Printf("removed: %v, unknown: %v\n", removed, unknown)
 	if (removed || unknown) && noOtherOnlineNodes {
 		return orders.UnknownOrderState
 	}
@@ -36,23 +33,10 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 	})
 }
 
-// Merges an incoming cab order state with the local state, using the same barrier protocol as mergeHallOrderState to coordinate transitions across all online nodes.
-// Cab orders are per-elevator, so the barrier only checks the owning
-// elevator's own state (not other elevators' unrelated cab orders).
-func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
+// Checks if any other elevator has seen our cab order before confirming and removing the order.
+func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders) orders.OrderState {
 	local := allCabOrders[update.OwnerID].GetOrderState(update.Floor)
 
-	// Once a cab order has been cleared (Removed), don't allow stale
-	// Confirmed from peers to resurrect it. Only Unconfirmed (a new button
-	// press) restarts the cycle. Without this, a peer's stale heartbeat
-	// containing Confirmed overwrites Removed via "highest state wins"
-	// because Confirmed(3) > Removed(1).
-	//if local == orders.RemovedOrderState && update.State == orders.ConfirmedOrderState {
-	//	return orders.RemovedOrderState
-	//}
-	// If this update is a peer reporting our own cab order and we already
-	// have it as Unconfirmed, treat that as dissemination and confirm
-	// immediately.
 	if update.OwnerID == config.MyID() &&
 		update.SenderID != config.MyID() &&
 		local == orders.UnconfirmedOrderState &&
@@ -60,8 +44,6 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 		return orders.ConfirmedOrderState
 	}
 
-	// Only the owning elevator participates in the barrier for cab orders.
-	fmt.Printf("New cab order update: %v\n", update)
 	cabBarrierNodes := []string{update.OwnerID}
 	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allCabOrders[id]
@@ -73,18 +55,13 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 }
 
 // mergeState contains the shared state-machine logic for merging an incoming order state with
-// the local state. It applies two distributed barriers: Unconfirmed→Confirmed and Completed→Removed (all nodes must
-// have seen the order).
-// getState is a callback that retrieves a node's current OrderState by ID, returning false if the node is unknown.
+// the local state.
 func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes []string, getState func(string) (orders.OrderState, bool)) orders.OrderState {
-	fmt.Printf("Merging state: local: %v, newOrder: %v\n", local, newOrder)
-	fmt.Printf("Online nodes: %v\n", onlineNodes)
 	switch local {
 	case orders.UnknownOrderState:
 		return newOrder
 	case orders.RemovedOrderState:
 		if newOrder.IsUnconfirmed() {
-			// Need to check barrier for single elevator case
 			if barrierReached(onlineNodes, orders.UnconfirmedOrderState, getState) {
 				return orders.ConfirmedOrderState
 			} else {
@@ -95,10 +72,8 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 		}
 	case orders.UnconfirmedOrderState:
 		if barrierReached(onlineNodes, orders.UnconfirmedOrderState, getState) {
-			fmt.Printf("Barrier reached for unconfirmed order\n")
 			return orders.ConfirmedOrderState
 		} else {
-			fmt.Printf("Barrier not reached for unconfirmed order\n")
 			return local
 		}
 	case orders.ConfirmedOrderState:
@@ -124,9 +99,6 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 }
 
 // barrierReached returns true if every online node has reached the given threshold.
-// For the Completed threshold, a node at Removed is treated as having passed through
-// Completed (the lifecycle is Unconfirmed→Confirmed→Completed→Removed, but Removed
-// has a lower numeric value than Completed).
 func barrierReached(onlineNodes []string, threshold orders.OrderState, getState func(string) (orders.OrderState, bool)) bool {
 
 	for _, id := range onlineNodes {
@@ -140,11 +112,8 @@ func barrierReached(onlineNodes []string, threshold orders.OrderState, getState 
 				return false
 			}
 		} else if state < threshold {
-			fmt.Printf("Node %v not at or above threshold\n", id)
-			fmt.Printf("Node %v state: %v\n", id, state)
 			return false
 		}
 	}
-	fmt.Printf("Barrier reached\n")
 	return true
 }

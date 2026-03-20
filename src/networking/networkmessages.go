@@ -14,7 +14,6 @@ type ElevatorState struct {
 	InService bool
 }
 
-
 // Message is the wire format for broadcasting worldview updates to the network.
 type Message struct {
 	SenderID       string
@@ -22,7 +21,6 @@ type Message struct {
 	AllCabOrders   map[string][config.NumFloors]orders.OrderState
 	ElevatorStates map[string]ElevatorState
 }
-
 
 // messageFromWorldview builds a wire Message from the current worldview snapshots.
 func messageFromWorldview(
@@ -53,9 +51,9 @@ func messageFromWorldview(
 			continue
 		}
 		msg.ElevatorStates[id] = ElevatorState{
-			Behaviour: elev.BehaviourString(),
+			Behaviour: elev.BehaviourToString(),
 			Floor:     elev.CurrentFloor(),
-			Direction: elev.DirectionString(),
+			Direction: elev.DirectionToString(),
 			InService: elev.InService(),
 		}
 	}

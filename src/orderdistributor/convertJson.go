@@ -40,9 +40,9 @@ func ConvertToJson(cabOrders map[string]*orders.CabOrders,
 			cabReqs = make([]bool, config.NumFloors)
 		}
 		states[elevID] = StateData{
-			Behaviour:   elev.BehaviourString(),
+			Behaviour:   elev.BehaviourToString(),
 			Floor:       elev.CurrentFloor(),
-			Direction:   elev.DirectionString(),
+			Direction:   elev.DirectionToString(),
 			CabRequests: cabReqs,
 		}
 	}
@@ -61,10 +61,10 @@ func ConvertToJson(cabOrders map[string]*orders.CabOrders,
 	return string(jsonData), nil
 }
 
-//A function that converts the JSON output from the cost function into a map of elevator IDs.
-//Each elevator ID maps to a struct containing the button states for that elevator. The JSON is expected to be in the format:
-//ID1: [[upButtonState, downButtonState], [upButtonState, downButtonState], ...],
-//ID2: [[upButtonState, downButtonState], [upButtonState, downButtonState], ...], ...
+// A function that converts the JSON output from the cost function into a map of elevator IDs.
+// Each elevator ID maps to a struct containing the button states for that elevator. The JSON is expected to be in the format:
+// ID1: [[upButtonState, downButtonState], [upButtonState, downButtonState], ...],
+// ID2: [[upButtonState, downButtonState], [upButtonState, downButtonState], ...], ...
 func ConvertFromJson(jsonStr string) (map[string][config.NumFloors][config.NumButtons]bool, error) {
 	var results map[string][config.NumFloors][config.NumButtons]bool
 

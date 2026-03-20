@@ -101,7 +101,7 @@ func (e *Elevator) Behaviour() Behaviour {
 	return e.behaviour
 }
 
-func (e *Elevator) BehaviourString() string {
+func (e *Elevator) BehaviourToString() string {
 	switch e.behaviour {
 	case Idle:
 		return "idle"
@@ -130,7 +130,7 @@ func (e *Elevator) CurrentDirection() Direction {
 	return e.direction
 }
 
-func (e *Elevator) DirectionString() string {
+func (e *Elevator) DirectionToString() string {
 	switch e.direction {
 	case Stop:
 		return "stop"
@@ -188,7 +188,7 @@ func ConvertOrderType(value int) OrderType {
 }
 func CreateOrderEvent(floor int, orderType OrderType) OrderEvent {
 	return OrderEvent{
-		Floor:     floor,
+		Floor:      floor,
 		OrderEvent: orderType,
 	}
 }

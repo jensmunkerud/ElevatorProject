@@ -51,7 +51,7 @@ func processNetworkMessages(
 	}
 }
 
-func copyAllElevState(m map[string]*elevator.Elevator) map[string]*elevator.Elevator {
+func copyAllElevatorState(m map[string]*elevator.Elevator) map[string]*elevator.Elevator {
 	cp := make(map[string]*elevator.Elevator, len(m))
 	for id, e := range m {
 		if e != nil {
@@ -160,7 +160,42 @@ func publishToConsumers(
 	channelForNetworking <- netMsg
 }
 
-// Run runs the elevator server.
+func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.HallOrders, onlineNodes []string) {
+	if _, ok := allHall[u.SenderID]; !ok {
+		allHall[u.SenderID] = orders.CreateHallOrders()
+	}
+	if u.SenderID != myID {
+		allHall[u.SenderID].UpdateOrderState(u.Floor, u.OrderType, u.State)
+	}
+	nextState := mergeHallOrderState(u, myID, allHall, onlineNodes)
+	allHall[myID].UpdateOrderState(u.Floor, u.OrderType, nextState)
+}
+
+func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders) {
+	if _, ok := allCab[u.OwnerID]; !ok {
+		allCab[u.OwnerID] = orders.CreateCabOrders()
+	}
+	// For our own cab orders, don't overwrite local state with a remote
+	// worldview before merge. For other owners, keep latest observed state.
+	if u.OwnerID != config.MyID() {
+		allCab[u.OwnerID].UpdateOrderState(u.Floor, u.State)
+	}
+	nextState := mergeCabOrderState(u, allCab)
+	allCab[u.OwnerID].UpdateOrderState(u.Floor, nextState)
+
+	// The barrier may already be satisfied after the first merge pass
+	// (e.g. the owning elevator is the only barrier node and just wrote
+	// the state above). Re-evaluate immediately so the order doesn't
+	// stay stuck until an unrelated update happens to trigger another
+	// merge for this floor.
+	if nextState == orders.UnconfirmedOrderState || nextState == orders.CompletedOrderState {
+		recheck := mergeCabOrderState(u, allCab)
+		allCab[u.OwnerID].UpdateOrderState(u.Floor, recheck)
+	}
+}
+
+
+// Runs the elevator server.
 // It listens for local updates to hall orders, cab orders, and elevator state,
 // as well as peer updates and incoming messages from the network.
 // It maintains the latest snapshot of all orders and elevator states,
@@ -200,7 +235,7 @@ func Run(
 		defer ticker.Stop()
 		latestHall := allHall[myID]
 		latestCab := orders.CopyAllCab(allCab)
-		latestElevState := copyAllElevState(allElevatorStates)
+		latestElevState := copyAllElevatorState(allElevatorStates)
 		latestNodes := []string{}
 		for {
 			select {
@@ -218,10 +253,9 @@ func Run(
 			}
 		}
 	}()
-	fmt.Println("Starting process network messages loop")
+
 	go processNetworkMessages(channelFromNetworking, hallUpdate, cabUpdate, elevatorStateUpdate)
 
-	fmt.Println("Starting hallupdate loop")
 	for {
 		select {
 		case u := <-hallUpdate:
@@ -233,7 +267,7 @@ func Run(
 			hallSnap <- allHall[myID].Copy()
 
 		case u := <-cabUpdate:
-			applyCabUpdate(u, allCab, elevatorsOnNetwork)
+			applyCabUpdate(u, allCab)
 			select {
 			case <-cabSnap:
 			default:
@@ -256,41 +290,8 @@ func Run(
 			case <-elevStateSnap:
 			default:
 			}
-			elevStateSnap <- copyAllElevState(allElevatorStates)
+			elevStateSnap <- copyAllElevatorState(allElevatorStates)
 		}
 	}
 }
 
-func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.HallOrders, onlineNodes []string) {
-	if _, ok := allHall[u.SenderID]; !ok {
-		allHall[u.SenderID] = orders.CreateHallOrders()
-	}
-	if u.SenderID != myID {
-		allHall[u.SenderID].UpdateOrderState(u.Floor, u.OrderType, u.State)
-	}
-	nextState := mergeHallOrderState(u, myID, allHall, onlineNodes)
-	allHall[myID].UpdateOrderState(u.Floor, u.OrderType, nextState)
-}
-
-func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlineNodes []string) {
-	if _, ok := allCab[u.OwnerID]; !ok {
-		allCab[u.OwnerID] = orders.CreateCabOrders()
-	}
-	// For our own cab orders, don't overwrite local state with a remote
-	// worldview before merge. For other owners, keep latest observed state.
-	if u.OwnerID != config.MyID() {
-		allCab[u.OwnerID].UpdateOrderState(u.Floor, u.State)
-	}
-	nextState := mergeCabOrderState(u, allCab, onlineNodes)
-	allCab[u.OwnerID].UpdateOrderState(u.Floor, nextState)
-
-	// The barrier may already be satisfied after the first merge pass
-	// (e.g. the owning elevator is the only barrier node and just wrote
-	// the state above). Re-evaluate immediately so the order doesn't
-	// stay stuck until an unrelated update happens to trigger another
-	// merge for this floor.
-	if nextState == orders.UnconfirmedOrderState || nextState == orders.CompletedOrderState {
-		recheck := mergeCabOrderState(u, allCab, onlineNodes)
-		allCab[u.OwnerID].UpdateOrderState(u.Floor, recheck)
-	}
-}
