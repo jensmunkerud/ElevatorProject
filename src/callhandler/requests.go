@@ -2,17 +2,17 @@ package callhandler
 
 import (
 	"elevatorproject/src/config"
-	es "elevatorproject/src/elevator"
+	"elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 )
 
-func requestsAbove(e es.Elevator) bool {
+func requestsAbove(e elevator.Elevator) bool {
 	if e.CurrentFloor() < 0 || e.CurrentFloor() >= config.NumFloors {
 		return false
 	}
-	for f := e.CurrentFloor() + 1; f < config.NumFloors; f++ {
+	for floor := e.CurrentFloor() + 1; floor < config.NumFloors; floor++ {
 		for btn := 0; btn < config.NumButtons; btn++ {
-			if e.Requests()[f][btn] {
+			if e.Requests()[floor][btn] {
 				return true
 			}
 		}
@@ -20,7 +20,7 @@ func requestsAbove(e es.Elevator) bool {
 	return false
 }
 
-func requestsBelow(e es.Elevator) bool {
+func requestsBelow(e elevator.Elevator) bool {
 	if e.CurrentFloor() < 0 || e.CurrentFloor() >= config.NumFloors {
 		return false
 	}
@@ -34,7 +34,7 @@ func requestsBelow(e es.Elevator) bool {
 	return false
 }
 
-func requestsHere(e es.Elevator) bool {
+func requestsHere(e elevator.Elevator) bool {
 	if e.CurrentFloor() < 0 || e.CurrentFloor() >= config.NumFloors {
 		return false
 	}
@@ -47,59 +47,59 @@ func requestsHere(e es.Elevator) bool {
 }
 
 // Find most suitable direction to move in, given current requests and direction.
-func requestsChooseDirection(e es.Elevator) (es.Direction, es.Behaviour) {
+func chooseNextDirection(e elevator.Elevator) (elevator.Direction, elevator.Behaviour) {
 	switch e.CurrentDirection() {
-	case es.Up:
+	case elevator.Up:
 		switch {
 		case requestsAbove(e):
-			return es.Up, es.Moving
+			return elevator.Up, elevator.Moving
 		case requestsHere(e):
-			return es.Down, es.DoorOpen
+			return elevator.Down, elevator.DoorOpen
 		case requestsBelow(e):
-			return es.Down, es.Moving
+			return elevator.Down, elevator.Moving
 		default:
-			return es.Stop, es.Idle
+			return elevator.Stop, elevator.Idle
 		}
-	case es.Down:
+	case elevator.Down:
 		switch {
 		case requestsBelow(e):
-			return es.Down, es.Moving
+			return elevator.Down, elevator.Moving
 		case requestsHere(e):
-			return es.Up, es.DoorOpen
+			return elevator.Up, elevator.DoorOpen
 		case requestsAbove(e):
-			return es.Up, es.Moving
+			return elevator.Up, elevator.Moving
 		default:
-			return es.Stop, es.Idle
+			return elevator.Stop, elevator.Idle
 		}
-	case es.Stop:
+	case elevator.Stop:
 		switch {
 		case requestsHere(e):
-			return es.Stop, es.DoorOpen
+			return elevator.Stop, elevator.DoorOpen
 		case requestsAbove(e):
-			return es.Up, es.Moving
+			return elevator.Up, elevator.Moving
 		case requestsBelow(e):
-			return es.Down, es.Moving
+			return elevator.Down, elevator.Moving
 		default:
-			return es.Stop, es.Idle
+			return elevator.Stop, elevator.Idle
 		}
 	default:
-		return es.Stop, es.Idle
+		return elevator.Stop, elevator.Idle
 	}
 }
 
 // shouldStop returns true if the elevator should stop at the current floor to serve any orders.
-func shouldStop(e es.Elevator) bool {
+func shouldStop(e elevator.Elevator) bool {
 	if e.CurrentFloor() < 0 || e.CurrentFloor() >= config.NumFloors {
 		return false
 	}
 	switch e.CurrentDirection() {
-	case es.Down:
-		return e.Requests()[e.CurrentFloor()][es.HallDown] ||
-			e.Requests()[e.CurrentFloor()][es.Cab] ||
+	case elevator.Down:
+		return e.Requests()[e.CurrentFloor()][elevator.HallDown] ||
+			e.Requests()[e.CurrentFloor()][elevator.Cab] ||
 			!requestsBelow(e)
-	case es.Up:
-		return e.Requests()[e.CurrentFloor()][es.HallUp] ||
-			e.Requests()[e.CurrentFloor()][es.Cab] ||
+	case elevator.Up:
+		return e.Requests()[e.CurrentFloor()][elevator.HallUp] ||
+			e.Requests()[e.CurrentFloor()][elevator.Cab] ||
 			!requestsAbove(e)
 	default:
 		return true
@@ -107,39 +107,39 @@ func shouldStop(e es.Elevator) bool {
 }
 
 // orderIsAtCurrentStop checks if the incoming local order can immediately be cleared.
-func orderIsAtCurrentStop(e es.Elevator, buttonFloor int, buttonType es.OrderType) bool {
+func orderIsAtCurrentStop(e elevator.Elevator, buttonFloor int, buttonType elevator.OrderType) bool {
 	if buttonFloor < 0 || buttonFloor >= config.NumFloors {
 		return false
 	}
 	return e.CurrentFloor() == buttonFloor &&
-		((e.CurrentDirection() == es.Up && buttonType == es.HallUp) ||
-			(e.CurrentDirection() == es.Down && buttonType == es.HallDown) ||
-			e.CurrentDirection() == es.Stop ||
-			buttonType == es.Cab)
+		((e.CurrentDirection() == elevator.Up && buttonType == elevator.HallUp) ||
+			(e.CurrentDirection() == elevator.Down && buttonType == elevator.HallDown) ||
+			e.CurrentDirection() == elevator.Stop ||
+			buttonType == elevator.Cab)
 }
 
 func requestClearAtCurrentFloor(
-	e *es.Elevator,
+	e *elevator.Elevator,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
-	RequestUpdateOrder(e.CurrentFloor(), es.Cab, true, cabOrderUpdate, hallOrderUpdate)
+	requestUpdateOrder(e.CurrentFloor(), elevator.Cab, true, cabOrderUpdate, hallOrderUpdate)
 
 	switch e.CurrentDirection() {
-	case es.Up:
-		if !requestsAbove(*e) && !e.Requests()[e.CurrentFloor()][es.HallUp]{
-			RequestUpdateOrder(e.CurrentFloor(), es.HallDown, true, cabOrderUpdate, hallOrderUpdate)
+	case elevator.Up:
+		if !requestsAbove(*e) && !e.Requests()[e.CurrentFloor()][elevator.HallUp] {
+			requestUpdateOrder(e.CurrentFloor(), elevator.HallDown, true, cabOrderUpdate, hallOrderUpdate)
 		}
-		RequestUpdateOrder(e.CurrentFloor(), es.HallUp, true, cabOrderUpdate, hallOrderUpdate)
+		requestUpdateOrder(e.CurrentFloor(), elevator.HallUp, true, cabOrderUpdate, hallOrderUpdate)
 
-	case es.Down:
-		if !requestsBelow(*e) && !e.Requests()[e.CurrentFloor()][es.HallDown]{
-			RequestUpdateOrder(e.CurrentFloor(), es.HallUp, true, cabOrderUpdate, hallOrderUpdate)
+	case elevator.Down:
+		if !requestsBelow(*e) && !e.Requests()[e.CurrentFloor()][elevator.HallDown] {
+			requestUpdateOrder(e.CurrentFloor(), elevator.HallUp, true, cabOrderUpdate, hallOrderUpdate)
 		}
-		RequestUpdateOrder(e.CurrentFloor(), es.HallDown, true, cabOrderUpdate, hallOrderUpdate)
+		requestUpdateOrder(e.CurrentFloor(), elevator.HallDown, true, cabOrderUpdate, hallOrderUpdate)
 
 	default:
-		RequestUpdateOrder(e.CurrentFloor(), es.HallUp, true, cabOrderUpdate, hallOrderUpdate)
-		RequestUpdateOrder(e.CurrentFloor(), es.HallDown, true, cabOrderUpdate, hallOrderUpdate)
+		requestUpdateOrder(e.CurrentFloor(), elevator.HallUp, true, cabOrderUpdate, hallOrderUpdate)
+		requestUpdateOrder(e.CurrentFloor(), elevator.HallDown, true, cabOrderUpdate, hallOrderUpdate)
 	}
 }

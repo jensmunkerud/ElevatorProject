@@ -50,7 +50,7 @@ type Elevator struct {
 	inService   bool
 }
 
-type ElevatorEvent struct {
+type HardwareEvent struct {
 	OrderEvent       chan OrderEvent
 	FloorEvent       chan int
 	ObstructionEvent chan bool
@@ -67,13 +67,13 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 	}
 }
 
-func CreateElevatorEvent(
+func CreateHardwareEvent(
 	orderEvent chan OrderEvent,
 	floorEvent chan int,
 	obstructionEvent chan bool,
 	stopEvent chan bool,
-) ElevatorEvent {
-	return ElevatorEvent{
+) HardwareEvent {
+	return HardwareEvent{
 		OrderEvent:       orderEvent,
 		FloorEvent:       floorEvent,
 		ObstructionEvent: obstructionEvent,
@@ -188,7 +188,7 @@ func ConvertOrderType(value int) OrderType {
 }
 func CreateOrderEvent(floor int, orderType OrderType) OrderEvent {
 	return OrderEvent{
-		Floor:     floor,
+		Floor:      floor,
 		OrderEvent: orderType,
 	}
 }
