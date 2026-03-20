@@ -23,8 +23,9 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 			noOtherOnlineNodes = false
 		}
 	}
-	fmt.Printf("noOtherOnlineNodes: %v\n", noOtherOnlineNodes)
-	if (local.Removed() || local.Unknown()) && noOtherOnlineNodes {
+	removed := local.Removed()
+	unknown := local.Unknown()
+	if (removed || unknown) && noOtherOnlineNodes {
 		fmt.Println("Returning UnknownOrderState")
 		return orders.UnknownOrderState
 	}
