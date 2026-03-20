@@ -46,12 +46,10 @@ func main() {
 	activeLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
 	elevatorEvent := make(chan elevator.ElevatorEvent, 5)
 	readyCallhandler := make(chan struct{})
-	readyController := make(chan struct{})
 
 	// Start goroutines:
 	fmt.Println("Starting controller")
-	go controller.Run(readyController, elevatorEvent, *port)
-	<-readyController
+	controller.Run(elevatorEvent, *port)
 	fmt.Println("Starting callhandler")
 	go callhandler.Run(readyCallhandler, elevatorEvent, hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, ordersOnNetwork, activeLocalOrders)
 	<-readyCallhandler

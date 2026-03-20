@@ -7,8 +7,7 @@ import (
 	"fmt"
 )
 
-func Run(ready chan<- struct{}, elevatorEvent chan elevator.ElevatorEvent, port int) {
-	defer close(ready)
+func Run(elevatorEvent chan elevator.ElevatorEvent, port int) {
 	// Initializes external library for communicating with the elevator.
 	elevio.Init(fmt.Sprintf("localhost:%d", port), config.NumFloors)
 
