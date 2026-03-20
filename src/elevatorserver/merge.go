@@ -77,6 +77,8 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 // have seen the order).
 // getState is a callback that retrieves a node's current OrderState by ID, returning false if the node is unknown.
 func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes []string, getState func(string) (orders.OrderState, bool)) orders.OrderState {
+	fmt.Printf("Merging state: local: %v, newOrder: %v\n", local, newOrder)
+	fmt.Printf("Online nodes: %v\n", onlineNodes)
 	switch local {
 	case orders.UnknownOrderState:
 		return newOrder
