@@ -49,7 +49,7 @@ func main() {
 	}
 
 	// If this runs, the program has entered into primary mode.
-	go processpair.RunAsPrimary(*port)
+	go processpair.RunAsPrimary(*port, *simulatorMode)
 
 	// Buffers are needed to avoid deadlocks during initalization.
 	hallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*config.NumButtons*10)
