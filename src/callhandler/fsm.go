@@ -9,8 +9,13 @@ import (
 	"time"
 )
 
-func fsmInit(e *es.Elevator) {
-	if controller.GetFloor() != -1 {
+func initializeElevatorToValidFloor(e *es.Elevator) {
+	if config.NumFloors < 1 {
+		fmt.Println("Error: NumFloors must be at least 1")
+		return
+	}
+	floor := controller.GetFloor()
+	if floor != -1 && floor >= 0 && floor < config.NumFloors {
 		if e.Behaviour() != es.Moving {
 			e.UpdateInService(true)
 			return
@@ -28,7 +33,7 @@ func fsmInit(e *es.Elevator) {
 	e.UpdateBehaviour(es.Moving)
 }
 
-func fsmOnFloorArrival(
+func elevatorArrivedAtFloor(
 	e *es.Elevator,
 	newFloor int,
 	doorTimer *time.Timer,
@@ -36,6 +41,10 @@ func fsmOnFloorArrival(
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
+	if newFloor < 0 || newFloor >= config.NumFloors {
+		fmt.Printf("Error: Invalid floor %d\n", newFloor)
+		return
+	}
 	fmt.Printf("\n\nfsmOnFloorArrival(%d)\n", newFloor)
 
 	e.UpdateCurrentFloor(newFloor)
@@ -46,10 +55,10 @@ func fsmOnFloorArrival(
 	case es.Moving:
 		// Necessary to restart the serviceTimer here, to also mark as out of service if door is obstructed.
 		restartTimer(serviceTimer, config.ServiceTimeout)
-		if requestsShouldStop(*e) {
+		if shouldStop(*e) {
 			controller.StopElevator()
 			controller.SetDoorOpenLamp(true)
-			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+			requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 			restartTimer(doorTimer, config.DoorOpenDuration)
 			e.UpdateBehaviour(es.DoorOpen)
 		}
@@ -58,14 +67,13 @@ func fsmOnFloorArrival(
 	}
 }
 
-func fsmOnDoorTimeout(
+func elevatorOnDoorTimeout(
 	e *es.Elevator,
 	doorTimer *time.Timer,
 	serviceTimer *time.Timer,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
-	fmt.Printf("\n\nfsmOnDoorTimeout()\n")
 	if e.Obstruction() {
 		// Keep door open
 		restartTimer(doorTimer, config.DoorOpenDuration)
@@ -84,7 +92,7 @@ func fsmOnDoorTimeout(
 			e.UpdateInService(true)
 			restartTimer(doorTimer, config.DoorOpenDuration)
 			restartTimer(serviceTimer, config.ServiceTimeout)
-			requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+			requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 		case es.Moving, es.Idle:
 			restartTimer(serviceTimer, config.ServiceTimeout)
 			e.UpdateInService(true)
@@ -104,15 +112,18 @@ func fsmOnDoorTimeout(
 	}
 }
 
-func fsmOnNewOrders(
+func elevatorOnNewOrders(
 	e *es.Elevator,
 	doorTimer *time.Timer,
 	serviceTimer *time.Timer,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
-	if e.Behaviour() != es.Idle ||
-		e.CurrentFloor() != controller.GetFloor() {
+	floor := controller.GetFloor()
+	if floor < 0 || floor >= config.NumFloors {
+		return
+	}
+	if e.Behaviour() != es.Idle || e.CurrentFloor() != floor {
 		return
 	}
 	newDirection, newBehaviour := requestsChooseDirection(*e)
@@ -123,7 +134,7 @@ func fsmOnNewOrders(
 	case es.DoorOpen:
 		controller.SetDoorOpenLamp(true)
 		restartTimer(doorTimer, config.DoorOpenDuration)
-		requestsClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
+		requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 	case es.Moving:
 		restartTimer(serviceTimer, config.ServiceTimeout)
 		if !e.StopPressed() {

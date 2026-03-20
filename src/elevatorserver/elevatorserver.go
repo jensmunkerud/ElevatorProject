@@ -56,6 +56,7 @@ func copyAllElevState(m map[string]*elevator.Elevator) map[string]*elevator.Elev
 		if e != nil {
 			elevCopy := e.Copy()
 			cp[id] = &elevCopy
+			fmt.Printf("Current elevator state %v, ID %v\n", cp[id].InService(), id)
 		}
 	}
 	return cp
@@ -90,6 +91,7 @@ func publishToConsumers(
 	for id, e := range latestElevState {
 		if e != nil {
 			elevValue[id] = *e
+			//fmt.Printf("Current elev state %v\n", elevValue[id].InService())
 		}
 	}
 
@@ -262,7 +264,9 @@ func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.
 	if _, ok := allHall[u.SenderID]; !ok {
 		allHall[u.SenderID] = orders.CreateHallOrders()
 	}
-	allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
+	if u.SenderID != myID {
+		allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
+	}
 	nextState := mergeHallOrderState(u, myID, allHall, onlineNodes)
 	allHall[myID].UpdateOrderState(u.Floor, u.Direction, nextState)
 }

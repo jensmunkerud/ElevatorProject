@@ -16,51 +16,48 @@ import (
 	"time"
 )
 
-func RequestUpdateCabOrder(floor int, button es.ButtonType, completed bool, cabOrderUpdate chan<- elevatorserver.CabOrderUpdate) {
-	myID := config.MyID()
+// RequestUpdateOrder sends order updates to the appropriate channel based on order type.
+// orderCompleted is true for removing orders, false for adding new orders.
+func RequestUpdateOrder(
+	floor int,
+	orderType es.OrderType,
+	orderCompleted bool,
+	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
+	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate) {
 
-	if cabOrderUpdate == nil || button != es.Cab {
+	if floor < 0 || floor >= config.NumFloors {
 		return
 	}
 
+	myID := config.MyID()
 	state := orders.UnconfirmedOrderState
-	if completed {
+	if orderCompleted {
 		state = orders.CompletedOrderState
 	}
 
-	cabOrderUpdate <- elevatorserver.CabOrderUpdate{
-		SenderID: myID,
-		Floor:    floor,
-		State:    state,
-	}
-}
-
-func RequestUpdateHallOrder(floor int, button es.ButtonType, completed bool, hallOrderUpdate chan<- elevatorserver.HallOrderUpdate) {
-	if hallOrderUpdate == nil || button == es.Cab {
+	switch orderType {
+	case es.Cab:
+		if cabOrderUpdate != nil {
+			cabOrderUpdate <- elevatorserver.NewCabOrderUpdate(myID, floor, state)
+		}
+	case es.HallUp, es.HallDown:
+		if hallOrderUpdate != nil {
+			hallOrderUpdate <- elevatorserver.NewHallOrderUpdate(myID, floor, int(orderType), state)
+		}
+	default:
 		return
 	}
-	myID := config.MyID()
-
-	state := orders.UnconfirmedOrderState
-	if completed {
-		state = orders.CompletedOrderState
-	}
-
-	hallOrderUpdate <- elevatorserver.HallOrderUpdate{
-		SenderID:  myID,
-		Floor:     floor,
-		Direction: int(button),
-		State:     state,
-	}
 }
-
-func RunCallHandler(
+// This launches the callhandler, which listens for events from the elevator
+// and sends order updates to the elevatorserver.
+// It also listens for new orders from order distributor and overwrites the old ones.
+func Run(
 	ready chan<- struct{},
 	elevatorEvent <-chan es.ElevatorEvent,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 	elevatorStateUpdate chan<- es.Elevator,
-	ordersOnNetwork <-chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
+	ordersOnNetwork <-chan elevatorserver.CallHandlerMessage,
 	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool) {
 
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
@@ -71,8 +68,8 @@ func RunCallHandler(
 	localElevator := es.CreateElevator(myID, -1, es.Stop, es.Idle)
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
-	fsmInit(localElevator)
-	emitLocalState(localElevator, elevatorStateUpdate)
+	initializeElevatorToValidFloor(localElevator)
+	sendLocalState(localElevator, elevatorStateLocal)
 	close(ready)
 
 	event := <-elevatorEvent
@@ -83,16 +80,12 @@ func RunCallHandler(
 		select {
 		case order := <-event.OrderEvent:
 			fmt.Printf("%+v\n", order)
-			if order.Button == es.Cab {
-				RequestUpdateCabOrder(order.Floor, order.Button, false, cabOrderUpdate)
-			} else {
-				RequestUpdateHallOrder(order.Floor, order.Button, false, hallOrderUpdate)
-			}
+			RequestUpdateOrder(order.Floor, order.Button, false, cabOrderUpdate, hallOrderUpdate)
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
-			fsmOnFloorArrival(localElevator, floor, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			emitLocalState(localElevator, elevatorStateUpdate)
+			elevatorArrivedAtFloor(localElevator, floor, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
+			sendLocalState(localElevator, elevatorStateLocal)
 
 		case obstruction := <-event.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
@@ -126,49 +119,49 @@ func RunCallHandler(
 
 		case newOrders := <-activeLocalOrders:
 			localElevator.UpdateRequest(newOrders)
-			fsmOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			emitLocalState(localElevator, elevatorStateUpdate)
+			elevatorOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
+			sendLocalState(localElevator, elevatorStateLocal)
 
 		case <-doorTimer.C:
-			fsmOnDoorTimeout(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			emitLocalState(localElevator, elevatorStateUpdate)
+			elevatorOnDoorTimeout(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
+			sendLocalState(localElevator, elevatorStateLocal)
 
 		case <-serviceTimer.C:
 			localElevator.UpdateInService(false)
-			fsmInit(localElevator)
+			initializeElevatorToValidFloor(localElevator)
 			restartTimer(serviceTimer, config.ServiceTimeout)
-			emitLocalState(localElevator, elevatorStateUpdate)
+			sendLocalState(localElevator, elevatorStateLocal)
 		}
 	}
 }
 
-// callHandlerMessageChanged returns true if a and b differ in any hall or cab order state.
-func callHandlerMessageChanged(a, b elevatorserver.CallHandlerMessage) bool {
-	hallA, cabA := a.UnpackForCallHandler()
-	hallB, cabB := b.UnpackForCallHandler()
-	for f := 0; f < config.NumFloors; f++ {
-		for d := 0; d < 2; d++ {
-			if hallA.GetOrderState(f, d) != hallB.GetOrderState(f, d) {
+// callHandlerMessageChanged returns true if previous and current differ in any hall or cab order state.
+func callHandlerMessageChanged(previous, current elevatorserver.CallHandlerMessage) bool {
+	hallPrevious, cabPrevious := previous.UnpackForCallHandler()
+	hallCurrent, cabCurrent := current.UnpackForCallHandler()
+	for atFloor := 0; atFloor < config.NumFloors; atFloor++ {
+		for direction := 0; direction < 2; direction++ {
+			if hallPrevious.GetOrderState(atFloor, direction) != hallCurrent.GetOrderState(atFloor, direction) {
 				return true
 			}
 		}
-		if cabA.GetOrderState(f) != cabB.GetOrderState(f) {
+		if cabPrevious.GetOrderState(atFloor) != cabCurrent.GetOrderState(atFloor) {
 			return true
 		}
 	}
 	return false
 }
 
-// Overwrites all buttonlamps of elevator if callHandlerMessage has new, different data.
+// refreshElevatorLights updates the elevator lights if orders have changed.
 func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerMessage) {
-	var last elevatorserver.CallHandlerMessage
+	var lastMessage elevatorserver.CallHandlerMessage
 	first := true
 	for msg := range callHandlerMessage {
-		if !first && !callHandlerMessageChanged(last, msg) {
+		if !first && !callHandlerMessageChanged(lastMessage, msg) {
 			continue
 		}
 		first = false
-		last = msg
+		lastMessage = msg
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
 			for button := es.HallUp; button <= es.HallDown; button++ {
@@ -182,6 +175,7 @@ func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerM
 	}
 }
 
+// handleActiveLocalOrders takes the most recent output from the order distributor and updates the local elevator's request state.
 func handleActiveLocalOrders(
 	localElevator *es.Elevator,
 	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool,
@@ -189,12 +183,11 @@ func handleActiveLocalOrders(
 ) {
 	for newActiveOrders := range activeLocalOrders {
 		localElevator.UpdateRequest(newActiveOrders)
-		emitLocalState(localElevator, elevatorStateLocal)
-		fmt.Printf("RECEIVED FROM COSTFUNC")
+		sendLocalState(localElevator, elevatorStateLocal)
 	}
 }
 
-func emitLocalState(current *es.Elevator, elevatorStateLocal chan<- es.Elevator) {
+func sendLocalState(current *es.Elevator, elevatorStateLocal chan<- es.Elevator) {
 	if elevatorStateLocal == nil || current == nil {
 		return
 	}

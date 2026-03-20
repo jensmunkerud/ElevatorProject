@@ -84,12 +84,14 @@ func worldviewFromMessage(msg Message) es.NetworkingDistributorMessage {
 
 	elevatorStates := make(map[string]*elevator.Elevator, len(msg.ElevatorStates))
 	for id, state := range msg.ElevatorStates {
-		elevatorStates[id] = elevator.CreateElevator(
+		elev := elevator.CreateElevator(
 			id,
 			state.Floor,
 			directionFromString(state.Direction),
 			behaviourFromString(state.Behaviour),
 		)
+		elev.UpdateInService(state.InService)
+		elevatorStates[id] = elev
 	}
 
 	return es.NewNetworkingDistributorMessage(msg.SenderID, allCabOrders, hallOrders, elevatorStates)
