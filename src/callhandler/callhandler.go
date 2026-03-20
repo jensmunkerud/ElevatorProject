@@ -82,7 +82,7 @@ func Run(
 		select {
 		case order := <-event.OrderEvent:
 			fmt.Printf("%+v\n", order)
-			RequestUpdateOrder(order.Floor, order.Button, false, cabOrderUpdate, hallOrderUpdate)
+			RequestUpdateOrder(order.Floor, order.OrderType, false, cabOrderUpdate, hallOrderUpdate)
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)

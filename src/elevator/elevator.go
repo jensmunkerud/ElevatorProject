@@ -26,9 +26,9 @@ var HallOrderTypes = []OrderType{
 	HallDown,
 }
 
-type ButtonEvent struct {
-	Floor  int
-	Button OrderType
+type OrderEvent struct {
+	Floor      int
+	OrderEvent OrderType
 }
 
 type Behaviour int
@@ -51,7 +51,7 @@ type Elevator struct {
 }
 
 type ElevatorEvent struct {
-	OrderEvent       chan ButtonEvent
+	OrderEvent       chan OrderEvent
 	FloorEvent       chan int
 	ObstructionEvent chan bool
 	StopEvent        chan bool
@@ -64,6 +64,20 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 		floor:     currentFloor,
 		direction: direction,
 		inService: false,
+	}
+}
+
+func CreateElevatorEvent(
+	orderEvent chan OrderEvent,
+	floorEvent chan int,
+	obstructionEvent chan bool,
+	stopEvent chan bool,
+) ElevatorEvent {
+	return ElevatorEvent{
+		OrderEvent:       orderEvent,
+		FloorEvent:       floorEvent,
+		ObstructionEvent: obstructionEvent,
+		StopEvent:        stopEvent,
 	}
 }
 
@@ -171,4 +185,10 @@ func ConvertOrderType(value int) OrderType {
 		return HallUp
 	}
 	return HallDown
+}
+func CreateOrderEvent(floor int, orderType OrderType) OrderEvent {
+	return OrderEvent{
+		Floor:     floor,
+		OrderType: orderType,
+	}
 }
