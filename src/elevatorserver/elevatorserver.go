@@ -37,7 +37,7 @@ func processNetworkMessages(
 		for _, u := range newHallOrders {
 			hallUpdate <- u
 		}
-		newCabOrders := UnpackCabOrders(tempCab, senderID)
+		newCabOrders := unpackCabOrders(tempCab, senderID)
 		for _, u := range newCabOrders {
 			cabUpdate <- u
 		}
@@ -51,14 +51,14 @@ func processNetworkMessages(
 }
 
 func copyAllElevatorState(m map[string]*elevator.Elevator) map[string]*elevator.Elevator {
-	cp := make(map[string]*elevator.Elevator, len(m))
+	copy := make(map[string]*elevator.Elevator, len(m))
 	for id, e := range m {
 		if e != nil {
 			elevCopy := e.Copy()
-			cp[id] = &elevCopy
+			copy[id] = &elevCopy
 		}
 	}
-	return cp
+	return copy
 }
 
 // publishToConsumers builds messages from the latest snapshots and publishes
@@ -192,7 +192,6 @@ func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders) {
 	}
 }
 
-
 // Runs the elevator server.
 // It listens for local updates to hall orders, cab orders, and elevator state,
 // as well as peer updates and incoming messages from the network.
@@ -292,4 +291,3 @@ func Run(
 		}
 	}
 }
-

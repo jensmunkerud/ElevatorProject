@@ -101,6 +101,10 @@ func (e *Elevator) Behaviour() Behaviour {
 	return e.behaviour
 }
 
+func (e *Elevator) UpdateBehaviour(behaviour Behaviour) {
+	e.behaviour = behaviour
+}
+
 func (e *Elevator) BehaviourToString() string {
 	switch e.behaviour {
 	case Idle:
@@ -114,8 +118,17 @@ func (e *Elevator) BehaviourToString() string {
 	return fmt.Sprintf(errorMsg, e.behaviour)
 }
 
-func (e *Elevator) UpdateBehaviour(behaviour Behaviour) {
-	e.behaviour = behaviour
+func BehaviourFromString(behaviour string) (Behaviour, error) {
+	switch behaviour {
+	case "moving":
+		return Moving, nil
+	case "doorOpen":
+		return DoorOpen, nil
+	case "idle":
+		return Idle, nil
+	default:
+		return Idle, fmt.Errorf("invalid behaviour %q", behaviour)
+	}
 }
 
 func (e *Elevator) CurrentFloor() int {
@@ -144,6 +157,19 @@ func (e *Elevator) DirectionString() string {
 
 func (e *Elevator) UpdateCurrentDirection(direction Direction) {
 	e.direction = direction
+}
+
+func DirectionFromString(direction string) (Direction, error) {
+	switch direction {
+	case "up":
+		return Up, nil
+	case "down":
+		return Down, nil
+	case "stop":
+		return Stop, nil
+	default:
+		return Stop, fmt.Errorf("invalid direction %q", direction)
+	}
 }
 
 func (e *Elevator) UpdateObstruction(obstructed bool) {

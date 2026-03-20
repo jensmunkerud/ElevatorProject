@@ -63,9 +63,9 @@ func UnpackHallOrders(senderID string, hallOrders *orders.HallOrders) []HallOrde
 	return updates
 }
 
-// UnpackCabOrders unpacks a received allCabOrders map into individual
+// unpackCabOrders unpacks a received allCabOrders map into individual
 // CabOrderUpdate values, one per elevator per floor, ready to send into cabUpdates.
-func UnpackCabOrders(allCabOrders map[string]*orders.CabOrders, senderID string) []CabOrderUpdate {
+func unpackCabOrders(allCabOrders map[string]*orders.CabOrders, senderID string) []CabOrderUpdate {
 	if allCabOrders == nil {
 		return nil
 	}
@@ -99,7 +99,6 @@ type OrderDistributorMessage struct {
 	allCabOrders     map[string]orders.CabOrders
 	elevatorState    map[string]elevator.Elevator
 }
-
 
 func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
@@ -157,7 +156,6 @@ func NewNetworkingDistributorMessage(
 	}
 	return msg
 }
-
 
 func (m NetworkingDistributorMessage) UnpackForNetworking() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
