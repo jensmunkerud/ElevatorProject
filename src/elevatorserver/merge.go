@@ -27,6 +27,7 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 		fmt.Println("Returning UnknownOrderState")
 		return orders.UnknownOrderState
 	}
+	fmt.Println("All good with orders, merging")
 	return mergeState(update.State, local, onlineNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allOrders[id]
 		if !ok {
