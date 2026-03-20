@@ -255,7 +255,9 @@ func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.
 	if _, ok := allHall[u.SenderID]; !ok {
 		allHall[u.SenderID] = orders.CreateHallOrders()
 	}
-	allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
+	if u.SenderID != myID {
+		allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
+	}
 	nextState := mergeHallOrderState(u, myID, allHall, onlineNodes)
 	allHall[myID].UpdateOrderState(u.Floor, u.Direction, nextState)
 }
