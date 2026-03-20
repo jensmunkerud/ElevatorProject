@@ -37,8 +37,8 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders) orders.OrderState {
 	local := allCabOrders[update.OwnerID].GetOrderState(update.Floor)
 
-	if update.OwnerID == config.MyID() &&
-		update.SenderID != config.MyID() &&
+	if update.SenderID == config.MyID() &&
+		update.OwnerID != config.MyID() &&
 		local == orders.UnconfirmedOrderState &&
 		update.State >= orders.UnconfirmedOrderState {
 		return orders.ConfirmedOrderState
