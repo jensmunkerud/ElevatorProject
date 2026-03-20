@@ -13,17 +13,17 @@ const (
 	Down Direction = -1
 )
 
-type ButtonType int
+type OrderType int
 
 const (
-	HallUp   ButtonType = 0
-	HallDown ButtonType = 1
-	Cab      ButtonType = 2
+	HallUp   OrderType = 0
+	HallDown OrderType = 1
+	Cab      OrderType = 2
 )
 
 type ButtonEvent struct {
 	Floor  int
-	Button ButtonType
+	Button OrderType
 }
 
 type Behaviour int
