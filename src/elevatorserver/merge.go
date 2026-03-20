@@ -33,15 +33,18 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 	})
 }
 
-// Checks if any other elevator has seen our cab order before confirming and removing the order.
+// Checks if any other elevator has seen our cab order before confirming.
 func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders) orders.OrderState {
 	local := allCabOrders[update.OwnerID].GetOrderState(update.Floor)
 
-	if update.SenderID == config.MyID() &&
-		update.OwnerID != config.MyID() &&
-		local == orders.UnconfirmedOrderState &&
-		update.State >= orders.UnconfirmedOrderState {
-		return orders.ConfirmedOrderState
+	// For our own cab orders, peer worldviews are only used as dissemination
+	// ACKs for Unconfirmed -> Confirmed. They must not resurrect stale orders
+	// after restart (e.g. Unknown/Removed turning into Confirmed from old data).
+	if update.OwnerID == config.MyID() && update.SenderID != config.MyID() {
+		if local == orders.UnconfirmedOrderState && update.State >= orders.UnconfirmedOrderState {
+			return orders.ConfirmedOrderState
+		}
+		return local
 	}
 
 	cabBarrierNodes := []string{update.OwnerID}
