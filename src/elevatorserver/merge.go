@@ -1,6 +1,7 @@
 package elevatorserver
 
 import (
+	"elevatorproject/src/config"
 	"elevatorproject/src/orders"
 	"fmt"
 )
@@ -38,7 +39,7 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 // Cab orders are per-elevator, so the barrier only checks the owning
 // elevator's own state (not other elevators' unrelated cab orders).
 func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
-	local := allCabOrders[update.SenderID].GetOrderState(update.Floor)
+	local := allCabOrders[update.OwnerID].GetOrderState(update.Floor)
 
 	// Once a cab order has been cleared (Removed), don't allow stale
 	// Confirmed from peers to resurrect it. Only Unconfirmed (a new button
@@ -48,21 +49,19 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 	//if local == orders.RemovedOrderState && update.State == orders.ConfirmedOrderState {
 	//	return orders.RemovedOrderState
 	//}
+	// If this update is a peer reporting our own cab order and we already
+	// have it as Unconfirmed, treat that as dissemination and confirm
+	// immediately.
+	if update.OwnerID == config.MyID() &&
+		update.SenderID != config.MyID() &&
+		local == orders.UnconfirmedOrderState &&
+		update.State >= orders.UnconfirmedOrderState {
+		return orders.ConfirmedOrderState
+	}
 
 	// Only the owning elevator participates in the barrier for cab orders.
 	fmt.Printf("New cab order update: %v\n", update)
-	noOtherOnlineNodes := true
-	cabBarrierNodes := []string{}
-	for _, id := range onlineNodes {
-		if id != update.SenderID {
-			noOtherOnlineNodes = false
-		}
-	}
-	if noOtherOnlineNodes {
-		cabBarrierNodes = []string{update.SenderID}
-	} else {
-		cabBarrierNodes = onlineNodes
-	}
+	cabBarrierNodes := []string{update.OwnerID}
 	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allCabOrders[id]
 		if !ok {
@@ -128,7 +127,7 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 // Completed (the lifecycle is Unconfirmed→Confirmed→Completed→Removed, but Removed
 // has a lower numeric value than Completed).
 func barrierReached(onlineNodes []string, threshold orders.OrderState, getState func(string) (orders.OrderState, bool)) bool {
-	fmt.Printf("Checking barrier: onlineNodes: %v, threshold: %v\n", onlineNodes, threshold)
+
 	for _, id := range onlineNodes {
 		state, ok := getState(id)
 		if !ok {
