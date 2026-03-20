@@ -32,16 +32,17 @@ func processNetworkMessages(
 	elevatorStateUpdate chan<- elevator.Elevator,
 ) {
 	for message := range channelFromNetworking {
+		senderID := message.SenderID()
 		tempCab, tempHall, tempElevator := message.UnpackForNetworking()
-		newHallOrders := UnpackHallOrders(message.SenderID(), tempHall)
+		newHallOrders := UnpackHallOrders(senderID, tempHall)
 		for _, u := range newHallOrders {
 			hallUpdate <- u
 		}
-		newCabOrders := UnpackCabOrders(tempCab)
+		newCabOrders := UnpackCabOrders(tempCab, senderID)
 		for _, u := range newCabOrders {
 			cabUpdate <- u
 		}
-		elev, ok := tempElevator[message.SenderID()]
+		elev, ok := tempElevator[senderID]
 		if !ok || elev == nil {
 			continue
 		}
@@ -272,19 +273,16 @@ func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.
 }
 
 func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlineNodes []string) {
-	if _, ok := allCab[u.SenderID]; !ok {
-		allCab[u.SenderID] = orders.CreateCabOrders()
+	if _, ok := allCab[u.OwnerID]; !ok {
+		allCab[u.OwnerID] = orders.CreateCabOrders()
 	}
-	// For self cab orders: don't overwrite local state with the remote view
-	// before merging — the merge reads allCab[SenderID] as "local", so
-	// corrupting it first would lose our actual state. Skipping the write
-	// lets the merge recover Unknown→Confirmed on startup while preserving
-	// known states during normal operation.
-	if u.SenderID != config.MyID() {
-		allCab[u.SenderID].UpdateOrderState(u.Floor, u.State)
+	// For our own cab orders, don't overwrite local state with a remote
+	// worldview before merge. For other owners, keep latest observed state.
+	if u.OwnerID != config.MyID() {
+		allCab[u.OwnerID].UpdateOrderState(u.Floor, u.State)
 	}
 	nextState := mergeCabOrderState(u, allCab, onlineNodes)
-	allCab[u.SenderID].UpdateOrderState(u.Floor, nextState)
+	allCab[u.OwnerID].UpdateOrderState(u.Floor, nextState)
 
 	// The barrier may already be satisfied after the first merge pass
 	// (e.g. the owning elevator is the only barrier node and just wrote
@@ -293,6 +291,6 @@ func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlin
 	// merge for this floor.
 	if nextState == orders.UnconfirmedOrderState || nextState == orders.CompletedOrderState {
 		recheck := mergeCabOrderState(u, allCab, onlineNodes)
-		allCab[u.SenderID].UpdateOrderState(u.Floor, recheck)
+		allCab[u.OwnerID].UpdateOrderState(u.Floor, recheck)
 	}
 }

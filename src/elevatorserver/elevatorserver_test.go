@@ -279,6 +279,35 @@ func TestMergeHallOrderState_MergesWithBarrier(t *testing.T) {
 	}
 }
 
+func TestMergeHallOrderState_DoesNotTreatSinglePeerAsAlone(t *testing.T) {
+	allHall := map[string]*orders.HallOrders{
+		"A": orders.CreateHallOrders(),
+		"B": orders.CreateHallOrders(),
+	}
+	allHall["A"].UpdateOrderState(0, 0, orders.RemovedOrderState)
+	allHall["B"].UpdateOrderState(0, 0, orders.UnconfirmedOrderState)
+
+	update := HallOrderUpdate{SenderID: "B", Floor: 0, Direction: 0, State: orders.UnconfirmedOrderState}
+	// onlineNodes from peer-discovery may exclude self and only contain peers.
+	result := mergeHallOrderState(update, "A", allHall, []string{"B"})
+	if result == orders.UnknownOrderState {
+		t.Fatalf("expected non-Unknown when another peer is online, got %v", result)
+	}
+}
+
+func TestMergeHallOrderState_AloneAfterRemovedReturnsUnknown(t *testing.T) {
+	allHall := map[string]*orders.HallOrders{
+		"A": orders.CreateHallOrders(),
+	}
+	allHall["A"].UpdateOrderState(0, 0, orders.RemovedOrderState)
+
+	update := HallOrderUpdate{SenderID: "A", Floor: 0, Direction: 0, State: orders.UnconfirmedOrderState}
+	result := mergeHallOrderState(update, "A", allHall, []string{"A"})
+	if result != orders.UnknownOrderState {
+		t.Fatalf("expected Unknown when alone after Removed, got %v", result)
+	}
+}
+
 // --- mergeCabOrderState ---
 
 func TestMergeCabOrderState_MergesWithBarrier(t *testing.T) {

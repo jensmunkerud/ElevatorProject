@@ -19,9 +19,12 @@ type HallOrderUpdate struct {
 
 // CabOrderUpdate describes an incoming cab order event from another elevator.
 type CabOrderUpdate struct {
+	// SenderID is the node that reported this worldview.
 	SenderID string
-	Floor    int
-	State    orders.OrderState
+	// OwnerID is the elevator that owns the cab order.
+	OwnerID string
+	Floor   int
+	State   orders.OrderState
 }
 
 // NewHallOrderUpdate constructs a HallOrderUpdate value.
@@ -38,6 +41,7 @@ func NewHallOrderUpdate(senderID string, floor int, Type elevator.OrderType, sta
 func NewCabOrderUpdate(senderID string, floor int, state orders.OrderState) CabOrderUpdate {
 	return CabOrderUpdate{
 		SenderID: senderID,
+		OwnerID:  senderID,
 		Floor:    floor,
 		State:    state,
 	}
@@ -65,15 +69,16 @@ func UnpackHallOrders(senderID string, hallOrders *orders.HallOrders) []HallOrde
 
 // UnpackCabOrders unpacks a received allCabOrders map into individual
 // CabOrderUpdate values, one per elevator per floor, ready to send into cabUpdates.
-func UnpackCabOrders(allCabOrders map[string]*orders.CabOrders) []CabOrderUpdate {
+func UnpackCabOrders(allCabOrders map[string]*orders.CabOrders, senderID string) []CabOrderUpdate {
 	if allCabOrders == nil {
 		return nil
 	}
 	updates := make([]CabOrderUpdate, 0, len(allCabOrders)*config.NumFloors)
-	for elevID, cab := range allCabOrders {
+	for ownerID, cab := range allCabOrders {
 		for floor := 0; floor < config.NumFloors; floor++ {
 			updates = append(updates, CabOrderUpdate{
-				SenderID: elevID,
+				SenderID: senderID,
+				OwnerID:  ownerID,
 				Floor:    floor,
 				State:    cab.GetOrderState(floor),
 			})
