@@ -14,7 +14,7 @@ func initializeElevatorToValidFloor(e *es.Elevator) {
 		fmt.Println("Error: NumFloors must be at least 1")
 		return
 	}
-	floor := controller.GetFloor()
+	floor := controller.GetCurrentFloor()
 	if floor != -1 && floor >= 0 && floor < config.NumFloors {
 		if e.Behaviour() != es.Moving {
 			e.UpdateInService(true)
@@ -119,7 +119,7 @@ func elevatorOnNewOrders(
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
-	floor := controller.GetFloor()
+	floor := controller.GetCurrentFloor()
 	if floor < 0 || floor >= config.NumFloors {
 		return
 	}

@@ -214,10 +214,10 @@ func TestHallOrderUpdatesFromNetwork_UnpacksAllFloorsAndDirections(t *testing.T)
 		if u.SenderID != "B" {
 			t.Fatalf("expected SenderID B, got %s", u.SenderID)
 		}
-		if u.Floor == 1 && u.Direction == 0 && u.State == orders.ConfirmedOrderState {
+		if u.Floor == 1 && u.OrderType == 0 && u.State == orders.ConfirmedOrderState {
 			found10 = true
 		}
-		if u.Floor == 2 && u.Direction == 1 && u.State == orders.UnconfirmedOrderState {
+		if u.Floor == 2 && u.OrderType == 1 && u.State == orders.UnconfirmedOrderState {
 			found21 = true
 		}
 	}
@@ -272,7 +272,7 @@ func TestMergeHallOrderState_MergesWithBarrier(t *testing.T) {
 	allHall["A"].UpdateOrderState(0, 0, orders.UnconfirmedOrderState)
 	allHall["B"].UpdateOrderState(0, 0, orders.UnconfirmedOrderState)
 
-	update := HallOrderUpdate{SenderID: "B", Floor: 0, Direction: 0, State: orders.UnconfirmedOrderState}
+	update := HallOrderUpdate{SenderID: "B", Floor: 0, OrderType: 0, State: orders.UnconfirmedOrderState}
 	result := mergeHallOrderState(update, "A", allHall, []string{"A", "B"})
 	if result != orders.ConfirmedOrderState {
 		t.Fatalf("expected Confirmed, got %v", result)
@@ -368,8 +368,8 @@ func TestRunElevatorServer_ProcessesHallUpdate(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 
 	// Both A and B report Unconfirmed for floor 1 up — server should merge via barrier
-	hallUpdate <- HallOrderUpdate{SenderID: "A", Floor: 1, Direction: 0, State: orders.UnconfirmedOrderState}
-	hallUpdate <- HallOrderUpdate{SenderID: "B", Floor: 1, Direction: 0, State: orders.UnconfirmedOrderState}
+	hallUpdate <- HallOrderUpdate{SenderID: "A", Floor: 1, OrderType: 0, State: orders.UnconfirmedOrderState}
+	hallUpdate <- HallOrderUpdate{SenderID: "B", Floor: 1, OrderType: 0, State: orders.UnconfirmedOrderState}
 
 	// Verify no deadlock or panic
 	time.Sleep(50 * time.Millisecond)
@@ -651,7 +651,7 @@ func TestMergeHallOrders_ManualVerify(t *testing.T) {
 						continue
 					}
 					state := allHall[senderID].GetOrderState(floor, dir)
-					update := HallOrderUpdate{SenderID: senderID, Floor: floor, Direction: dir, State: state}
+					update := HallOrderUpdate{SenderID: senderID, Floor: floor, OrderType: dir, State: state}
 					allHall[senderID].UpdateOrderState(floor, dir, state)
 					next := mergeHallOrderState(update, receiverID, allHall, onlineNodes)
 					allHall[receiverID].UpdateOrderState(floor, dir, next)

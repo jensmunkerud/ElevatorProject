@@ -3,42 +3,32 @@ package controller
 import (
 	"driver-go/elevio"
 	"elevatorproject/src/config"
-	es "elevatorproject/src/elevator"
+	"elevatorproject/src/elevator"
 	"fmt"
 )
 
-func RunController(elevatorEvent chan es.ElevatorEvent, port int) {
-	// Initializes communication with elevatorserver to receive IO from physical elevator
+func Run(elevatorEvent chan elevator.ElevatorEvent, port int) {
+	// Initializes external library for communicating with the elevator.
 	elevio.Init(fmt.Sprintf("localhost:%d", port), config.NumFloors)
 
-	orderEventElevio := make(chan elevio.ButtonEvent)
-	orderEvent := make(chan es.ButtonEvent)
+	incomingOrderEvent := make(chan elevio.ButtonEvent)
+	outgoingOrderEvent := make(chan elevator.OrderEvent)
 	floorEvent := make(chan int)
 	obstructionEvent := make(chan bool)
 	stopEvent := make(chan bool)
 
-	elevatorEvent <- es.ElevatorEvent{
-		OrderEvent:       orderEvent,
-		FloorEvent:       floorEvent,
-		ObstructionEvent: obstructionEvent,
-		StopEvent:        stopEvent,
-	}
+	// Merge all events into a single channel to simplify the main event loop in callhandler.
+	elevatorEvent <- elevator.CreateElevatorEvent(outgoingOrderEvent, floorEvent, obstructionEvent, stopEvent)
 
-	// Continually polls hardwarechanges onto the event channels
-	go elevio.PollButtons(orderEventElevio)
+	go elevio.PollButtons(incomingOrderEvent)
 	go elevio.PollFloorSensor(floorEvent)
 	go elevio.PollObstructionSwitch(obstructionEvent)
 	go elevio.PollStopButton(stopEvent)
 
-	// Necessary to make elevio and callhandler "loosely coupled":
-	// orderEvent simply reflects orderEventElevio, but with internal ButtonEvent type
-	fmt.Println("Starting controller loop")
+	// Converts elevio.ButtonEvents to elevator.OrderEvent to decouple the controller from the elevio package.
 	go func() {
-		for order := range orderEventElevio {
-			orderEvent <- es.ButtonEvent{
-				Floor:  order.Floor,
-				Button: es.OrderType(order.Button),
-			}
+		for order := range incomingOrderEvent {
+			outgoingOrderEvent <- elevator.CreateOrderEvent(order.Floor, elevator.OrderType(order.Button))
 		}
 	}()
 }
@@ -59,7 +49,7 @@ func StopElevator() {
 	elevio.SetMotorDirection(elevio.MD_Stop)
 }
 
-func SetButtonLamp(button es.OrderType, floor int, value bool) {
+func SetButtonLamp(button elevator.OrderType, floor int, value bool) {
 	elevio.SetButtonLamp(elevio.ButtonType(button), floor, value)
 }
 
@@ -71,7 +61,7 @@ func SetStopLamp(value bool) {
 	elevio.SetStopLamp(value)
 }
 
-func GetFloor() int {
+func GetCurrentFloor() int {
 	return elevio.GetFloor()
 }
 

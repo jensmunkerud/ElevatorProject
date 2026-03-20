@@ -21,9 +21,14 @@ const (
 	Cab      OrderType = 2
 )
 
-type ButtonEvent struct {
-	Floor  int
-	Button OrderType
+var HallOrderTypes = []OrderType{
+	HallUp,
+	HallDown,
+}
+
+type OrderEvent struct {
+	Floor      int
+	OrderEvent OrderType
 }
 
 type Behaviour int
@@ -46,7 +51,7 @@ type Elevator struct {
 }
 
 type ElevatorEvent struct {
-	OrderEvent       chan ButtonEvent
+	OrderEvent       chan OrderEvent
 	FloorEvent       chan int
 	ObstructionEvent chan bool
 	StopEvent        chan bool
@@ -59,6 +64,20 @@ func CreateElevator(id string, currentFloor int, direction Direction, behaviour 
 		floor:     currentFloor,
 		direction: direction,
 		inService: false,
+	}
+}
+
+func CreateElevatorEvent(
+	orderEvent chan OrderEvent,
+	floorEvent chan int,
+	obstructionEvent chan bool,
+	stopEvent chan bool,
+) ElevatorEvent {
+	return ElevatorEvent{
+		OrderEvent:       orderEvent,
+		FloorEvent:       floorEvent,
+		ObstructionEvent: obstructionEvent,
+		StopEvent:        stopEvent,
 	}
 }
 
@@ -159,4 +178,17 @@ func (e Elevator) InService() bool {
 
 func (e *Elevator) Copy() Elevator {
 	return *e
+}
+
+func ConvertOrderType(value int) OrderType {
+	if value == 0 {
+		return HallUp
+	}
+	return HallDown
+}
+func CreateOrderEvent(floor int, orderType OrderType) OrderEvent {
+	return OrderEvent{
+		Floor:     floor,
+		OrderType: orderType,
+	}
 }

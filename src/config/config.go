@@ -25,8 +25,6 @@ const (
 	ElevatorPort  = 15657
 	PeersPort     = 52317
 	BroadcastPort = 53491
-
-	testing = true
 )
 
 var (
@@ -41,17 +39,17 @@ func MyID() string {
 	return myID
 }
 
-// SetMyID initializes config with the default port. Used by tests.
+// SetMyID initializes config with the default port. Only used for unit testing.
 func SetMyID() {
-	InitConfig(15658)
+	InitConfig(15658, true)
 }
 
 // InitConfig sets the local elevator ID and ElevatorIOPort once.
-// In testing mode: ID = port, ElevatorIOPort = localhost:port.
+// In simulator mode: ID = port, ElevatorIOPort = localhost:port.
 // In production mode: ID = MAC address, ElevatorIOPort = default.
-func InitConfig(port int) {
+func InitConfig(port int, simulatorMode bool) {
 	once.Do(func() {
-		if testing {
+		if simulatorMode {
 			myID = strconv.Itoa(port)
 			ElevatorIOPort = "localhost:" + strconv.Itoa(port)
 		} else {
