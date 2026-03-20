@@ -127,16 +127,16 @@ func requestClearAtCurrentFloor(
 
 	switch e.CurrentDirection() {
 	case es.Up:
-		RequestUpdateOrder(e.CurrentFloor(), es.HallUp, true, cabOrderUpdate, hallOrderUpdate)
-		if !requestsAbove(*e) {
+		if !requestsAbove(*e) && !e.Requests()[e.CurrentFloor()][es.HallUp]{
 			RequestUpdateOrder(e.CurrentFloor(), es.HallDown, true, cabOrderUpdate, hallOrderUpdate)
 		}
+		RequestUpdateOrder(e.CurrentFloor(), es.HallUp, true, cabOrderUpdate, hallOrderUpdate)
 
 	case es.Down:
-		RequestUpdateOrder(e.CurrentFloor(), es.HallDown, true, cabOrderUpdate, hallOrderUpdate)
-		if !requestsBelow(*e) {
+		if !requestsBelow(*e) && !e.Requests()[e.CurrentFloor()][es.HallDown]{
 			RequestUpdateOrder(e.CurrentFloor(), es.HallUp, true, cabOrderUpdate, hallOrderUpdate)
 		}
+		RequestUpdateOrder(e.CurrentFloor(), es.HallDown, true, cabOrderUpdate, hallOrderUpdate)
 
 	default:
 		RequestUpdateOrder(e.CurrentFloor(), es.HallUp, true, cabOrderUpdate, hallOrderUpdate)
