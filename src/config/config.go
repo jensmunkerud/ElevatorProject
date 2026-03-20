@@ -16,7 +16,7 @@ const (
 	TravelDuration   = 2500 * time.Millisecond
 	ServiceTimeout   = 4000 * time.Millisecond
 
-	HeartbeatInterval       = 500 * time.Millisecond
+	HeartbeatInterval       = 10 * time.Millisecond
 	ProcessPairRestartDelay = 10 * time.Second
 	// Decouple the cost-function from heartbeat to avoid spamming
 	CostFuncInterval = 200 * time.Millisecond
