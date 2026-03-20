@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-// Run is called in backup mode (-processpair flag).
+// RunAsBackup is called in backup mode (-processpair flag).
 // It polls the master PID and returns when the master dies, so the caller can promote to master.
-func Run(port int, masterPID int) {
+func RunAsBackup(port int, masterPID int) {
 	fmt.Printf("[Backup] Monitoring master (PID %d) for port %d...\n", masterPID, port)
 	for {
 		if !isProcessAlive(masterPID) {
@@ -22,9 +22,9 @@ func Run(port int, masterPID int) {
 	}
 }
 
-// SpawnAndMonitorBackup spawns a backup process in a new terminal and monitors it.
+// RunAsPrimary spawns a backup process in a new terminal and monitors it.
 // If the backup dies, a new one is spawned. Run as a goroutine from the master.
-func SpawnAndMonitorBackup(port int) {
+func RunAsPrimary(port int) {
 	executable, err := os.Executable()
 	if err != nil {
 		fmt.Printf("[Master] Could not resolve executable path: %v\n", err)
@@ -64,4 +64,3 @@ func newBackupTerminal(executable, portStr, masterPID string) *exec.Cmd {
 		return cmd
 	}
 }
-	

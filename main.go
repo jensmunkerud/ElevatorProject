@@ -13,30 +13,49 @@ import (
 	"fmt"
 )
 
+/*
+This program controls N elevators over M floors. N and M are defined in config.go. The program is
+based on a peer-to-peer network of elevators using UDP to communicate. It is split into six main components:
+1. Controller: "The physical elevator" Takes IO from the elevator-panel and transforms it into usable formats.
+2. Callhandler: "The elevator logic" Handles the logic for one ("my") elevator, and shares it's state with Elevatorserver.
+3. Elevatorserver: "The database" Merging of orders and elevator states recieved from the network and the local elevator.
+4. Networking: "The communicator" Networking between elevators.
+5. Orderdistributor: "The order manager" Assigns cab- and hallcalls to "my" elevator.
+6.Processpair: Handles the backup process that monitors and restarts the elevator if it crashes.
+
+Optional flags for the program are:
+-port <int> - The port for the elevator IO (standard is 15657)
+-processpair - Run as backup process that monitors and restarts the elevator
+-masterpid <int> - PID of the master process (used by backup to ensure consistent naming)
+-simulator - Run in simulator mode (default is production mode)
+	Simulator mode uses the process-id as the node ID and enables running multiple elevators on
+	the same machine.
+	Production mode uses the MAC address as the node ID and runs the elevator on real hardware.
+*/
+
 func main() {
 	port := flag.Int("port", config.ElevatorPort, "Port for the elevator simulator")
 	backup := flag.Bool("processpair", false, "Run as backup process that monitors and restarts the elevator")
-	masterPID := flag.Int("masterpid", 0, "PID of the master process (used by backup)")
+	primaryPID := flag.Int("masterpid", 0, "PID of the master process (used by backup)")
 	simulatorMode := flag.Bool("simulator", false, "Run in simulator mode")
 	flag.Parse()
 
+	// InitConfig must be called first due to setting global variables.
 	config.InitConfig(*port, *simulatorMode)
 
+	// If true, the program will monitor primary process and block until it dies.
 	if *backup {
-		processpair.Run(*port, *masterPID)
-		// Master died — we promote to master, fall through to run elevator
+		processpair.RunAsBackup(*port, *primaryPID)
 	}
 
-	// Spawn and monitor a backup process in the background
-	go processpair.SpawnAndMonitorBackup(*port)
+	// If this runs, the program has entered into primary mode.
+	go processpair.RunAsPrimary(*port)
 
-	// Initialize channels for communication between goroutines:
-	hallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*1000) // Buffered to avoid blocking on sends
-	cabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*1000)
+	// Buffers are needed to avoid deadlocks during initalization.
+	hallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*config.NumButtons*10)
+	cabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*config.NumButtons*10)
 	elevatorStateUpdate := make(chan elevator.Elevator, config.NumFloors*4)
-
-	peerUpdate := make(chan []string, 10) // Buffered to avoid blocking on sends
-
+	peerUpdate := make(chan []string, 10)
 	ordersOnNetwork := make(chan elevatorserver.CallHandlerMessage, config.NumFloors*10)
 	worldviewToOrderDistributor := make(chan elevatorserver.OrderDistributorMessage, 5)
 	sendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
@@ -57,6 +76,6 @@ func main() {
 	go networking.Run(sendWorldviewToNetwork, peerUpdate, receiveWorldviewFromNetwork)
 	fmt.Println("Starting orderdistributor")
 	go orderdistributor.Run(worldviewToOrderDistributor, activeLocalOrders)
-	fmt.Println("Starting select")
-	select {} // Block forever
+	// Block forever to keep the program running
+	select {}
 }
