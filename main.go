@@ -64,7 +64,7 @@ func main() {
 	hardwareEvent := make(chan elevator.HardwareEvent, 5)
 	readyCallhandler := make(chan struct{})
 
-	// Start goroutines:
+	//
 	fmt.Println("Starting controller")
 	controller.Run(hardwareEvent, *port)
 	fmt.Println("Starting callhandler")
