@@ -11,8 +11,8 @@ func requestsAbove(e elevator.Elevator) bool {
 		return false
 	}
 	for floor := e.CurrentFloor() + 1; floor < config.NumFloors; floor++ {
-		for btn := 0; btn < config.NumButtons; btn++ {
-			if e.Requests()[floor][btn] {
+		for orderType := range config.NumButtons {
+			if e.Requests()[floor][orderType] {
 				return true
 			}
 		}
@@ -24,9 +24,9 @@ func requestsBelow(e elevator.Elevator) bool {
 	if e.CurrentFloor() < 0 || e.CurrentFloor() >= config.NumFloors {
 		return false
 	}
-	for f := 0; f < e.CurrentFloor(); f++ {
-		for btn := 0; btn < config.NumButtons; btn++ {
-			if e.Requests()[f][btn] {
+	for floor := 0; floor < e.CurrentFloor(); floor++ {
+		for orderType := range config.NumButtons {
+			if e.Requests()[floor][orderType] {
 				return true
 			}
 		}
@@ -38,8 +38,8 @@ func requestsHere(e elevator.Elevator) bool {
 	if e.CurrentFloor() < 0 || e.CurrentFloor() >= config.NumFloors {
 		return false
 	}
-	for btn := 0; btn < config.NumButtons; btn++ {
-		if e.Requests()[e.CurrentFloor()][btn] {
+	for orderType := range config.NumButtons {
+		if e.Requests()[e.CurrentFloor()][orderType] {
 			return true
 		}
 	}
@@ -107,15 +107,15 @@ func shouldStop(e elevator.Elevator) bool {
 }
 
 // orderIsAtCurrentStop checks if the incoming local order can immediately be cleared.
-func orderIsAtCurrentStop(e elevator.Elevator, buttonFloor int, buttonType elevator.OrderType) bool {
-	if buttonFloor < 0 || buttonFloor >= config.NumFloors {
+func orderIsAtCurrentStop(e elevator.Elevator, floor int, orderType elevator.OrderType) bool {
+	if floor < 0 || floor >= config.NumFloors {
 		return false
 	}
-	return e.CurrentFloor() == buttonFloor &&
-		((e.CurrentDirection() == elevator.Up && buttonType == elevator.HallUp) ||
-			(e.CurrentDirection() == elevator.Down && buttonType == elevator.HallDown) ||
+	return e.CurrentFloor() == floor &&
+		((e.CurrentDirection() == elevator.Up && orderType == elevator.HallUp) ||
+			(e.CurrentDirection() == elevator.Down && orderType == elevator.HallDown) ||
 			e.CurrentDirection() == elevator.Stop ||
-			buttonType == elevator.Cab)
+			orderType == elevator.Cab)
 }
 
 func requestClearAtCurrentFloor(
