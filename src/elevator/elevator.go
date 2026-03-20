@@ -21,6 +21,11 @@ const (
 	Cab      OrderType = 2
 )
 
+var HallOrderTypes = []OrderType{
+	HallUp,
+	HallDown,
+}
+
 type ButtonEvent struct {
 	Floor  int
 	Button OrderType

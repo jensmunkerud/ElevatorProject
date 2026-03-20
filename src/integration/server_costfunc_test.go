@@ -198,7 +198,7 @@ func TestServerAndCostFuncInteraction(t *testing.T) {
 		hallUpdate <- elevatorserver.HallOrderUpdate{
 			SenderID:  myID,
 			Floor:     floor,
-			Direction: dir,
+			OrderType: dir,
 			State:     state,
 		}
 

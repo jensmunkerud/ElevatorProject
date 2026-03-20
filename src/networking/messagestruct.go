@@ -49,8 +49,8 @@ func messageFromWorldview(
 		ElevatorStates: make(map[string]ElevatorState, len(elevatorStates)),
 	}
 	for floor := 0; floor < config.NumFloors; floor++ {
-		for dir := 0; dir < 2; dir++ {
-			msg.HallOrders[floor][dir] = int(hall.GetOrderState(floor, dir))
+		for _, orderType := range elevator.HallOrderTypes {
+			msg.HallOrders[floor][int(orderType)] = int(hall.GetOrderState(floor, orderType))
 		}
 	}
 	for id, cab := range allCab {

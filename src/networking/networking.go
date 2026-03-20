@@ -67,9 +67,9 @@ func Run(
 
 func worldviewFromMessage(msg Message) es.NetworkingDistributorMessage {
 	hallOrders := orders.CreateHallOrders()
-	for floorIdx, floorOrders := range msg.HallOrders {
+	for floor, floorOrders := range msg.HallOrders {
 		for dirIdx, orderState := range floorOrders {
-			hallOrders.UpdateOrderState(floorIdx, dirIdx, orders.OrderState(orderState))
+			hallOrders.UpdateOrderState(floor, dirIdx, orders.OrderState(orderState))
 		}
 	}
 

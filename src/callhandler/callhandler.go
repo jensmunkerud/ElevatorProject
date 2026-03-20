@@ -166,7 +166,7 @@ func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerM
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
 			for button := es.HallUp; button <= es.HallDown; button++ {
-				orderState := hallOrders.GetOrderState(floorIndex, int(button))
+				orderState := hallOrders.GetOrderState(floorIndex, button)
 				controller.SetButtonLamp(button, floorIndex, orderState == orders.ConfirmedOrderState)
 			}
 

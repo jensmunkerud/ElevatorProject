@@ -1,14 +1,17 @@
 package orders
 
-import "elevatorproject/src/config"
+import (
+	"elevatorproject/src/config"
+	"elevatorproject/src/elevator"
+)
 
 type HallOrders struct {
-	Orders [][2]*Order //[floor][up/down] for each floor and direction
+	Orders [][2]*Order //[floor][up/down] for each floor and orderType
 }
 
 // A [NumFloors][2] array of pointers to OrderState,
 // where the first index represents the floor
-// and the second index represents the direction (0 for up, 1 for down).
+// and the second index represents the orderType (0 for up, 1 for down).
 func CreateHallOrders() *HallOrders {
 	orders := make([][2]*Order, config.NumFloors)
 	for i := 0; i < config.NumFloors; i++ {
@@ -20,8 +23,8 @@ func CreateHallOrders() *HallOrders {
 	return &HallOrders{Orders: orders}
 }
 
-func (o *HallOrders) HallOrderState(floor int, direction int) OrderState {
-	return o.Orders[floor][direction].GetState()
+func (o *HallOrders) HallOrderState(floor int, orderType elevator.OrderType) OrderState {
+	return o.Orders[floor][int(orderType)].GetState()
 }
 
 // Simplify converts HallOrders to a simpler [][]bool format for easier processing in cost functions.
@@ -30,19 +33,19 @@ func (h *HallOrders) Simplify() [][]bool {
 	simplified := make([][]bool, config.NumFloors)
 	for floor := 0; floor < config.NumFloors; floor++ {
 		simplified[floor] = make([]bool, 2)
-		for direction := 0; direction < 2; direction++ {
-			simplified[floor][direction] = h.HallOrderState(floor, direction) == ConfirmedOrderState 
+		for _, orderType := range elevator.HallOrderTypes {
+			simplified[floor][int(orderType)] = h.HallOrderState(floor, orderType) == ConfirmedOrderState
 		}
 	}
 	return simplified
 }
 
-func (h *HallOrders) UpdateOrderState(floor int, direction int, state OrderState) {
-	h.Orders[floor][direction].UpdateState(state)
+func (h *HallOrders) UpdateOrderState(floor int, orderType elevator.OrderType, state OrderState) {
+	h.Orders[floor][orderType].UpdateState(state)
 }
 
-func (h *HallOrders) GetOrderState(floor int, direction int) OrderState {
-	return h.Orders[floor][direction].GetState()
+func (h *HallOrders) GetOrderState(floor int, orderType elevator.OrderType) OrderState {
+	return h.Orders[floor][orderType].GetState()
 }
 
 func (h *HallOrders) Copy() *HallOrders {
