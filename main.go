@@ -50,13 +50,8 @@ func main() {
 	go controller.RunController(elevatorEvent, *port)
 	time.Sleep(1 * time.Second)
 	fmt.Println("Starting callhandler")
-	go callhandler.RunCallHandler(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, CurrentOrdersToCallhandler, ActiveLocalOrders)
-	select {
-	case <-ready:
-		fmt.Println("Callhandler ready")
-	case <-time.After(5 * time.Second):
-		fmt.Println("Callhandler did not signal ready within 5s")
-	}
+	go callhandler.Run(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, CurrentOrdersToCallhandler, ActiveLocalOrders)
+	<-ready
 	fmt.Println("Starting elevatorserver")
 	go elevatorserver.Run(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
 	fmt.Println("Starting networking")

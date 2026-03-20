@@ -4,22 +4,23 @@ import (
 	"time"
 )
 
-// Drains a given timer t, then reset (start) it with the duration d
-func restartTimer(t *time.Timer, d time.Duration) {
-	t.Stop()
+
+func restartTimer(timer *time.Timer, duration time.Duration) {
+	timer.Stop()
 	select {
-	case <-t.C:
+	case <-timer.C:
 	default:
 	}
-	t.Reset(d)
+	timer.Reset(duration)
 }
 
-// Stops and drains a given timer t
-func stopTimer(t *time.Timer) {
-	if !t.Stop() {
+
+func stopTimer(timer *time.Timer) {
+	if !timer.Stop() {
 		select {
-		case <-t.C:
+		case <-timer.C:
 		default:
 		}
 	}
 }
+

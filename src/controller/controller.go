@@ -37,7 +37,7 @@ func RunController(elevatorEvent chan es.ElevatorEvent, port int) {
 		for order := range orderEventElevio {
 			orderEvent <- es.ButtonEvent{
 				Floor:  order.Floor,
-				Button: es.ButtonType(order.Button),
+				Button: es.OrderType(order.Button),
 			}
 		}
 	}()
@@ -59,7 +59,7 @@ func StopElevator() {
 	elevio.SetMotorDirection(elevio.MD_Stop)
 }
 
-func SetButtonLamp(button es.ButtonType, floor int, value bool) {
+func SetButtonLamp(button es.OrderType, floor int, value bool) {
 	elevio.SetButtonLamp(elevio.ButtonType(button), floor, value)
 }
 

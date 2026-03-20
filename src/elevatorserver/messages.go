@@ -24,6 +24,25 @@ type CabOrderUpdate struct {
 	State    orders.OrderState
 }
 
+// NewHallOrderUpdate constructs a HallOrderUpdate value.
+func NewHallOrderUpdate(senderID string, floor int, direction int, state orders.OrderState) HallOrderUpdate {
+	return HallOrderUpdate{
+		SenderID:  senderID,
+		Floor:     floor,
+		Direction: direction,
+		State:     state,
+	}
+}
+
+// NewCabOrderUpdate constructs a CabOrderUpdate value.
+func NewCabOrderUpdate(senderID string, floor int, state orders.OrderState) CabOrderUpdate {
+	return CabOrderUpdate{
+		SenderID: senderID,
+		Floor:    floor,
+		State:    state,
+	}
+}
+
 // UnpackHallOrders unpacks a received HallOrders snapshot into individual
 // HallOrderUpdate values, one per floor per direction, ready to send into hallUpdates.
 func UnpackHallOrders(senderID string, hallOrders *orders.HallOrders) []HallOrderUpdate {
