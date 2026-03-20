@@ -165,7 +165,6 @@ func (e Elevator) StopPressed() bool {
 func (e *Elevator) UpdateInService(inService bool) {
 	e.inService = inService
 	if inService {
-		fmt.Printf("Elevator is IN SERVICE!!\n")
 	} else {
 		fmt.Printf("Elevator is OUT OF SERVICE\n")
 	}

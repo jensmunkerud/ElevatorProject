@@ -57,7 +57,6 @@ func copyAllElevatorState(m map[string]*elevator.Elevator) map[string]*elevator.
 		if e != nil {
 			elevCopy := e.Copy()
 			cp[id] = &elevCopy
-			fmt.Printf("Current elevator state %v, ID %v\n", cp[id].InService(), id)
 		}
 	}
 	return cp
