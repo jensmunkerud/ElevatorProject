@@ -31,7 +31,6 @@ var (
 	// ElevatorIOPort is the address for elevator I/O. In testing mode it is set from user input in SetMyID.
 	ElevatorIOPort = "localhost:15658"
 	myID           = "placeholder"
-	localTesting   = false
 	once           sync.Once
 )
 
@@ -51,7 +50,6 @@ func SetMyID() {
 func InitConfig(port int, simulatorMode bool) {
 	once.Do(func() {
 		if simulatorMode {
-			localTesting = true
 			myID = strconv.Itoa(port)
 			ElevatorIOPort = "localhost:" + strconv.Itoa(port)
 		} else {

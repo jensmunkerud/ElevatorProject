@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	// Decides whether to run in simulator mode or on real hardware.
-	simulatorMode := false
+	simulatorMode := true
 
 	config.InitConfig(*port, simulatorMode)
 
