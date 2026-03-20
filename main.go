@@ -11,7 +11,6 @@ import (
 	"elevatorproject/src/processpair"
 	"flag"
 	"fmt"
-	"time"
 )
 
 func main() {
@@ -46,15 +45,14 @@ func main() {
 	receiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	activeLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
 	elevatorEvent := make(chan elevator.ElevatorEvent, 5)
-	ready := make(chan struct{})
+	readyCallhandler := make(chan struct{})
 
 	// Start goroutines:
 	fmt.Println("Starting controller")
-	go controller.Run(elevatorEvent, *port)
-	time.Sleep(1 * time.Second)
+	controller.Run(elevatorEvent, *port)
 	fmt.Println("Starting callhandler")
-	go callhandler.Run(ready, elevatorEvent, hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, ordersOnNetwork, activeLocalOrders)
-	<-ready
+	go callhandler.Run(readyCallhandler, elevatorEvent, hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, ordersOnNetwork, activeLocalOrders)
+	<-readyCallhandler
 	fmt.Println("Starting elevatorserver")
 	go elevatorserver.Run(hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, peerUpdate, ordersOnNetwork, worldviewToOrderDistributor, sendWorldviewToNetwork, receiveWorldviewFromNetwork)
 	fmt.Println("Starting networking")
