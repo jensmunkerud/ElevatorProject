@@ -2,7 +2,6 @@ package elevatorserver
 
 import (
 	"elevatorproject/src/orders"
-	"fmt"
 )
 
 //This file contains the logic for merging incoming order updates from the network with the local
@@ -45,9 +44,9 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 	// press) restarts the cycle. Without this, a peer's stale heartbeat
 	// containing Confirmed overwrites Removed via "highest state wins"
 	// because Confirmed(3) > Removed(1).
-	if local == orders.RemovedOrderState && update.State == orders.ConfirmedOrderState {
-		return orders.RemovedOrderState
-	}
+	//if local == orders.RemovedOrderState && update.State == orders.ConfirmedOrderState {
+	//	return orders.RemovedOrderState
+	//}
 
 	// Only the owning elevator participates in the barrier for cab orders.
 	noOtherOnlineNodes := true
@@ -59,10 +58,8 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 	}
 	if noOtherOnlineNodes {
 		cabBarrierNodes = []string{update.SenderID}
-		fmt.Printf("No other online nodes, using only %v\n", cabBarrierNodes)
 	} else {
 		cabBarrierNodes = onlineNodes
-		fmt.Printf("Other online nodes, using %v\n", cabBarrierNodes)
 	}
 	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allCabOrders[id]
