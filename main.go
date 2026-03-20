@@ -20,7 +20,10 @@ func main() {
 	masterPID := flag.Int("masterpid", 0, "PID of the master process (used by backup)")
 	flag.Parse()
 
-	config.InitConfig(*port)
+	// Decides whether to run in simulator mode or on real hardware.
+	simulatorMode := false
+
+	config.InitConfig(*port, simulatorMode)
 
 	if *backup {
 		processpair.Run(*port, *masterPID)
@@ -47,7 +50,7 @@ func main() {
 
 	// Start goroutines:
 	fmt.Println("Starting controller")
-	go controller.RunController(elevatorEvent, *port)
+	go controller.Run(elevatorEvent, *port)
 	time.Sleep(1 * time.Second)
 	fmt.Println("Starting callhandler")
 	go callhandler.Run(ready, elevatorEvent, hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, ordersOnNetwork, activeLocalOrders)
