@@ -16,46 +16,45 @@ import (
 	"time"
 )
 
-// Adds a new cab order update locally. orderCompleted is true for removing orders, false for adding new orders.
-func RequestUpdateCabOrder(floor int, orderType es.OrderType, orderCompleted bool, cabOrderUpdate chan<- elevatorserver.CabOrderUpdate) {
-	myID := config.MyID()
+// RequestUpdateOrder sends order updates to the appropriate channel based on order type.
+// orderCompleted is true for removing orders, false for adding new orders.
+func RequestUpdateOrder(
+	floor int,
+	orderType es.OrderType,
+	orderCompleted bool,
+	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
+	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate) {
 
-	if cabOrderUpdate == nil || orderType != es.Cab {
+	if floor < 0 || floor >= config.NumFloors {
 		return
 	}
 
+	myID := config.MyID()
 	state := orders.UnconfirmedOrderState
 	if orderCompleted {
 		state = orders.CompletedOrderState
 	}
 
-	cabOrderUpdate <- elevatorserver.CabOrderUpdate{
-		SenderID: myID,
-		Floor:    floor,
-		State:    state,
+	switch orderType {
+	case es.Cab:
+		if cabOrderUpdate != nil {
+			cabOrderUpdate <- elevatorserver.CabOrderUpdate{
+				SenderID: myID,
+				Floor:    floor,
+				State:    state,
+			}
+		}
+	default: 
+		if hallOrderUpdate != nil {
+			hallOrderUpdate <- elevatorserver.HallOrderUpdate{
+				SenderID:  myID,
+				Floor:     floor,
+				Direction: int(orderType),
+				State:     state,
+			}
+		}
 	}
 }
-
-// Adds a new hall order update locally. orderCompleted is true for removing orders, false for adding new orders.
-func RequestUpdateHallOrder(floor int, orderType es.OrderType, orderCompleted bool, hallOrderUpdate chan<- elevatorserver.HallOrderUpdate) {
-	if hallOrderUpdate == nil || orderType == es.Cab {
-		return
-	}
-	myID := config.MyID()
-
-	state := orders.UnconfirmedOrderState
-	if orderCompleted {
-		state = orders.CompletedOrderState
-	}
-
-	hallOrderUpdate <- elevatorserver.HallOrderUpdate{
-		SenderID:  myID,
-		Floor:     floor,
-		Direction: int(orderType),
-		State:     state,
-	}
-}
-
 // This launches the callhandler, which listens for events from the elevator
 // and sends order updates to the elevatorserver.
 // It also listens for new orders from order distributor and overwrites the old ones.
@@ -88,11 +87,7 @@ func Run(
 		select {
 		case order := <-event.OrderEvent:
 			fmt.Printf("%+v\n", order)
-			if order.Button == es.Cab {
-				RequestUpdateCabOrder(order.Floor, order.Button, false, cabOrderUpdate)
-			} else {
-				RequestUpdateHallOrder(order.Floor, order.Button, false, hallOrderUpdate)
-			}
+			RequestUpdateOrder(order.Floor, order.Button, false, cabOrderUpdate, hallOrderUpdate)
 
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
@@ -149,6 +144,9 @@ func Run(
 
 // callHandlerMessageChanged returns true if previous and current differ in any hall or cab order state.
 func callHandlerMessageChanged(previous, current elevatorserver.CallHandlerMessage) bool {
+	if config.NumFloors < 1 || config.NumButtons < 1 {
+		return false
+	}
 	hallPrevious, cabPrevious := previous.UnpackForCallHandler()
 	hallCurrent, cabCurrent := current.UnpackForCallHandler()
 	for atFloor := 0; atFloor < config.NumFloors; atFloor++ {

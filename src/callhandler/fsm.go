@@ -10,7 +10,12 @@ import (
 )
 
 func initializeElevatorToValidFloor(e *es.Elevator) {
-	if controller.GetFloor() != -1 {
+	if config.NumFloors < 1 {
+		fmt.Println("Error: NumFloors must be at least 1")
+		return
+	}
+	floor := controller.GetFloor()
+	if floor != -1 && floor >= 0 && floor < config.NumFloors {
 		if e.Behaviour() != es.Moving {
 			e.UpdateInService(true)
 			return
@@ -36,6 +41,10 @@ func elevatorArrivedAtFloor(
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
+	if newFloor < 0 || newFloor >= config.NumFloors {
+		fmt.Printf("Error: Invalid floor %d\n", newFloor)
+		return
+	}
 	fmt.Printf("\n\nfsmOnFloorArrival(%d)\n", newFloor)
 
 	e.UpdateCurrentFloor(newFloor)
@@ -110,8 +119,11 @@ func elevatorOnNewOrders(
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
 ) {
-	if e.Behaviour() != es.Idle ||
-		e.CurrentFloor() != controller.GetFloor() {
+	floor := controller.GetFloor()
+	if floor < 0 || floor >= config.NumFloors {
+		return
+	}
+	if e.Behaviour() != es.Idle || e.CurrentFloor() != floor {
 		return
 	}
 	newDirection, newBehaviour := requestsChooseDirection(*e)
