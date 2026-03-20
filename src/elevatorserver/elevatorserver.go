@@ -13,7 +13,6 @@ import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
-	"fmt"
 	"time"
 )
 
