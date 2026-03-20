@@ -173,17 +173,11 @@ func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlin
 	if _, ok := allCab[u.OwnerID]; !ok {
 		allCab[u.OwnerID] = orders.CreateCabOrders()
 	}
-	// Do not pre-overwrite the stored state before merging. The merge logic
-	// must see the current local state unmodified so it can protect confirmed
-	// orders from being wiped by a restarted elevator broadcasting Unknown.
+
 	nextState := mergeCabOrderState(u, allCab, onlineNodes)
 	allCab[u.OwnerID].UpdateOrderState(u.Floor, nextState)
 
-	// The barrier may already be satisfied after the first merge pass
-	// (e.g. the owning elevator is the only barrier node and just wrote
-	// the state above). Re-evaluate immediately so the order doesn't
-	// stay stuck until an unrelated update happens to trigger another
-	// merge for this floor.
+	// Recheck the barrier to prevent getting stuck in barrier state.
 	if nextState == orders.UnconfirmedOrderState || nextState == orders.CompletedOrderState {
 		recheck := mergeCabOrderState(u, allCab, onlineNodes)
 		allCab[u.OwnerID].UpdateOrderState(u.Floor, recheck)

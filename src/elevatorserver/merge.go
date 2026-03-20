@@ -45,8 +45,7 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 		}
 	}
 
-	// For local cab orders, only transition Unconfirmed->Confirmed after a peer has
-	// echoed the order back. This guarantees a lit cab lamp implies distribution.
+	// Only transition if a peer has confirmed receival of the order.
 	if update.OwnerID == myID && local == orders.UnconfirmedOrderState {
 		if !hasOtherOnlineNodes {
 			return orders.ConfirmedOrderState
