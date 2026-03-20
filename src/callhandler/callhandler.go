@@ -62,6 +62,7 @@ func Run(
 	ordersOnNetwork <-chan elevatorserver.CallHandlerMessage,
 	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool) {
 
+	defer close(ready)
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
 	stopTimer(doorTimer)
 	serviceTimer := time.NewTimer(config.ServiceTimeout)
@@ -72,7 +73,6 @@ func Run(
 	elevators[localElevator.Id()] = localElevator
 	initializeElevatorToValidFloor(localElevator)
 	sendLocalState(localElevator, elevatorStateUpdate)
-	close(ready)
 
 	event := <-elevatorEvent
 	go refreshElevatorLights(ordersOnNetwork)
