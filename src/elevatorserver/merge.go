@@ -2,6 +2,7 @@ package elevatorserver
 
 import (
 	"elevatorproject/src/orders"
+	"fmt"
 )
 
 //This file contains the logic for merging incoming order updates from the network with the local
@@ -15,6 +16,7 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 	local := allOrders[receiverID].GetOrderState(update.Floor, update.Direction)
 	// onlineNodes may or may not include receiverID depending on peer source.
 	// Treat "alone" as: no online node exists other than receiverID.
+	fmt.Printf("onlineNodes: %v\n", onlineNodes)
 	noOtherOnlineNodes := true
 	for _, id := range onlineNodes {
 		if id != receiverID {
