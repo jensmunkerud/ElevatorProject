@@ -58,11 +58,11 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 		}
 	}
 	if noOtherOnlineNodes {
-		fmt.Printf("No other online nodes, using only %v\n", update.SenderID)
 		cabBarrierNodes = []string{update.SenderID}
+		fmt.Printf("No other online nodes, using only %v\n", cabBarrierNodes)
 	} else {
-		fmt.Printf("Other online nodes, using %v\n", onlineNodes)
 		cabBarrierNodes = onlineNodes
+		fmt.Printf("Other online nodes, using %v\n", cabBarrierNodes)
 	}
 	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
 		elev, ok := allCabOrders[id]
