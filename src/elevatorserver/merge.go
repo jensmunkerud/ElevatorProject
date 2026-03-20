@@ -137,12 +137,11 @@ func barrierReached(onlineNodes []string, threshold orders.OrderState, getState 
 		}
 		if threshold == orders.CompletedOrderState {
 			if state != orders.CompletedOrderState && state != orders.RemovedOrderState {
-				fmt.Printf("Node %v not at completed or removed\n", id)
-				fmt.Printf("Node %v state: %v\n", id, state)
 				return false
 			}
 		} else if state < threshold {
 			fmt.Printf("Node %v not at or above threshold\n", id)
+			fmt.Printf("Node %v state: %v\n", id, state)
 			return false
 		}
 	}
