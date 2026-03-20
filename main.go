@@ -31,17 +31,17 @@ func main() {
 	go processpair.SpawnAndMonitorBackup(*port)
 
 	// Initialize channels for communication between goroutines:
-	HallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*1000) // Buffered to avoid blocking on sends
-	CabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*1000)
-	ElevatorStateUpdate := make(chan elevator.Elevator, config.NumFloors*4)
+	hallOrderUpdate := make(chan elevatorserver.HallOrderUpdate, config.NumFloors*1000) // Buffered to avoid blocking on sends
+	cabOrderUpdate := make(chan elevatorserver.CabOrderUpdate, config.NumFloors*1000)
+	elevatorStateUpdate := make(chan elevator.Elevator, config.NumFloors*4)
 
-	PeerUpdate := make(chan []string, 10) // Buffered to avoid blocking on sends
+	peerUpdate := make(chan []string, 10) // Buffered to avoid blocking on sends
 
-	CurrentOrdersToCallhandler := make(chan elevatorserver.CallHandlerMessage, config.NumFloors*10)
-	WorldviewToOrderDistributor := make(chan elevatorserver.OrderDistributorMessage, 5)
-	SendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
-	ReceiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
-	ActiveLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
+	ordersOnNetwork := make(chan elevatorserver.CallHandlerMessage, config.NumFloors*10)
+	worldviewToOrderDistributor := make(chan elevatorserver.OrderDistributorMessage, 5)
+	sendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
+	receiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
+	activeLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
 	elevatorEvent := make(chan elevator.ElevatorEvent, 5)
 	ready := make(chan struct{})
 
@@ -50,14 +50,14 @@ func main() {
 	go controller.RunController(elevatorEvent, *port)
 	time.Sleep(1 * time.Second)
 	fmt.Println("Starting callhandler")
-	go callhandler.Run(ready, elevatorEvent, HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, CurrentOrdersToCallhandler, ActiveLocalOrders)
+	go callhandler.Run(ready, elevatorEvent, hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, ordersOnNetwork, activeLocalOrders)
 	<-ready
 	fmt.Println("Starting elevatorserver")
-	go elevatorserver.Run(HallOrderUpdate, CabOrderUpdate, ElevatorStateUpdate, PeerUpdate, CurrentOrdersToCallhandler, WorldviewToOrderDistributor, SendWorldviewToNetwork, ReceiveWorldviewFromNetwork)
+	go elevatorserver.Run(hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, peerUpdate, ordersOnNetwork, worldviewToOrderDistributor, sendWorldviewToNetwork, receiveWorldviewFromNetwork)
 	fmt.Println("Starting networking")
-	go networking.Run(SendWorldviewToNetwork, PeerUpdate, ReceiveWorldviewFromNetwork)
+	go networking.Run(sendWorldviewToNetwork, peerUpdate, receiveWorldviewFromNetwork)
 	fmt.Println("Starting orderdistributor")
-	go orderdistributor.Run(WorldviewToOrderDistributor, ActiveLocalOrders)
+	go orderdistributor.Run(worldviewToOrderDistributor, activeLocalOrders)
 	fmt.Println("Starting select")
 	select {} // Block forever
 }

@@ -56,8 +56,8 @@ func Run(
 	elevatorEvent <-chan es.ElevatorEvent,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
-	elevatorStateLocal chan<- es.Elevator,
-	callHandlerMessage <-chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
+	elevatorStateUpdate chan<- es.Elevator,
+	ordersOnNetwork <-chan elevatorserver.CallHandlerMessage,
 	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool) {
 
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
@@ -73,7 +73,7 @@ func Run(
 	close(ready)
 
 	event := <-elevatorEvent
-	go refreshElevatorLights(callHandlerMessage)
+	go refreshElevatorLights(ordersOnNetwork)
 
 	fmt.Println("Starting callhandler loop")
 	for {

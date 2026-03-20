@@ -1,5 +1,14 @@
 package elevatorserver
 
+// In:	HallOrderUpdate		[CallHandler]
+// In:	CabOrderUpdate		[CallHandler]
+// In:	LocalElevatorState	[CallHandler]
+// In:	ReceiveWorldView	[Networking]
+// =====================================
+// Out:	SendWorldView		[Networking]
+// Out:	AllCabOrders		[OrderDistributor]
+// Out:	MergedHallOrders	[OrderDistributor]
+
 import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
@@ -161,7 +170,7 @@ func Run(
 	cabUpdate chan CabOrderUpdate,
 	elevatorStateUpdate chan elevator.Elevator,
 	peersOnlineUpdate <-chan []string,
-	channelToCallHandler chan CallHandlerMessage,
+	ordersOnNetwork chan CallHandlerMessage,
 	channelToOrderDistributor chan OrderDistributorMessage,
 	channelToNetworking chan NetworkingDistributorMessage,
 	channelFromNetworking <-chan NetworkingDistributorMessage,
@@ -204,7 +213,7 @@ func Run(
 				latestNodes = n
 			case <-ticker.C:
 				publishToConsumers(latestHall, latestCab, latestElevState,
-					channelToCallHandler, channelToOrderDistributor, channelToNetworking, latestNodes)
+					ordersOnNetwork, channelToOrderDistributor, channelToNetworking, latestNodes)
 			}
 		}
 	}()
