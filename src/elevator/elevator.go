@@ -21,9 +21,14 @@ const (
 	Cab      OrderType = 2
 )
 
+var HallOrderTypes = []OrderType{
+	HallUp,
+	HallDown,
+}
+
 type OrderEvent struct {
-	Floor     int
-	OrderType OrderType
+	Floor      int
+	OrderEvent OrderType
 }
 
 type Behaviour int
@@ -175,6 +180,12 @@ func (e *Elevator) Copy() Elevator {
 	return *e
 }
 
+func ConvertOrderType(value int) OrderType {
+	if value == 0 {
+		return HallUp
+	}
+	return HallDown
+}
 func CreateOrderEvent(floor int, orderType OrderType) OrderEvent {
 	return OrderEvent{
 		Floor:     floor,

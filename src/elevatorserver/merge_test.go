@@ -411,7 +411,7 @@ func TestMergeState_ThreeElevators_TenScenarios_PrintInputAndOutput(t *testing.T
 						update := HallOrderUpdate{
 							SenderID:  senderID,
 							Floor:     floor,
-							Direction: dir,
+							OrderType: dir,
 							State:     allHall[senderID].GetOrderState(floor, dir),
 						}
 						next := mergeHallOrderState(update, "Elev1", allHall, onlineNodes)
@@ -481,18 +481,18 @@ func TestMergeState_DiagramVerification(t *testing.T) {
 
 	tests := []tc{
 		// ── Unknown: always takes newOrder ──────────────────────────────────
-		{"Unknown/newOrder=Unknown    → Unknown",     U,  U,  nil, nil, U},
-		{"Unknown/newOrder=Removed   → Removed",     U,  R,  nil, nil, R},
-		{"Unknown/newOrder=Unconfirmed→Unconfirmed",  U,  UN, nil, nil, UN},
-		{"Unknown/newOrder=Confirmed → Confirmed",    U,  C,  nil, nil, C},
-		{"Unknown/newOrder=Completed → Completed",    U,  CP, nil, nil, CP},
+		{"Unknown/newOrder=Unknown    → Unknown", U, U, nil, nil, U},
+		{"Unknown/newOrder=Removed   → Removed", U, R, nil, nil, R},
+		{"Unknown/newOrder=Unconfirmed→Unconfirmed", U, UN, nil, nil, UN},
+		{"Unknown/newOrder=Confirmed → Confirmed", U, C, nil, nil, C},
+		{"Unknown/newOrder=Completed → Completed", U, CP, nil, nil, CP},
 
 		// ── Removed: only Unconfirmed restarts the cycle ─────────────────
-		{"Removed/newOrder=Unconfirmed→Unconfirmed",  R,  UN, nil, noBarrier, UN},
-		{"Removed/newOrder=Unknown   → Removed",      R,  U,  nil, noBarrier, R},
-		{"Removed/newOrder=Removed   → Removed",      R,  R,  nil, noBarrier, R},
-		{"Removed/newOrder=Confirmed → Removed",      R,  C,  nil, noBarrier, R},
-		{"Removed/newOrder=Completed → Removed",      R,  CP, nil, noBarrier, R},
+		{"Removed/newOrder=Unconfirmed→Unconfirmed", R, UN, nil, noBarrier, UN},
+		{"Removed/newOrder=Unknown   → Removed", R, U, nil, noBarrier, R},
+		{"Removed/newOrder=Removed   → Removed", R, R, nil, noBarrier, R},
+		{"Removed/newOrder=Confirmed → Removed", R, C, nil, noBarrier, R},
+		{"Removed/newOrder=Completed → Removed", R, CP, nil, noBarrier, R},
 
 		// ── Unconfirmed: barrier → Confirmed; no barrier → stay ──────────
 		// barrier reached: all nodes at Unconfirmed
@@ -552,11 +552,11 @@ func TestMergeState_DiagramVerification(t *testing.T) {
 		},
 
 		// ── Confirmed: only Completed advances the state ──────────────────
-		{"Confirmed/newOrder=Completed → Completed",  C,  CP, nil, noBarrier, CP},
-		{"Confirmed/newOrder=Unknown   → Confirmed",  C,  U,  nil, noBarrier, C},
-		{"Confirmed/newOrder=Removed   → Confirmed",  C,  R,  nil, noBarrier, C},
-		{"Confirmed/newOrder=Unconfirmed→ Confirmed", C,  UN, nil, noBarrier, C},
-		{"Confirmed/newOrder=Confirmed  → Confirmed", C,  C,  nil, noBarrier, C},
+		{"Confirmed/newOrder=Completed → Completed", C, CP, nil, noBarrier, CP},
+		{"Confirmed/newOrder=Unknown   → Confirmed", C, U, nil, noBarrier, C},
+		{"Confirmed/newOrder=Removed   → Confirmed", C, R, nil, noBarrier, C},
+		{"Confirmed/newOrder=Unconfirmed→ Confirmed", C, UN, nil, noBarrier, C},
+		{"Confirmed/newOrder=Confirmed  → Confirmed", C, C, nil, noBarrier, C},
 
 		// ── Completed: barrier → Removed; no barrier → stay ─────────────
 		// barrier reached: all at Completed

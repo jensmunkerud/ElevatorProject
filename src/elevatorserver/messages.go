@@ -13,7 +13,7 @@ import (
 type HallOrderUpdate struct {
 	SenderID  string
 	Floor     int
-	Direction int
+	OrderType elevator.OrderType
 	State     orders.OrderState
 }
 
@@ -25,11 +25,11 @@ type CabOrderUpdate struct {
 }
 
 // NewHallOrderUpdate constructs a HallOrderUpdate value.
-func NewHallOrderUpdate(senderID string, floor int, direction int, state orders.OrderState) HallOrderUpdate {
+func NewHallOrderUpdate(senderID string, floor int, Type elevator.OrderType, state orders.OrderState) HallOrderUpdate {
 	return HallOrderUpdate{
 		SenderID:  senderID,
 		Floor:     floor,
-		Direction: direction,
+		OrderType: Type,
 		State:     state,
 	}
 }
@@ -51,12 +51,12 @@ func UnpackHallOrders(senderID string, hallOrders *orders.HallOrders) []HallOrde
 	}
 	updates := make([]HallOrderUpdate, 0, config.NumFloors*2)
 	for floor := 0; floor < config.NumFloors; floor++ {
-		for dir := 0; dir < 2; dir++ {
+		for _, orderType := range elevator.HallOrderTypes {
 			updates = append(updates, HallOrderUpdate{
 				SenderID:  senderID,
 				Floor:     floor,
-				Direction: dir,
-				State:     hallOrders.GetOrderState(floor, dir),
+				OrderType: orderType,
+				State:     hallOrders.GetOrderState(floor, orderType),
 			})
 		}
 	}

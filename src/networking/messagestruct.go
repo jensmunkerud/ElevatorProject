@@ -27,8 +27,8 @@ type ElevatorStateUpdate struct {
 // ElevatorStates carries the physical state of every known elevator, keyed by ID.
 type Message struct {
 	SenderID       string
-	HallOrders     [config.NumFloors][2]int
-	AllCabOrders   map[string][config.NumFloors]int
+	HallOrders     [config.NumFloors][2]orders.OrderState
+	AllCabOrders   map[string][config.NumFloors]orders.OrderState
 	ElevatorStates map[string]ElevatorState
 }
 
@@ -45,18 +45,18 @@ func messageFromWorldview(
 ) Message {
 	msg := Message{
 		SenderID:       senderID,
-		AllCabOrders:   make(map[string][config.NumFloors]int, len(allCab)),
+		AllCabOrders:   make(map[string][config.NumFloors]orders.OrderState, len(allCab)),
 		ElevatorStates: make(map[string]ElevatorState, len(elevatorStates)),
 	}
 	for floor := 0; floor < config.NumFloors; floor++ {
-		for dir := 0; dir < 2; dir++ {
-			msg.HallOrders[floor][dir] = int(hall.GetOrderState(floor, dir))
+		for _, orderType := range elevator.HallOrderTypes {
+			msg.HallOrders[floor][int(orderType)] = hall.GetOrderState(floor, orderType)
 		}
 	}
 	for id, cab := range allCab {
-		var arr [config.NumFloors]int
+		var arr [config.NumFloors]orders.OrderState
 		for floor := 0; floor < config.NumFloors; floor++ {
-			arr[floor] = int(cab.GetOrderState(floor))
+			arr[floor] = cab.GetOrderState(floor)
 		}
 		msg.AllCabOrders[id] = arr
 	}

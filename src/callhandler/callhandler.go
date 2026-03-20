@@ -9,6 +9,7 @@ package callhandler
 import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/controller"
+	"elevatorproject/src/elevator"
 	es "elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
@@ -42,7 +43,7 @@ func RequestUpdateOrder(
 		}
 	case es.HallUp, es.HallDown:
 		if hallOrderUpdate != nil {
-			hallOrderUpdate <- elevatorserver.NewHallOrderUpdate(myID, floor, int(orderType), state)
+			hallOrderUpdate <- elevatorserver.NewHallOrderUpdate(myID, floor, orderType, state)
 		}
 	default:
 		return
@@ -141,8 +142,8 @@ func callHandlerMessageChanged(previous, current elevatorserver.CallHandlerMessa
 	hallPrevious, cabPrevious := previous.UnpackForCallHandler()
 	hallCurrent, cabCurrent := current.UnpackForCallHandler()
 	for atFloor := 0; atFloor < config.NumFloors; atFloor++ {
-		for direction := 0; direction < 2; direction++ {
-			if hallPrevious.GetOrderState(atFloor, direction) != hallCurrent.GetOrderState(atFloor, direction) {
+		for _, orderType := range elevator.HallOrderTypes {
+			if hallPrevious.GetOrderState(atFloor, orderType) != hallCurrent.GetOrderState(atFloor, orderType) {
 				return true
 			}
 		}
@@ -166,7 +167,7 @@ func refreshElevatorLights(callHandlerMessage <-chan elevatorserver.CallHandlerM
 		hallOrders, cabOrders := msg.UnpackForCallHandler()
 		for floorIndex := range hallOrders.Orders {
 			for button := es.HallUp; button <= es.HallDown; button++ {
-				orderState := hallOrders.GetOrderState(floorIndex, int(button))
+				orderState := hallOrders.GetOrderState(floorIndex, button)
 				controller.SetButtonLamp(button, floorIndex, orderState == orders.ConfirmedOrderState)
 			}
 

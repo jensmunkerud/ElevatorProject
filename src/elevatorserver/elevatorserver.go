@@ -265,10 +265,10 @@ func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.
 		allHall[u.SenderID] = orders.CreateHallOrders()
 	}
 	if u.SenderID != myID {
-		allHall[u.SenderID].UpdateOrderState(u.Floor, u.Direction, u.State)
+		allHall[u.SenderID].UpdateOrderState(u.Floor, u.OrderType, u.State)
 	}
 	nextState := mergeHallOrderState(u, myID, allHall, onlineNodes)
-	allHall[myID].UpdateOrderState(u.Floor, u.Direction, nextState)
+	allHall[myID].UpdateOrderState(u.Floor, u.OrderType, nextState)
 }
 
 func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlineNodes []string) {
