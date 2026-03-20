@@ -38,21 +38,14 @@ func RequestUpdateOrder(
 	switch orderType {
 	case es.Cab:
 		if cabOrderUpdate != nil {
-			cabOrderUpdate <- elevatorserver.CabOrderUpdate{
-				SenderID: myID,
-				Floor:    floor,
-				State:    state,
-			}
+			cabOrderUpdate <- elevatorserver.NewCabOrderUpdate(myID, floor, state)
 		}
-	default: 
+	case es.HallUp, es.HallDown:
 		if hallOrderUpdate != nil {
-			hallOrderUpdate <- elevatorserver.HallOrderUpdate{
-				SenderID:  myID,
-				Floor:     floor,
-				Direction: int(orderType),
-				State:     state,
-			}
+			hallOrderUpdate <- elevatorserver.NewHallOrderUpdate(myID, floor, int(orderType), state)
 		}
+	default:
+		return
 	}
 }
 // This launches the callhandler, which listens for events from the elevator
@@ -144,9 +137,6 @@ func Run(
 
 // callHandlerMessageChanged returns true if previous and current differ in any hall or cab order state.
 func callHandlerMessageChanged(previous, current elevatorserver.CallHandlerMessage) bool {
-	if config.NumFloors < 1 || config.NumButtons < 1 {
-		return false
-	}
 	hallPrevious, cabPrevious := previous.UnpackForCallHandler()
 	hallCurrent, cabCurrent := current.UnpackForCallHandler()
 	for atFloor := 0; atFloor < config.NumFloors; atFloor++ {
