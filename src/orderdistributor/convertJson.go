@@ -42,7 +42,7 @@ func ConvertToJson(cabOrders map[string]*orders.CabOrders,
 		states[elevID] = StateData{
 			Behaviour:   elev.BehaviourToString(),
 			Floor:       elev.CurrentFloor(),
-			Direction:   elev.DirectionToString(),
+			Direction:   elev.DirectionString(),
 			CabRequests: cabReqs,
 		}
 	}

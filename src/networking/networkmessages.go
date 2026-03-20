@@ -53,7 +53,7 @@ func messageFromWorldview(
 		msg.ElevatorStates[id] = ElevatorState{
 			Behaviour: elev.BehaviourToString(),
 			Floor:     elev.CurrentFloor(),
-			Direction: elev.DirectionToString(),
+			Direction: elev.DirectionString(),
 			InService: elev.InService(),
 		}
 	}

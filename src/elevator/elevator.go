@@ -130,7 +130,7 @@ func (e *Elevator) CurrentDirection() Direction {
 	return e.direction
 }
 
-func (e *Elevator) DirectionToString() string {
+func (e *Elevator) DirectionString() string {
 	switch e.direction {
 	case Stop:
 		return "stop"
@@ -164,11 +164,6 @@ func (e Elevator) StopPressed() bool {
 
 func (e *Elevator) UpdateInService(inService bool) {
 	e.inService = inService
-	if inService {
-	} else {
-		fmt.Printf("Elevator is OUT OF SERVICE\n")
-	}
-
 }
 
 func (e Elevator) InService() bool {
