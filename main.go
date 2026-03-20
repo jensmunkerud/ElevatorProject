@@ -57,7 +57,7 @@ func main() {
 	elevatorStateUpdate := make(chan elevator.Elevator, config.NumFloors*4)
 	peerUpdate := make(chan []string, 10)
 	ordersOnNetwork := make(chan elevatorserver.CallHandlerMessage, config.NumFloors*10)
-	worldviewToOrderDistributor := make(chan elevatorserver.OrderDistributorMessage, 5)
+	sendWorldviewToOrderDistributor := make(chan elevatorserver.OrderDistributorMessage, 5)
 	sendWorldviewToNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	receiveWorldviewFromNetwork := make(chan elevatorserver.NetworkingDistributorMessage, 5)
 	activeLocalOrders := make(chan [config.NumFloors][config.NumButtons]bool, 5)
@@ -71,11 +71,11 @@ func main() {
 	go callhandler.Run(readyCallhandler, hardwareEvent, hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, ordersOnNetwork, activeLocalOrders)
 	<-readyCallhandler
 	fmt.Println("Starting elevatorserver")
-	go elevatorserver.Run(hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, peerUpdate, ordersOnNetwork, worldviewToOrderDistributor, sendWorldviewToNetwork, receiveWorldviewFromNetwork)
+	go elevatorserver.Run(hallOrderUpdate, cabOrderUpdate, elevatorStateUpdate, peerUpdate, ordersOnNetwork, sendWorldviewToOrderDistributor, sendWorldviewToNetwork, receiveWorldviewFromNetwork)
 	fmt.Println("Starting networking")
 	go networking.Run(sendWorldviewToNetwork, peerUpdate, receiveWorldviewFromNetwork)
 	fmt.Println("Starting orderdistributor")
-	go orderdistributor.Run(worldviewToOrderDistributor, activeLocalOrders)
+	go orderdistributor.Run(sendWorldviewToOrderDistributor, activeLocalOrders)
 	// Block forever to keep the program running
 	select {}
 }
