@@ -48,6 +48,7 @@ func RequestUpdateOrder(
 		return
 	}
 }
+
 // This launches the callhandler, which listens for events from the elevator
 // and sends order updates to the elevatorserver.
 // It also listens for new orders from order distributor and overwrites the old ones.
@@ -69,7 +70,7 @@ func Run(
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
 	initializeElevatorToValidFloor(localElevator)
-	sendLocalState(localElevator, elevatorStateLocal)
+	sendLocalState(localElevator, elevatorStateUpdate)
 	close(ready)
 
 	event := <-elevatorEvent
@@ -85,7 +86,7 @@ func Run(
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
 			elevatorArrivedAtFloor(localElevator, floor, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			sendLocalState(localElevator, elevatorStateLocal)
+			sendLocalState(localElevator, elevatorStateUpdate)
 
 		case obstruction := <-event.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
@@ -120,17 +121,17 @@ func Run(
 		case newOrders := <-activeLocalOrders:
 			localElevator.UpdateRequest(newOrders)
 			elevatorOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			sendLocalState(localElevator, elevatorStateLocal)
+			sendLocalState(localElevator, elevatorStateUpdate)
 
 		case <-doorTimer.C:
 			elevatorOnDoorTimeout(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			sendLocalState(localElevator, elevatorStateLocal)
+			sendLocalState(localElevator, elevatorStateUpdate)
 
 		case <-serviceTimer.C:
 			localElevator.UpdateInService(false)
 			initializeElevatorToValidFloor(localElevator)
 			restartTimer(serviceTimer, config.ServiceTimeout)
-			sendLocalState(localElevator, elevatorStateLocal)
+			sendLocalState(localElevator, elevatorStateUpdate)
 		}
 	}
 }
