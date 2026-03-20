@@ -87,12 +87,12 @@ func worldviewFromMessage(msg Message) (elevatorserver.NetworkingDistributorMess
 
 	elevatorStates := make(map[string]*elevator.Elevator, len(msg.ElevatorStates))
 	for id, state := range msg.ElevatorStates {
-		direction, err := directionFromString(state.Direction)
+		direction, err := elevator.DirectionFromString(state.Direction)
 		if err != nil {
 			return elevatorserver.NetworkingDistributorMessage{}, err
 		}
 
-		behaviour, err := behaviourFromString(state.Behaviour)
+		behaviour, err := elevator.BehaviourFromString(state.Behaviour)
 		if err != nil {
 			return elevatorserver.NetworkingDistributorMessage{}, err
 		}
@@ -108,30 +108,4 @@ func worldviewFromMessage(msg Message) (elevatorserver.NetworkingDistributorMess
 	}
 
 	return elevatorserver.NewNetworkingDistributorMessage(msg.SenderID, allCabOrders, hallOrders, elevatorStates), nil
-}
-
-func directionFromString(direction string) (elevator.Direction, error) {
-	switch direction {
-	case "up":
-		return elevator.Up, nil
-	case "down":
-		return elevator.Down, nil
-	case "stop":
-		return elevator.Stop, nil
-	default:
-		return elevator.Stop, fmt.Errorf("invalid direction %q", direction)
-	}
-}
-
-func behaviourFromString(behaviour string) (elevator.Behaviour, error) {
-	switch behaviour {
-	case "moving":
-		return elevator.Moving, nil
-	case "doorOpen":
-		return elevator.DoorOpen, nil
-	case "idle":
-		return elevator.Idle, nil
-	default:
-		return elevator.Idle, fmt.Errorf("invalid behaviour %q", behaviour)
-	}
 }
