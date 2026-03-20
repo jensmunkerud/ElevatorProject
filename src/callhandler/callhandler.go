@@ -72,11 +72,10 @@ func Run(
 	elevators[localElevator.Id()] = localElevator
 	initializeElevatorToValidFloor(localElevator)
 	sendLocalState(localElevator, elevatorStateUpdate)
-	close(ready)
 
 	event := <-elevatorEvent
 	go refreshElevatorLights(ordersOnNetwork)
-
+	close(ready)
 	fmt.Println("Starting callhandler loop")
 	for {
 		select {
