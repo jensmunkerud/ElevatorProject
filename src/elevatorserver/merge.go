@@ -19,7 +19,6 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 	for _, id := range onlineNodes {
 		if id != receiverID {
 			noOtherOnlineNodes = false
-			break
 		}
 	}
 	if (local.Removed() || local.Unknown()) && noOtherOnlineNodes {
