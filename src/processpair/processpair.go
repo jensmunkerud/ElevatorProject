@@ -24,7 +24,7 @@ func RunAsBackup(port int, masterPID int) {
 
 // RunAsPrimary spawns a backup process in a new terminal and monitors it.
 // If the backup dies, a new one is spawned. Run as a goroutine from the master.
-func RunAsPrimary(port int) {
+func RunAsPrimary(port int, simulatorMode bool) {
 	executable, err := os.Executable()
 	if err != nil {
 		fmt.Printf("[Master] Could not resolve executable path: %v\n", err)
@@ -36,7 +36,7 @@ func RunAsPrimary(port int) {
 
 	for {
 		fmt.Printf("[Master] Spawning backup for port %s\n", portStr)
-		cmd := newBackupTerminal(executable, portStr, myPID)
+		cmd := newBackupTerminal(executable, portStr, myPID, simulatorMode)
 		if err := cmd.Run(); err != nil {
 			fmt.Printf("[Master] Backup for port %s exited with error: %v\n", portStr, err)
 		} else {
@@ -47,18 +47,22 @@ func RunAsPrimary(port int) {
 	}
 }
 
-func newBackupTerminal(executable, portStr, masterPID string) *exec.Cmd {
+func newBackupTerminal(executable, portStr, masterPID string, simulatorMode bool) *exec.Cmd {
+	args := []string{"-port", portStr, "-processpair", "-masterpid", masterPID}
+	if simulatorMode {
+		args = append(args, "-simulator")
+	}
 	switch runtime.GOOS {
 	case "windows":
-		return exec.Command("cmd", "/c", "start", "/wait",
-			fmt.Sprintf("Backup %s", portStr),
-			executable, "-port", portStr, "-processpair", "-masterpid", masterPID)
+		return exec.Command("cmd", append(
+			[]string{"/c", "start", "/wait", fmt.Sprintf("Backup %s", portStr), executable},
+			args...)...)
 	case "linux":
-		return exec.Command("gnome-terminal", "--wait", "--title",
-			fmt.Sprintf("Backup %s", portStr), "--",
-			executable, "-port", portStr, "-processpair", "-masterpid", masterPID)
+		return exec.Command("gnome-terminal", append(
+			[]string{"--wait", "--title", fmt.Sprintf("Backup %s", portStr), "--", executable},
+			args...)...)
 	default:
-		cmd := exec.Command(executable, "-port", portStr, "-processpair", "-masterpid", masterPID)
+		cmd := exec.Command(executable, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		return cmd

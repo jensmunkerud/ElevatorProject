@@ -169,25 +169,17 @@ func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.
 	allHall[myID].UpdateOrderState(u.Floor, u.OrderType, nextState)
 }
 
-func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders) {
+func applyCabUpdate(u CabOrderUpdate, allCab map[string]*orders.CabOrders, onlineNodes []string) {
 	if _, ok := allCab[u.OwnerID]; !ok {
 		allCab[u.OwnerID] = orders.CreateCabOrders()
 	}
-	// For our own cab orders, don't overwrite local state with a remote
-	// worldview before merge. For other owners, keep latest observed state.
-	if u.OwnerID != config.MyID() {
-		allCab[u.OwnerID].UpdateOrderState(u.Floor, u.State)
-	}
-	nextState := mergeCabOrderState(u, allCab)
+
+	nextState := mergeCabOrderState(u, allCab, onlineNodes)
 	allCab[u.OwnerID].UpdateOrderState(u.Floor, nextState)
 
-	// The barrier may already be satisfied after the first merge pass
-	// (e.g. the owning elevator is the only barrier node and just wrote
-	// the state above). Re-evaluate immediately so the order doesn't
-	// stay stuck until an unrelated update happens to trigger another
-	// merge for this floor.
+	// Recheck the barrier to prevent getting stuck in barrier state.
 	if nextState == orders.UnconfirmedOrderState || nextState == orders.CompletedOrderState {
-		recheck := mergeCabOrderState(u, allCab)
+		recheck := mergeCabOrderState(u, allCab, onlineNodes)
 		allCab[u.OwnerID].UpdateOrderState(u.Floor, recheck)
 	}
 }
@@ -264,7 +256,7 @@ func Run(
 			hallSnap <- allHall[myID].Copy()
 
 		case u := <-cabUpdate:
-			applyCabUpdate(u, allCab)
+			applyCabUpdate(u, allCab, elevatorsOnNetwork)
 			select {
 			case <-cabSnap:
 			default:
