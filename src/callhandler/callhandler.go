@@ -59,8 +59,8 @@ func RunCallHandler(
 	elevatorEvent <-chan es.ElevatorEvent,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
 	cabOrderUpdate chan<- elevatorserver.CabOrderUpdate,
-	elevatorStateLocal chan<- es.Elevator,
-	callHandlerMessage <-chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
+	elevatorStateUpdate chan<- es.Elevator,
+	ordersOnNetwork <-chan elevatorserver.CallHandlerMessage, // FOR LIGHTS CONTROL
 	activeLocalOrders <-chan [config.NumFloors][config.NumButtons]bool) {
 
 	doorTimer := time.NewTimer(config.DoorOpenDuration)
@@ -72,11 +72,11 @@ func RunCallHandler(
 	elevators := make(map[string]*es.Elevator)
 	elevators[localElevator.Id()] = localElevator
 	fsmInit(localElevator)
-	emitLocalState(localElevator, elevatorStateLocal)
+	emitLocalState(localElevator, elevatorStateUpdate)
 	close(ready)
 
 	event := <-elevatorEvent
-	go refreshElevatorLights(callHandlerMessage)
+	go refreshElevatorLights(ordersOnNetwork)
 
 	fmt.Println("Starting callhandler loop")
 	for {
@@ -92,7 +92,7 @@ func RunCallHandler(
 		case floor := <-event.FloorEvent:
 			fmt.Printf("%+v\n", floor)
 			fsmOnFloorArrival(localElevator, floor, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			emitLocalState(localElevator, elevatorStateLocal)
+			emitLocalState(localElevator, elevatorStateUpdate)
 
 		case obstruction := <-event.ObstructionEvent:
 			fmt.Printf("%+v\n", obstruction)
@@ -127,17 +127,17 @@ func RunCallHandler(
 		case newOrders := <-activeLocalOrders:
 			localElevator.UpdateRequest(newOrders)
 			fsmOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			emitLocalState(localElevator, elevatorStateLocal)
+			emitLocalState(localElevator, elevatorStateUpdate)
 
 		case <-doorTimer.C:
 			fsmOnDoorTimeout(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
-			emitLocalState(localElevator, elevatorStateLocal)
+			emitLocalState(localElevator, elevatorStateUpdate)
 
 		case <-serviceTimer.C:
 			localElevator.UpdateInService(false)
 			fsmInit(localElevator)
 			restartTimer(serviceTimer, config.ServiceTimeout)
-			emitLocalState(localElevator, elevatorStateLocal)
+			emitLocalState(localElevator, elevatorStateUpdate)
 		}
 	}
 }
