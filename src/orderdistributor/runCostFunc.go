@@ -110,8 +110,8 @@ func executeCostFunction(jsonInput string) (string, error) {
 		filepath.Join(dir, exe),
 		"--input", jsonInput,
 		"--includeCab",
-		"--doorOpenDuration", strconv.Itoa(config.DoorOpenDuration),
-		"--travelDuration", strconv.Itoa(config.TravelDuration),
+		"--doorOpenDuration", strconv.FormatInt(config.DoorOpenDuration.Milliseconds(), 10),
+		"--travelDuration", strconv.FormatInt(config.TravelDuration.Milliseconds(), 10),
 	)
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
