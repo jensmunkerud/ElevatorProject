@@ -68,8 +68,8 @@ func Run(
 func worldviewFromMessage(msg Message) es.NetworkingDistributorMessage {
 	hallOrders := orders.CreateHallOrders()
 	for floor, floorOrders := range msg.HallOrders {
-		for dirIdx, orderState := range floorOrders {
-			hallOrders.UpdateOrderState(floor, dirIdx, orders.OrderState(orderState))
+		for orderInDirection, orderState := range floorOrders {
+			hallOrders.UpdateOrderState(floor, elevator.ConvertOrderType(orderInDirection), orders.OrderState(orderState))
 		}
 	}
 

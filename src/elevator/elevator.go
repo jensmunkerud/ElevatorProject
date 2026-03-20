@@ -165,3 +165,10 @@ func (e Elevator) InService() bool {
 func (e *Elevator) Copy() Elevator {
 	return *e
 }
+
+func ConvertOrderType(value int) OrderType {
+	if value == 0 {
+		return HallUp
+	}
+	return HallDown
+}

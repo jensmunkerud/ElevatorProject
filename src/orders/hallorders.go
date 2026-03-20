@@ -41,11 +41,11 @@ func (h *HallOrders) Simplify() [][]bool {
 }
 
 func (h *HallOrders) UpdateOrderState(floor int, orderType elevator.OrderType, state OrderState) {
-	h.Orders[floor][orderType].UpdateState(state)
+	h.Orders[floor][int(orderType)].UpdateState(state)
 }
 
 func (h *HallOrders) GetOrderState(floor int, orderType elevator.OrderType) OrderState {
-	return h.Orders[floor][orderType].GetState()
+	return h.Orders[floor][int(orderType)].GetState()
 }
 
 func (h *HallOrders) Copy() *HallOrders {
