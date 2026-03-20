@@ -17,7 +17,7 @@ start "Simulator 15659" cmd /k "cd /d ""%PROJECT_ROOT%"" && SimElevatorServer --
 
 timeout /t 2 /nobreak >nul
 
-start "Elevator 15657" cmd /k "cd /d ""%PROJECT_ROOT%"" && elevator.exe -port 15657"
-start "Elevator 15658" cmd /k "cd /d ""%PROJECT_ROOT%"" && elevator.exe -port 15658"
-start "Elevator 15659" cmd /k "cd /d ""%PROJECT_ROOT%"" && elevator.exe -port 15659"
+start "Elevator 15657" cmd /k "cd /d ""%PROJECT_ROOT%"" && elevator.exe -port 15657 -simulator"
+start "Elevator 15658" cmd /k "cd /d ""%PROJECT_ROOT%"" && elevator.exe -port 15658 -simulator"
+start "Elevator 15659" cmd /k "cd /d ""%PROJECT_ROOT%"" && elevator.exe -port 15659 -simulator"
 
