@@ -8,10 +8,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"time"
 )
-
-
 
 // Run receives OrderDistributorMessages from the elevator server and runs the
 // cost function at a throttled rate (costFuncInterval) to avoid spawning a
@@ -50,7 +49,7 @@ func Run(
 				id := elevator.Id()
 				isInService := elevator.InService()
 				//fmt.Printf("State of elevator %v, %v\n", id, elevator)
-				if !isInService{
+				if !isInService {
 					delete(elevators, id)
 					delete(allCabOrders, id)
 				}
@@ -111,10 +110,14 @@ func executeCostFunction(jsonInput string) (string, error) {
 		filepath.Join(dir, exe),
 		"--input", jsonInput,
 		"--includeCab",
-		"--doorOpenDuration", config.DoorOpenDuration.String(),
-		"--travelDuration", config.TravelDuration.String(),
+		"--doorOpenDuration", strconv.Itoa(config.DoorOpenDuration),
+		"--travelDuration", strconv.Itoa(config.TravelDuration),
 	)
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
+	if len(output) == 0 {
+		fmt.Printf("Cost func not activated")
+		panic("Cost func not activated")
+	}
 	return string(output), err
 }

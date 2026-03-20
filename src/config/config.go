@@ -13,14 +13,14 @@ const (
 	NumButtons   = 3
 	NumElevators = 3
 
-	DoorOpenDuration        = 3000 * time.Millisecond
-	TravelDuration          = 2500 * time.Millisecond
+	DoorOpenDuration        = 3000
+	TravelDuration          = 2500
 	ServiceTimeout          = 4000 * time.Millisecond
 	Timeout                 = 1000 * time.Millisecond
 	HeartbeatInterval       = 100 * time.Millisecond
 	ProcessPairRestartDelay = 10 * time.Second
 	// Decouple the cost-function from heartbeat to avoid spamming
-	CostFuncInterval        = 200 * time.Millisecond
+	CostFuncInterval = 200 * time.Millisecond
 
 	ElevatorPort  = 15657
 	PeersPort     = 52317
