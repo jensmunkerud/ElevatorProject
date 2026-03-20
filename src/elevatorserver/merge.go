@@ -2,6 +2,7 @@ package elevatorserver
 
 import (
 	"elevatorproject/src/orders"
+	"fmt"
 )
 
 //This file contains the logic for merging incoming order updates from the network with the local
@@ -57,8 +58,10 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 		}
 	}
 	if noOtherOnlineNodes {
+		fmt.Printf("No other online nodes, using only %v\n", update.SenderID)
 		cabBarrierNodes = []string{update.SenderID}
 	} else {
+		fmt.Printf("Other online nodes, using %v\n", onlineNodes)
 		cabBarrierNodes = onlineNodes
 	}
 	return mergeState(update.State, local, cabBarrierNodes, func(id string) (orders.OrderState, bool) {
