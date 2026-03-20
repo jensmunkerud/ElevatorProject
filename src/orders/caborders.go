@@ -1,59 +1,76 @@
 package orders
 
-import "elevatorproject/src/config"
+import (
+	"elevatorproject/src/config"
+	"fmt"
+)
 
-//Indexed by floor, contains the state of the cab order for each floor.
+// Indexed by floor, contains the state of the cab order for each floor.
 type CabOrders struct {
-	Orders []*Order
+	orders []*Order
 }
 
-//A [NumFloors][2] array of pointers to OrderState,
-// where the first index represents the floor
-// and the second index represents the direction (0 for up, 1 for down).
+// A [NumFloors] array of pointers to OrderState,
 func CreateCabOrders() *CabOrders {
 	orders := make([]*Order, config.NumFloors)
-	for i := 0; i < config.NumFloors; i++ {
+	for floor := range config.NumFloors {
 		order := CreateOrder()
-		orders[i] = order
+		orders[floor] = order
 	}
-	return &CabOrders{Orders: orders}
+	return &CabOrders{orders: orders}
 }
 
 func (o *CabOrders) CabOrderState(floor int) OrderState {
-	return o.Orders[floor].GetState()
+	if !isValidFloor(floor) {
+		return UnknownOrderState
+	}
+	return o.orders[floor].GetState()
 }
 
 // Simplify converts CabOrders to a simpler []bool format for easier processing in cost functions.
-// Returns true for states Confirmed and Completed, false otherwise.
+// Returns true for states Confirmed, otherwise false.
 func (c *CabOrders) Simplify() []bool {
 	simplified := make([]bool, config.NumFloors)
-	for floor := 0; floor < config.NumFloors; floor++ {
-		simplified[floor] = c.CabOrderState(floor) == ConfirmedOrderState 
+	for floor := range config.NumFloors {
+		simplified[floor] = c.CabOrderState(floor) == ConfirmedOrderState
 	}
 	return simplified
 }
 
 func (c *CabOrders) UpdateOrderState(floor int, state OrderState) {
-	c.Orders[floor].UpdateState(state)
+	if !isValidFloor(floor) {
+		return
+	}
+	c.orders[floor].UpdateState(state)
 }
 
 func (c *CabOrders) GetOrderState(floor int) OrderState {
-	return c.Orders[floor].GetState()
+	if !isValidFloor(floor) {
+		return UnknownOrderState
+	}
+	return c.orders[floor].GetState()
+}
+
+func isValidFloor(floor int) bool {
+	if floor < 0 || floor >= config.NumFloors {
+		fmt.Printf("orders: invalid floor %d (valid range 0-%d)\n", floor, config.NumFloors-1)
+		return false
+	}
+	return true
 }
 
 func (c *CabOrders) Copy() *CabOrders {
-	cp := CreateCabOrders()
-	for floor := 0; floor < config.NumFloors; floor++ {
-		cp.Orders[floor].UpdateState(c.Orders[floor].GetState())
+	copy := CreateCabOrders()
+	for floor := range config.NumFloors {
+		copy.orders[floor].UpdateState(c.orders[floor].GetState())
 	}
-	return cp
+	return copy
 }
 
-// CopyAllCab returns a deep copy of a map[string]*CabOrders.
-func CopyAllCab(m map[string]*CabOrders) map[string]*CabOrders {
-	cp := make(map[string]*CabOrders, len(m))
-	for id, cab := range m {
-		cp[id] = cab.Copy()
+func CopyAllCab(cabOrders map[string]*CabOrders) map[string]*CabOrders {
+	copy := make(map[string]*CabOrders, len(cabOrders))
+	for id, cab := range cabOrders {
+		copy[id] = cab.Copy()
 	}
-	return cp
+	return copy
 }

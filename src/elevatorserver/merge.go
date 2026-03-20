@@ -21,8 +21,9 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 			noOtherOnlineNodes = false
 		}
 	}
-	removed := local.Removed()
-	unknown := local.Unknown()
+	removed := local.IsRemoved()
+	unknown := local.IsUnknown()
+	fmt.Printf("removed: %v, unknown: %v\n", removed, unknown)
 	if (removed || unknown) && noOtherOnlineNodes {
 		return orders.UnknownOrderState
 	}
@@ -82,7 +83,7 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 	case orders.UnknownOrderState:
 		return newOrder
 	case orders.RemovedOrderState:
-		if newOrder.Unconfirmed() {
+		if newOrder.IsUnconfirmed() {
 			// Need to check barrier for single elevator case
 			if barrierReached(onlineNodes, orders.UnconfirmedOrderState, getState) {
 				return orders.ConfirmedOrderState
@@ -101,7 +102,7 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 			return local
 		}
 	case orders.ConfirmedOrderState:
-		if newOrder.Completed() {
+		if newOrder.IsCompleted() {
 			// Need to check barrier for single elevator case
 			if barrierReached(onlineNodes, orders.CompletedOrderState, getState) {
 				return orders.RemovedOrderState

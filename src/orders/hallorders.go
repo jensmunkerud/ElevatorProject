@@ -3,10 +3,11 @@ package orders
 import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
+	"fmt"
 )
 
 type HallOrders struct {
-	Orders [][2]*Order //[floor][up/down] for each floor and orderType
+	orders [][2]*Order //[floor][up/down] for each floor and orderType
 }
 
 // A [NumFloors][2] array of pointers to OrderState,
@@ -14,21 +15,22 @@ type HallOrders struct {
 // and the second index represents the orderType (0 for up, 1 for down).
 func CreateHallOrders() *HallOrders {
 	orders := make([][2]*Order, config.NumFloors)
-	for i := 0; i < config.NumFloors; i++ {
-		up := CreateOrder()
-		down := CreateOrder()
-		orders[i][0] = up
-		orders[i][1] = down
+	for floor := 0; floor < config.NumFloors; floor++ {
+		orders[floor][0] = CreateOrder()
+		orders[floor][1] = CreateOrder()
 	}
-	return &HallOrders{Orders: orders}
+	return &HallOrders{orders: orders}
 }
 
 func (o *HallOrders) HallOrderState(floor int, orderType elevator.OrderType) OrderState {
-	return o.Orders[floor][int(orderType)].GetState()
+	if !isValidFloor(floor) || !isValidHallOrderType(orderType) {
+		return UnknownOrderState
+	}
+	return o.orders[floor][int(orderType)].GetState()
 }
 
 // Simplify converts HallOrders to a simpler [][]bool format for easier processing in cost functions.
-// Returns true for states Confirmed and Completed, false otherwise.
+// Returns true for states Confirmed, otherwise false
 func (h *HallOrders) Simplify() [][]bool {
 	simplified := make([][]bool, config.NumFloors)
 	for floor := 0; floor < config.NumFloors; floor++ {
@@ -41,19 +43,33 @@ func (h *HallOrders) Simplify() [][]bool {
 }
 
 func (h *HallOrders) UpdateOrderState(floor int, orderType elevator.OrderType, state OrderState) {
-	h.Orders[floor][int(orderType)].UpdateState(state)
+	if !isValidFloor(floor) || !isValidHallOrderType(orderType) {
+		return
+	}
+	h.orders[floor][int(orderType)].UpdateState(state)
 }
 
 func (h *HallOrders) GetOrderState(floor int, orderType elevator.OrderType) OrderState {
-	return h.Orders[floor][int(orderType)].GetState()
+	if !isValidFloor(floor) || !isValidHallOrderType(orderType) {
+		return UnknownOrderState
+	}
+	return h.orders[floor][int(orderType)].GetState()
 }
 
 func (h *HallOrders) Copy() *HallOrders {
-	cp := CreateHallOrders()
+	copy := CreateHallOrders()
 	for floor := 0; floor < config.NumFloors; floor++ {
-		for dir := 0; dir < 2; dir++ {
-			cp.Orders[floor][dir].UpdateState(h.Orders[floor][dir].GetState())
+		for _, orderType := range elevator.HallOrderTypes {
+			copy.orders[floor][int(orderType)].UpdateState(h.orders[floor][int(orderType)].GetState())
 		}
 	}
-	return cp
+	return copy
+}
+
+func isValidHallOrderType(orderType elevator.OrderType) bool {
+	if orderType != elevator.HallUp && orderType != elevator.HallDown {
+		fmt.Printf("orders: invalid hall order type %d\n", orderType)
+		return false
+	}
+	return true
 }
