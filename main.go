@@ -17,12 +17,10 @@ func main() {
 	port := flag.Int("port", config.ElevatorPort, "Port for the elevator simulator")
 	backup := flag.Bool("processpair", false, "Run as backup process that monitors and restarts the elevator")
 	masterPID := flag.Int("masterpid", 0, "PID of the master process (used by backup)")
+	simulatorMode := flag.Bool("simulator", false, "Run in simulator mode")
 	flag.Parse()
 
-	// Decides whether to run in simulator mode or on real hardware.
-	simulatorMode := true
-
-	config.InitConfig(*port, simulatorMode)
+	config.InitConfig(*port, *simulatorMode)
 
 	if *backup {
 		processpair.Run(*port, *masterPID)
