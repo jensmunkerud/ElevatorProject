@@ -1,14 +1,14 @@
 package callhandler
 
 /*
-In:		hardwareEvent chan						[controller]
-In:		activeLocalOrders chan					[orderdistributor]
-In:		ordersOnNetwork chan					[elevatorserver]
-=================================================================
-Out:	controller.MoveElevator					[controller]
-Out:	elevatorStateUpdate						[elevatorserver]
-out:	hallOrderUpdate chan					[elevatorserver]
-out:	cabOrderUpdate chan						[elevatorserver]
+In:		hardwareEvent chan			[controller]
+In:		activeLocalOrders chan		[orderdistributor]
+In:		ordersOnNetwork chan		[elevatorserver]
+======================================================
+Out:	controller.MoveElevator		[controller]
+Out:	elevatorStateUpdate			[elevatorserver]
+out:	hallOrderUpdate chan		[elevatorserver]
+out:	cabOrderUpdate chan			[elevatorserver]
 */
 
 import (
