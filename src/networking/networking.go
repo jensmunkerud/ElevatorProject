@@ -5,7 +5,7 @@ import (
 	"Network-go/network/peers"
 	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
-	es "elevatorproject/src/elevatorserver"
+	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
 	"fmt"
 )
@@ -13,9 +13,9 @@ import (
 // Run starts UDP broadcasting for the elevator network. It listens for incoming worldviews, peers on the network and
 // sends out the local worldview.
 func Run(
-	sendWorldviewIn <-chan es.NetworkingDistributorMessage,
+	sendWorldviewIn <-chan elevatorserver.NetworkingDistributorMessage,
 	peerUpdates chan<- []string,
-	receiveWorldviewOut chan<- es.NetworkingDistributorMessage,
+	receiveWorldviewOut chan<- elevatorserver.NetworkingDistributorMessage,
 ) {
 	myID := config.MyID()
 	peerUpdateCh := make(chan peers.PeerUpdate)
@@ -68,7 +68,7 @@ func Run(
 
 // Converts a received message from the networking into the internal format used by the elevator server.
 // Returns an error if any elevator state fails to parse.
-func worldviewFromMessage(msg Message) (es.NetworkingDistributorMessage, error) {
+func worldviewFromMessage(msg Message) (elevatorserver.NetworkingDistributorMessage, error) {
 	hallOrders := orders.CreateHallOrders()
 	for floor, floorOrders := range msg.HallOrders {
 		for orderInDirection, orderState := range floorOrders {
@@ -89,12 +89,12 @@ func worldviewFromMessage(msg Message) (es.NetworkingDistributorMessage, error) 
 	for id, state := range msg.ElevatorStates {
 		direction, err := directionFromString(state.Direction)
 		if err != nil {
-			return es.NetworkingDistributorMessage{}, err
+			return elevatorserver.NetworkingDistributorMessage{}, err
 		}
 
 		behaviour, err := behaviourFromString(state.Behaviour)
 		if err != nil {
-			return es.NetworkingDistributorMessage{}, err
+			return elevatorserver.NetworkingDistributorMessage{}, err
 		}
 
 		elev := elevator.CreateElevator(
@@ -107,7 +107,7 @@ func worldviewFromMessage(msg Message) (es.NetworkingDistributorMessage, error) 
 		elevatorStates[id] = elev
 	}
 
-	return es.NewNetworkingDistributorMessage(msg.SenderID, allCabOrders, hallOrders, elevatorStates), nil
+	return elevatorserver.NewNetworkingDistributorMessage(msg.SenderID, allCabOrders, hallOrders, elevatorStates), nil
 }
 
 func directionFromString(direction string) (elevator.Direction, error) {
