@@ -37,6 +37,7 @@ func Run(
 
 		case <-ticker.C:
 			if latest == nil {
+				fmt.Printf("No data for cost function yet, skipping\n")
 				continue
 			}
 			parts := *latest
@@ -58,7 +59,7 @@ func Run(
 				fmt.Println("No elevators, skipping cost function")
 				continue
 			}
-			jsonInput, err := ConvertToJson(config.MyID(), allCabOrders, mergedHallOrders, elevators)
+			jsonInput, err := ConvertToJson(allCabOrders, mergedHallOrders, elevators)
 			if err != nil {
 				fmt.Printf("Error converting to JSON: %v\n", err)
 				continue
@@ -66,14 +67,21 @@ func Run(
 
 			jsonOutput, err := executeCostFunction(jsonInput)
 			if err != nil {
+				fmt.Printf("Error executing cost function: %v\nOutput: %s\n", err, jsonOutput)
 				continue
 			}
 
 			assignments, err := ConvertFromJson(jsonOutput)
 			if err != nil {
+				fmt.Printf("Error converting from JSON: %v\nOutput: %s\n", err, jsonOutput)
 				continue
 			}
-			activeOrders <- assignments[myID]
+			currentlyActive, ok := assignments[myID]
+			if !ok {
+				fmt.Printf("Cost function did not return an assignment for this elevator (ID %s)\n", myID)
+				continue
+			}
+			activeOrders <- currentlyActive
 		}
 	}
 }
