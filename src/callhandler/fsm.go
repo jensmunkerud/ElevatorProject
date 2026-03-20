@@ -3,20 +3,20 @@ package callhandler
 import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/controller"
-	es "elevatorproject/src/elevator"
+	"elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 	"fmt"
 	"time"
 )
 
-func initializeElevatorToValidFloor(e *es.Elevator) {
+func initializeElevatorToValidFloor(e *elevator.Elevator) {
 	if config.NumFloors < 1 {
 		fmt.Println("Error: NumFloors must be at least 1")
 		return
 	}
 	floor := controller.GetCurrentFloor()
 	if floor != -1 && floor >= 0 && floor < config.NumFloors {
-		if e.Behaviour() != es.Moving {
+		if e.Behaviour() != elevator.Moving {
 			e.UpdateInService(true)
 			return
 		}
@@ -25,16 +25,16 @@ func initializeElevatorToValidFloor(e *es.Elevator) {
 
 	if e.CurrentFloor() < mid {
 		controller.MoveElevatorUp()
-		e.UpdateCurrentDirection(es.Up)
+		e.UpdateCurrentDirection(elevator.Up)
 	} else {
 		controller.MoveElevatorDown()
-		e.UpdateCurrentDirection(es.Down)
+		e.UpdateCurrentDirection(elevator.Down)
 	}
-	e.UpdateBehaviour(es.Moving)
+	e.UpdateBehaviour(elevator.Moving)
 }
 
 func elevatorArrivedAtFloor(
-	e *es.Elevator,
+	e *elevator.Elevator,
 	newFloor int,
 	doorTimer *time.Timer,
 	serviceTimer *time.Timer,
@@ -52,7 +52,7 @@ func elevatorArrivedAtFloor(
 	controller.SetFloorIndicator(newFloor)
 
 	switch e.Behaviour() {
-	case es.Moving:
+	case elevator.Moving:
 		// Necessary to restart the serviceTimer here, to also mark as out of service if door is obstructed.
 		restartTimer(serviceTimer, config.ServiceTimeout)
 		if shouldStop(*e) {
@@ -60,7 +60,7 @@ func elevatorArrivedAtFloor(
 			controller.SetDoorOpenLamp(true)
 			requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
 			restartTimer(doorTimer, config.DoorOpenDuration)
-			e.UpdateBehaviour(es.DoorOpen)
+			e.UpdateBehaviour(elevator.DoorOpen)
 		}
 	default:
 		// nothing
@@ -68,7 +68,7 @@ func elevatorArrivedAtFloor(
 }
 
 func elevatorOnDoorTimeout(
-	e *es.Elevator,
+	e *elevator.Elevator,
 	doorTimer *time.Timer,
 	serviceTimer *time.Timer,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
@@ -82,26 +82,26 @@ func elevatorOnDoorTimeout(
 		return
 	}
 	switch e.Behaviour() {
-	case es.DoorOpen:
-		newDirection, newBehaviour := requestsChooseDirection(*e)
+	case elevator.DoorOpen:
+		newDirection, newBehaviour := chooseNextDirection(*e)
 		e.UpdateCurrentDirection(newDirection)
 		e.UpdateBehaviour(newBehaviour)
 
 		switch e.Behaviour() {
-		case es.DoorOpen:
+		case elevator.DoorOpen:
 			e.UpdateInService(true)
 			restartTimer(doorTimer, config.DoorOpenDuration)
 			restartTimer(serviceTimer, config.ServiceTimeout)
 			requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
-		case es.Moving, es.Idle:
+		case elevator.Moving, elevator.Idle:
 			restartTimer(serviceTimer, config.ServiceTimeout)
 			e.UpdateInService(true)
 			controller.SetDoorOpenLamp(false)
-			if !e.StopPressed() && e.Behaviour() == es.Moving {
+			if !e.StopPressed() && e.Behaviour() == elevator.Moving {
 				switch e.CurrentDirection() {
-				case es.Up:
+				case elevator.Up:
 					controller.MoveElevatorUp()
-				case es.Down:
+				case elevator.Down:
 					controller.MoveElevatorDown()
 				}
 			}
@@ -113,7 +113,7 @@ func elevatorOnDoorTimeout(
 }
 
 func elevatorOnNewOrders(
-	e *es.Elevator,
+	e *elevator.Elevator,
 	doorTimer *time.Timer,
 	serviceTimer *time.Timer,
 	hallOrderUpdate chan<- elevatorserver.HallOrderUpdate,
@@ -123,25 +123,25 @@ func elevatorOnNewOrders(
 	if floor < 0 || floor >= config.NumFloors {
 		return
 	}
-	if e.Behaviour() != es.Idle || e.CurrentFloor() != floor {
+	if e.Behaviour() != elevator.Idle || e.CurrentFloor() != floor {
 		return
 	}
-	newDirection, newBehaviour := requestsChooseDirection(*e)
+	newDirection, newBehaviour := chooseNextDirection(*e)
 	e.UpdateCurrentDirection(newDirection)
 	e.UpdateBehaviour(newBehaviour)
 	e.UpdateInService(true)
 	switch newBehaviour {
-	case es.DoorOpen:
+	case elevator.DoorOpen:
 		controller.SetDoorOpenLamp(true)
 		restartTimer(doorTimer, config.DoorOpenDuration)
 		requestClearAtCurrentFloor(e, hallOrderUpdate, cabOrderUpdate)
-	case es.Moving:
+	case elevator.Moving:
 		restartTimer(serviceTimer, config.ServiceTimeout)
 		if !e.StopPressed() {
 			switch e.CurrentDirection() {
-			case es.Up:
+			case elevator.Up:
 				controller.MoveElevatorUp()
-			case es.Down:
+			case elevator.Down:
 				controller.MoveElevatorDown()
 			}
 		}

@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-
 func restartTimer(timer *time.Timer, duration time.Duration) {
 	timer.Stop()
 	select {
@@ -14,7 +13,6 @@ func restartTimer(timer *time.Timer, duration time.Duration) {
 	timer.Reset(duration)
 }
 
-
 func stopTimer(timer *time.Timer) {
 	if !timer.Stop() {
 		select {
@@ -23,4 +21,3 @@ func stopTimer(timer *time.Timer) {
 		}
 	}
 }
-

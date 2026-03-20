@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func Run(elevatorEvent chan elevator.ElevatorEvent, port int) {
+func Run(hardwareEvent chan elevator.HardwareEvent, port int) {
 	// Initializes external library for communicating with the elevator.
 	elevio.Init(fmt.Sprintf("localhost:%d", port), config.NumFloors)
 
@@ -18,7 +18,7 @@ func Run(elevatorEvent chan elevator.ElevatorEvent, port int) {
 	stopEvent := make(chan bool)
 
 	// Merge all events into a single channel to simplify the main event loop in callhandler.
-	elevatorEvent <- elevator.CreateElevatorEvent(outgoingOrderEvent, floorEvent, obstructionEvent, stopEvent)
+	hardwareEvent <- elevator.CreateHardwareEvent(outgoingOrderEvent, floorEvent, obstructionEvent, stopEvent)
 
 	go elevio.PollButtons(incomingOrderEvent)
 	go elevio.PollFloorSensor(floorEvent)
