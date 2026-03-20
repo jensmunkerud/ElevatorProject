@@ -50,6 +50,7 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 	//}
 
 	// Only the owning elevator participates in the barrier for cab orders.
+	fmt.Printf("New cab order update: %v\n", update)
 	noOtherOnlineNodes := true
 	cabBarrierNodes := []string{}
 	for _, id := range onlineNodes {
@@ -67,7 +68,6 @@ func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.C
 		if !ok {
 			return orders.UnknownOrderState, false
 		}
-		fmt.Printf("Orderstate for node %v: %v\n", id, elev.GetOrderState(update.Floor))
 		return elev.GetOrderState(update.Floor), true
 	})
 }
