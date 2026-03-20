@@ -25,12 +25,15 @@ endif
 # Step 3: Build Go project
 main:
 ifeq ($(UNAME_S),Linux)
+	rm -f elevator
 	GOOS=linux GOARCH=amd64 go build -o elevator main.go
 endif
 ifeq ($(UNAME_S),Darwin)
+	rm -f elevator
 	GOOS=darwin GOARCH=amd64 go build -o elevator main.go
 endif
 ifeq ($(OS),Windows_NT)
+	if exist elevator.exe del elevator.exe
 	set GOOS=windows&& set GOARCH=amd64&& go build -o elevator.exe main.go
 endif
 
