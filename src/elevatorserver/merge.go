@@ -86,10 +86,8 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 		if newOrder.Unconfirmed() {
 			// Need to check barrier for single elevator case
 			if barrierReached(onlineNodes, orders.UnconfirmedOrderState, getState) {
-				fmt.Printf("Merge of 2 and 2 resulted in confirmed \n")
 				return orders.ConfirmedOrderState
 			} else {
-				fmt.Printf("Merge of 2 and 2 resulted in unconfirmed \n")
 				return orders.UnconfirmedOrderState
 			}
 		} else {
@@ -97,8 +95,10 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 		}
 	case orders.UnconfirmedOrderState:
 		if barrierReached(onlineNodes, orders.UnconfirmedOrderState, getState) {
+			fmt.Printf("Barrier reached for unconfirmed order\n")
 			return orders.ConfirmedOrderState
 		} else {
+			fmt.Printf("Barrier not reached for unconfirmed order\n")
 			return local
 		}
 	case orders.ConfirmedOrderState:
