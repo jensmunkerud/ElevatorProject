@@ -128,18 +128,23 @@ func mergeState(newOrder orders.OrderState, local orders.OrderState, onlineNodes
 // Completed (the lifecycle is Unconfirmed→Confirmed→Completed→Removed, but Removed
 // has a lower numeric value than Completed).
 func barrierReached(onlineNodes []string, threshold orders.OrderState, getState func(string) (orders.OrderState, bool)) bool {
+	fmt.Printf("Checking barrier: onlineNodes: %v, threshold: %v\n", onlineNodes, threshold)
 	for _, id := range onlineNodes {
 		state, ok := getState(id)
 		if !ok {
+			fmt.Printf("Node %v not found\n", id)
 			return false
 		}
 		if threshold == orders.CompletedOrderState {
 			if state != orders.CompletedOrderState && state != orders.RemovedOrderState {
+				fmt.Printf("Node %v not at completed or removed\n", id)
 				return false
 			}
 		} else if state < threshold {
+			fmt.Printf("Node %v not at or above threshold\n", id)
 			return false
 		}
 	}
+	fmt.Printf("Barrier reached\n")
 	return true
 }
