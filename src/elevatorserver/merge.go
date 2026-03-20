@@ -34,11 +34,31 @@ func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders ma
 }
 
 // Checks if any other elevator has seen our cab order before confirming and removing the order.
-func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders) orders.OrderState {
+func mergeCabOrderState(update CabOrderUpdate, allCabOrders map[string]*orders.CabOrders, onlineNodes []string) orders.OrderState {
 	local := allCabOrders[update.OwnerID].GetOrderState(update.Floor)
+	myID := config.MyID()
+	hasOtherOnlineNodes := false
+	for _, id := range onlineNodes {
+		if id != myID {
+			hasOtherOnlineNodes = true
+			break
+		}
+	}
 
-	if update.SenderID == config.MyID() &&
-		update.OwnerID != config.MyID() &&
+	// For local cab orders, only transition Unconfirmed->Confirmed after a peer has
+	// echoed the order back. This guarantees a lit cab lamp implies distribution.
+	if update.OwnerID == myID && local == orders.UnconfirmedOrderState {
+		if !hasOtherOnlineNodes {
+			return orders.ConfirmedOrderState
+		}
+		if update.SenderID != myID && update.State >= orders.UnconfirmedOrderState {
+			return orders.ConfirmedOrderState
+		}
+		return orders.UnconfirmedOrderState
+	}
+
+	if update.SenderID == myID &&
+		update.OwnerID != myID &&
 		local == orders.UnconfirmedOrderState &&
 		update.State >= orders.UnconfirmedOrderState {
 		return orders.ConfirmedOrderState
