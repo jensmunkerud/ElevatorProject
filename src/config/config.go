@@ -14,6 +14,7 @@ const (
 	NumElevators = 3
 
 	DoorOpenDuration        = 3000 * time.Millisecond
+	TravelDuration          = 2500 * time.Millisecond
 	ServiceTimeout          = 4000 * time.Millisecond
 	Timeout                 = 1000 * time.Millisecond
 	HeartbeatInterval       = 100 * time.Millisecond
