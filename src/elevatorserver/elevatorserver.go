@@ -25,12 +25,12 @@ import (
 // processNetworkMessages receives messages from the network and forwards the
 // unpacked orders and elevator state into the local update channels.
 func processNetworkMessages(
-	channelFromNetworking <-chan NetworkingDistributorMessage,
+	receiveWorldviewFromNetwork <-chan NetworkingDistributorMessage,
 	hallUpdate chan<- HallOrderUpdate,
 	cabUpdate chan<- CabOrderUpdate,
 	elevatorStateUpdate chan<- elevator.Elevator,
 ) {
-	for message := range channelFromNetworking {
+	for message := range receiveWorldviewFromNetwork {
 		senderID := message.SenderID()
 		tempCab, tempHall, tempElevator := message.UnpackForNetworking()
 		newHallOrders := UnpackHallOrders(senderID, tempHall)
@@ -67,9 +67,9 @@ func publishToConsumers(
 	latestHall *orders.HallOrders,
 	latestCab map[string]*orders.CabOrders,
 	latestElevState map[string]*elevator.Elevator,
-	channelForCallHandler chan CallHandlerMessage,
-	channelForOrderDistributor chan OrderDistributorMessage,
-	channelForNetworking chan NetworkingDistributorMessage,
+	ordersOnNetwork chan CallHandlerMessage,
+	sendWorldviewToOrderDistributor chan OrderDistributorMessage,
+	sendWorldviewToNetwork chan NetworkingDistributorMessage,
 	nodes []string,
 ) {
 	var hallValue orders.HallOrders
@@ -141,21 +141,21 @@ func publishToConsumers(
 	//Discard outdated snapshots if the channel is full, ensuring the latest state is always published
 	// at the next tick without blocking.
 	select {
-	case <-channelForCallHandler:
+	case <-ordersOnNetwork:
 	default:
 	}
 	select {
-	case <-channelForOrderDistributor:
+	case <-sendWorldviewToOrderDistributor:
 	default:
 	}
 	select {
-	case <-channelForNetworking:
+	case <-sendWorldviewToNetwork:
 	default:
 	}
 
-	channelForCallHandler <- chMsg
-	channelForOrderDistributor <- odMsg
-	channelForNetworking <- netMsg
+	ordersOnNetwork <- chMsg
+	sendWorldviewToOrderDistributor <- odMsg
+	sendWorldviewToNetwork <- netMsg
 }
 
 func applyHallUpdate(u HallOrderUpdate, myID string, allHall map[string]*orders.HallOrders, onlineNodes []string) {
@@ -205,9 +205,9 @@ func Run(
 	elevatorStateUpdate chan elevator.Elevator,
 	peersOnlineUpdate <-chan []string,
 	ordersOnNetwork chan CallHandlerMessage,
-	channelToOrderDistributor chan OrderDistributorMessage,
-	channelToNetworking chan NetworkingDistributorMessage,
-	channelFromNetworking <-chan NetworkingDistributorMessage,
+	sendWorldviewToOrderDistributor chan OrderDistributorMessage,
+	sendWorldviewToNetwork chan NetworkingDistributorMessage,
+	receiveWorldviewFromNetwork <-chan NetworkingDistributorMessage,
 ) {
 	//For storing the latest snapshot of all orders and elevator states, used for merging and broadcasting to network.
 	myID := config.MyID()
@@ -247,12 +247,12 @@ func Run(
 				latestNodes = n
 			case <-ticker.C:
 				publishToConsumers(latestHall, latestCab, latestElevState,
-					ordersOnNetwork, channelToOrderDistributor, channelToNetworking, latestNodes)
+					ordersOnNetwork, sendWorldviewToOrderDistributor, sendWorldviewToNetwork, latestNodes)
 			}
 		}
 	}()
 
-	go processNetworkMessages(channelFromNetworking, hallUpdate, cabUpdate, elevatorStateUpdate)
+	go processNetworkMessages(receiveWorldviewFromNetwork, hallUpdate, cabUpdate, elevatorStateUpdate)
 
 	for {
 		select {
