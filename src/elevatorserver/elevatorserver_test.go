@@ -307,7 +307,7 @@ func startServer(t *testing.T, myID string) (
 	channelFromNetworking chan NetworkingDistributorMessage,
 ) {
 	t.Helper()
-	config.SetMyID()
+	config.InitConfigTesting()
 	// Not restoring config.MyID in cleanup: leaked RunElevatorServer
 	// goroutines read it and would panic on a nil map lookup.
 
@@ -432,7 +432,7 @@ func TestRunElevatorServer_NetworkingGoroutineForwardsUpdates(t *testing.T) {
 // --- publishToConsumers ---
 
 func TestPublishToConsumers_PublishesAllOnStateUpdates(t *testing.T) {
-	config.SetMyID()
+	config.InitConfigTesting()
 
 	callCh := make(chan CallHandlerMessage, 10)
 	orderCh := make(chan OrderDistributorMessage, 10)

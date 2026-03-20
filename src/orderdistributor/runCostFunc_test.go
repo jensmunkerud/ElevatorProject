@@ -57,7 +57,7 @@ func TestConvertToJsonOutput(t *testing.T) {
 }
 
 func TestCostFunc(t *testing.T) {
-	config.SetMyID()
+	config.InitConfigTesting()
 	myID := config.MyID()
 
 	elev1 := elevator.CreateElevator(myID, 2, elevator.Down, elevator.Idle)
