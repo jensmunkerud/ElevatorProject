@@ -13,8 +13,16 @@ import (
 // barrier protocol to coordinate transitions across all online nodes. This preserves orders across elevator failures.
 func mergeHallOrderState(update HallOrderUpdate, receiverID string, allOrders map[string]*orders.HallOrders, onlineNodes []string) orders.OrderState {
 	local := allOrders[receiverID].GetOrderState(update.Floor, update.Direction)
-	noOnlineNodes := len(onlineNodes) <= 1
-	if (local.Removed() || local.Unknown()) &&  noOnlineNodes{
+	// onlineNodes may or may not include receiverID depending on peer source.
+	// Treat "alone" as: no online node exists other than receiverID.
+	noOtherOnlineNodes := true
+	for _, id := range onlineNodes {
+		if id != receiverID {
+			noOtherOnlineNodes = false
+			break
+		}
+	}
+	if (local.Removed() || local.Unknown()) && noOtherOnlineNodes {
 		return orders.UnknownOrderState
 	}
 	return mergeState(update.State, local, onlineNodes, func(id string) (orders.OrderState, bool) {
