@@ -39,11 +39,11 @@ func RequestUpdateOrder(
 	switch orderType {
 	case es.Cab:
 		if cabOrderUpdate != nil {
-			cabOrderUpdate <- elevatorserver.NewCabOrderUpdate(myID, floor, state)
+			cabOrderUpdate <- elevatorserver.CreateCabOrderUpdate(myID, floor, state)
 		}
 	case es.HallUp, es.HallDown:
 		if hallOrderUpdate != nil {
-			hallOrderUpdate <- elevatorserver.NewHallOrderUpdate(myID, floor, orderType, state)
+			hallOrderUpdate <- elevatorserver.CreateHallOrderUpdate(myID, floor, orderType, state)
 		}
 	default:
 		return

@@ -101,7 +101,7 @@ func (e *Elevator) Behaviour() Behaviour {
 	return e.behaviour
 }
 
-func (e *Elevator) BehaviourString() string {
+func (e *Elevator) BehaviourToString() string {
 	switch e.behaviour {
 	case Idle:
 		return "idle"
@@ -164,12 +164,6 @@ func (e Elevator) StopPressed() bool {
 
 func (e *Elevator) UpdateInService(inService bool) {
 	e.inService = inService
-	if inService {
-		fmt.Printf("Elevator is IN SERVICE!!\n")
-	} else {
-		fmt.Printf("Elevator is OUT OF SERVICE\n")
-	}
-
 }
 
 func (e Elevator) InService() bool {
@@ -188,7 +182,7 @@ func ConvertOrderType(value int) OrderType {
 }
 func CreateOrderEvent(floor int, orderType OrderType) OrderEvent {
 	return OrderEvent{
-		Floor:     floor,
+		Floor:      floor,
 		OrderEvent: orderType,
 	}
 }
