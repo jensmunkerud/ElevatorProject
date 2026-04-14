@@ -1,0 +1,17 @@
+Per spec, the specsheet does not require elevio to be "interchangeable". We did this,
+overly complicating the program completely unnecessary.
+
+In elevatorserver, we flush the outgoing and ingoing channels. This is because
+if multiple button presses happen between heartbeats, we want to throw away the old worldviews
+and only care about the new ones. This should be avoided, by for instance force sending 
+the worldview when it changes or by another method.
+
+we have non-pure functions. Also we had functions used only once from a timer, elevatorOnDoorTimeout.
+This function could instead be called "attemptCloseDoor" or something. Since the 
+timer goroutine case already indicates that this function is run when the door timer times out,
+the function should not also be called this.
+
+We push variables called "sendLocalState" on a channel, which has 3 completely non-informative parts.
+send says nothing, local means nothing and state means nothing. Instead using <-elevator or
+something tells us we are sending this object on the channel in a much smarter way.
+
