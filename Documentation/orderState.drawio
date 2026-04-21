@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="Page-1" id="fXLtdXe-6DGHO8m1pgKr">
-        <mxGraphModel dx="1686" dy="917" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="337" dy="183" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -84,11 +84,11 @@
                         <mxPoint x="-3" y="-1" as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="606" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;[AllordersConfirmed]&lt;/span&gt;&lt;/div&gt;" style="text;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                <mxCell id="606" value="[AllordersConfirmed]" style="text;whiteSpace=wrap;fontSize=16;fillColor=default;" parent="1" vertex="1">
                     <mxGeometry x="777" y="213" width="150" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="608" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;font-size: 16px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;[AllOrdersCompleted]&lt;/span&gt;&lt;/div&gt;" style="text;whiteSpace=wrap;html=1;fontColor=#000000;" parent="1" vertex="1">
-                    <mxGeometry x="459" y="283" width="150" height="30" as="geometry"/>
+                <mxCell id="608" value="[AllOrdersCompleted]" style="text;whiteSpace=wrap;fontColor=#000000;fontSize=16;fillColor=default;" parent="1" vertex="1">
+                    <mxGeometry x="459" y="283" width="161" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="609" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=#d5e8d4;strokeColor=light-dark(#000000,#2C6700);gradientColor=#97d077;" parent="1" target="8" edge="1">
                     <mxGeometry relative="1" as="geometry">
