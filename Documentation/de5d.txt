@@ -1,0 +1,36 @@
+Review 1:
+8
+- CQ: Inconsistent code style/patterns. For example, sometimes a function `isValidFloor` is used to check if a floor is valid, sometimes an if is inlined. Etc.
+- CQ: Some functions are very long and contain several checks and assignments to local variables before doing what they are supposed to do. An example is `publishToConsumers`. This function could benefit from refactoring into smaller functions with dedicated responsibilities.
+- CQ: Some functions contain nested ifs inside of loops inside of switches inside of loops. To improve readability of control flow, this should be refactored with a focus on less nesting.
+- CQ: Magic numbers in channel initialization in `main.go`, explained to avoid deadlocks, but not the choice of the actual numbers.
+- State: Generally, all module states are private and communicated through others through channels. The main entry point makes it clear which modules exists and the channels they communicate on.
+- Coupling: The boundary between `callhandler` and `controller` is not immediately clear. In particular, it is hard to quickly get an overview over all the cases where the physical elevator control outputs can change.
+- Coherence: `callhandler` does a lot of things, and could benefit from being split into either several functions with defined responsibilities, or separate modules.
+Overall this code had a pretty good structure, but seemed a bit unpolished code quality-wise. Control flow was hard to read. The biggest plus of the code base was state management through message passing, which strengthened encapsulation and coherence.
+Since the main drawbacks of the code are localized to function bodies / blocks of code, we believe these issues are less severe.
+
+Review 2:
+8
+* Only the callhandler module uses timer.go, but it doesn't have anything to do with its central purpose directly and is general enough to move into its own module.
+* fsm.go in callhandler does not handle calls, but rather deals with the elevator directly. Move this to a separate module.
+* There is too much comments, where many times they simply just repeat the code where it already is self documenting.
+* The naming is good generally, but some of the variable names are confusing. For example, the variable just named 'first' in refreshElevatorLights(). Also, the callhandler module is not specific enough to explain its purpose.
+* It is very easy to understand how the code is built, both from the major comment at the top of main.go, but also from how main.go makes channels and runs go routines.
+* It is clear what modules are responsible for what variables, both from the names of the variables and also where it is modified.
+
+Review 3:
+8
+* Inline comments in main
+* elevator.go has 25 functions, which could be simplified by a separate helper function or placed elsewhere.
+* Elevatorserver is not completely pure, it does some additional things than only order merging. Could be solved by moving order merge functionality OUT into a separate package / the order package.
+
+Review 4:
+7
+Main file is well structured and it is clear what channels are initialized from looking at it.
+Why does controller also handle polling and conversion of elevio.ButtonEvents to elevator.OrderEvent?
+Cohesion-wise, elevator.go is large, and it mixes some responsibilities. It has event-channel wiring, helpers (BehaviourTo/FromString), and some convenience functions such as ConvertOrderType and CreateOrderEvent towards the bottom. Could it be better to separate into multiple smaller files?
+If-statement for checking if floor is valid in hallorders.go should be abstracted into a helper function since it is reused in many of the functions.
+The functions in fsm.go are very large with multiple responsibilities. Let's use elevatorArrivedAtFloor as an example. It validates input, updates floor, updates lights (hardware), handles timers, states, etc. It conflicts with the idea that "a routine should do one, and only one thing, and do it well". It is also deeply coupled to the rest of the code. It is connected to elevator.go, controller.go, timer.go, requests.go, etc.
+Run() in elevatorServer.go has the same issue. The commented description in your code shows all the stuff it is doing.
+
