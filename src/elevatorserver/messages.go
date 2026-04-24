@@ -98,9 +98,10 @@ type OrderDistributorMessage struct {
 	mergedHallOrders orders.HallOrders
 	allCabOrders     map[string]orders.CabOrders
 	elevatorState    map[string]elevator.Elevator
+	onlineNodes      []string
 }
 
-func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator) {
+func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders.CabOrders, *orders.HallOrders, map[string]*elevator.Elevator, []string) {
 	allCabOrders := make(map[string]*orders.CabOrders, len(m.allCabOrders))
 	for id, cab := range m.allCabOrders {
 		allCabOrders[id] = cab.Copy()
@@ -114,7 +115,10 @@ func (m OrderDistributorMessage) UnpackForOrderDistributor() (map[string]*orders
 		elevatorState[id] = &elevCopy
 	}
 
-	return allCabOrders, hallOrders, elevatorState
+	nodes := make([]string, len(m.onlineNodes))
+	copy(nodes, m.onlineNodes)
+
+	return allCabOrders, hallOrders, elevatorState, nodes
 }
 
 type NetworkingDistributorMessage struct {

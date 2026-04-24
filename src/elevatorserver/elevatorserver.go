@@ -13,6 +13,7 @@ import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/orders"
+	"sort"
 	"time"
 )
 
@@ -106,24 +107,25 @@ func publishToConsumers(
 
 	// Filter cab orders and elevator state to only online nodes for cost function
 	myID := config.MyID()
+	nodeSet := make(map[string]struct{}, len(nodes)+1)
+	nodeSet[myID] = struct{}{}
+	for _, id := range nodes {
+		nodeSet[id] = struct{}{}
+	}
+	onlineNodes := make([]string, 0, len(nodeSet))
+	for id := range nodeSet {
+		onlineNodes = append(onlineNodes, id)
+	}
+	sort.Strings(onlineNodes)
+
 	onlineCab := make(map[string]orders.CabOrders)
 	onlineElev := make(map[string]elevator.Elevator)
-	if len(nodes) == 0 {
-		// No peers known yet — include self only
-		if c, ok := cabValue[myID]; ok {
-			onlineCab[myID] = c
+	for _, id := range onlineNodes {
+		if c, ok := cabValue[id]; ok {
+			onlineCab[id] = c
 		}
-		if e, ok := elevValue[myID]; ok {
-			onlineElev[myID] = e
-		}
-	} else {
-		for _, id := range nodes {
-			if c, ok := cabValue[id]; ok {
-				onlineCab[id] = c
-			}
-			if e, ok := elevValue[id]; ok {
-				onlineElev[id] = e
-			}
+		if e, ok := elevValue[id]; ok {
+			onlineElev[id] = e
 		}
 	}
 
@@ -131,6 +133,7 @@ func publishToConsumers(
 		mergedHallOrders: hallValue,
 		allCabOrders:     onlineCab,
 		elevatorState:    onlineElev,
+		onlineNodes:      onlineNodes,
 	}
 	netMsg := NetworkingDistributorMessage{
 		senderID:         config.MyID(),

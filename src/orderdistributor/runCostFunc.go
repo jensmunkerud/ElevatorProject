@@ -3,14 +3,36 @@ package orderdistributor
 import (
 	"elevatorproject/src/config"
 	"elevatorproject/src/elevatorserver"
+	"elevatorproject/src/orders"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"time"
 )
+
+func worldviewReadyForCostFunc(
+	onlineNodes []string,
+	allCabOrders map[string]*orders.CabOrders,
+	elevators map[string]*elevatorserver.Elevator,
+) bool {
+	if len(onlineNodes) == 0 {
+		return false
+	}
+	for _, id := range onlineNodes {
+		if _, ok := allCabOrders[id]; !ok {
+			return false
+		}
+		elev, ok := elevators[id]
+		if !ok || elev == nil {
+			return false
+		}
+	}
+	return true
+}
 
 // Run receives OrderDistributorMessages from the elevator server and runs the
 // cost function at a throttled rate (costFuncInterval) to avoid spawning a
@@ -43,7 +65,13 @@ func Run(
 			parts := *latest
 			latest = nil
 
-			allCabOrders, mergedHallOrders, elevators := parts.UnpackForOrderDistributor()
+			allCabOrders, mergedHallOrders, elevators, onlineNodes := parts.UnpackForOrderDistributor()
+
+			if !worldviewReadyForCostFunc(onlineNodes, allCabOrders, elevators) {
+				sort.Strings(onlineNodes)
+				fmt.Printf("Skipping cost function: worldview not aligned yet. online=%v cab=%d elev=%d\n", onlineNodes, len(allCabOrders), len(elevators))
+				continue
+			}
 
 			// Remove non-servicable elevators from the cost function input
 			for _, elevator := range elevators {
