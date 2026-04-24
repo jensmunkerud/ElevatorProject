@@ -2,6 +2,7 @@ package orderdistributor
 
 import (
 	"elevatorproject/src/config"
+	"elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
 	"elevatorproject/src/orders"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 func worldviewReadyForCostFunc(
 	onlineNodes []string,
 	allCabOrders map[string]*orders.CabOrders,
-	elevators map[string]*elevatorserver.Elevator,
+	elevators map[string]*elevator.Elevator,
 ) bool {
 	if len(onlineNodes) == 0 {
 		return false
