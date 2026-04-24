@@ -79,6 +79,7 @@ func Run(
 			currentlyActive, ok := assignments[myID]
 			if !ok {
 				fmt.Printf("Cost function did not return an assignment for this elevator (ID %s)\n", myID)
+				activeOrders <- [config.NumFloors][config.NumButtons]bool{}
 				continue
 			}
 			activeOrders <- currentlyActive
