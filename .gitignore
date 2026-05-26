@@ -37,5 +37,6 @@ go.work.sum
 
 *.obj
 
-SimElevatorServer
-simulator.con
+!utilities/SimElevatorServerWindows.exe
+!utilities/SimElevatorServerLinux.exe
+!utilities/SimElevatorServerMac.exe
