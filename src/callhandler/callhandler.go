@@ -16,6 +16,7 @@ import (
 	"elevatorproject/src/controller"
 	"elevatorproject/src/elevator"
 	"elevatorproject/src/elevatorserver"
+	"elevatorproject/src/opticalflow"
 	"elevatorproject/src/orders"
 	"fmt"
 	"time"
@@ -70,6 +71,9 @@ func Run(
 	stopTimer(doorTimer)
 	serviceTimer := time.NewTimer(config.ServiceTimeout)
 	stopTimer(serviceTimer)
+	opticalFlowInput := make(chan float64, 10)
+	opticalFlowPIDOutput := make(chan float64, 10)
+	go opticalflow.Run(opticalFlowInput, opticalFlowPIDOutput)
 	myID := config.MyID()
 	localElevator := elevator.CreateElevator(myID, -1, elevator.Stop, elevator.Idle)
 	elevators := make(map[string]*elevator.Elevator)
@@ -122,6 +126,12 @@ func Run(
 				}
 			}
 
+		case measurement := <-event.OpticalFlowEvent:
+			select {
+			case opticalFlowInput <- measurement:
+			default:
+			}
+
 		case newOrders := <-activeLocalOrders:
 			localElevator.UpdateRequest(newOrders)
 			elevatorOnNewOrders(localElevator, doorTimer, serviceTimer, hallOrderUpdate, cabOrderUpdate)
@@ -136,6 +146,8 @@ func Run(
 			initializeElevatorToValidFloor(localElevator)
 			restartTimer(serviceTimer, config.ServiceTimeout)
 			sendLocalState(localElevator, elevatorStateUpdate)
+
+		case <-opticalFlowPIDOutput:
 		}
 	}
 }

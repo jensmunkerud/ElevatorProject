@@ -24,6 +24,12 @@ const (
 	ElevatorPort  = 15657
 	PeersPort     = 52317
 	BroadcastPort = 53491
+
+	OpticalFlowSetpoint      = 0.0
+	OpticalFlowKp            = 0.8
+	OpticalFlowKi            = 0.05
+	OpticalFlowKd            = 0.02
+	OpticalFlowIntegralLimit = 100.0
 )
 
 var (

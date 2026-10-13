@@ -55,6 +55,7 @@ type HardwareEvent struct {
 	FloorEvent       chan int
 	ObstructionEvent chan bool
 	StopEvent        chan bool
+	OpticalFlowEvent chan float64
 }
 
 func CreateElevator(id string, currentFloor int, direction Direction, behaviour Behaviour) *Elevator {
@@ -72,12 +73,14 @@ func CreateHardwareEvent(
 	floorEvent chan int,
 	obstructionEvent chan bool,
 	stopEvent chan bool,
+	opticalFlowEvent chan float64,
 ) HardwareEvent {
 	return HardwareEvent{
 		OrderEvent:       orderEvent,
 		FloorEvent:       floorEvent,
 		ObstructionEvent: obstructionEvent,
 		StopEvent:        stopEvent,
+		OpticalFlowEvent: opticalFlowEvent,
 	}
 }
 

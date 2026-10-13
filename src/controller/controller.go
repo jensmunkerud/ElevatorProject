@@ -16,14 +16,16 @@ func Run(hardwareEvent chan elevator.HardwareEvent, port int) {
 	floorEvent := make(chan int)
 	obstructionEvent := make(chan bool)
 	stopEvent := make(chan bool)
+	opticalFlowEvent := make(chan float64)
 
 	// Merge all events into a single channel to simplify the main event loop in callhandler.
-	hardwareEvent <- elevator.CreateHardwareEvent(outgoingOrderEvent, floorEvent, obstructionEvent, stopEvent)
+	hardwareEvent <- elevator.CreateHardwareEvent(outgoingOrderEvent, floorEvent, obstructionEvent, stopEvent, opticalFlowEvent)
 
 	go elevio.PollButtons(incomingOrderEvent)
 	go elevio.PollFloorSensor(floorEvent)
 	go elevio.PollObstructionSwitch(obstructionEvent)
 	go elevio.PollStopButton(stopEvent)
+	go pollOpticalFlowSensor(opticalFlowEvent)
 
 	// Converts elevio.ButtonEvents to elevator.OrderEvent to decouple the controller from the elevio package.
 	go func() {
